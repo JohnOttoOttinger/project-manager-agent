@@ -1,6 +1,8 @@
 import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { loadAgentRegistry } from "./agents.js";
 import { createChatServer } from "./app.js";
+import { ChatStore } from "./chat-store.js";
 import { DocumentStore } from "./documents.js";
 
 const DEFAULT_PORT = 3_000;
@@ -33,6 +35,9 @@ const documentDirectory =
   process.env.DOCUMENT_DATA_DIRECTORY ?? "/app/data/documents";
 const documentWorkerUrl =
   process.env.DOCUMENT_WORKER_URL ?? DEFAULT_DOCUMENT_WORKER_URL;
+const chatDataDirectory =
+  process.env.CHAT_DATA_DIRECTORY ??
+  fileURLToPath(new URL("../../../data/chat", import.meta.url));
 
 try {
   new URL(upstreamUrl);
@@ -47,9 +52,11 @@ const documentStore = new DocumentStore(
   documentWorkerUrl,
 );
 await documentStore.cleanupExpired();
+const chatStore = new ChatStore(join(chatDataDirectory, "chat.sqlite"));
 
 const server = createChatServer({
   agents,
+  chatStore,
   documentStore,
   publicDirectory,
   upstreamUrl,
@@ -62,11 +69,25 @@ server.listen(port, listenAddress, () => {
   console.log(
     `Loaded ${agents.length} agent definitions; ${agents.filter((agent) => agent.status === "active").length} active.`,
   );
+  console.log(
+    `Chat history ready with schema ${chatStore.health().schemaVersion}.`,
+  );
 });
 
+let shuttingDown = false;
 function shutdown(signal: string): void {
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
   console.log(`${signal} received; closing the chat gateway.`);
   server.close((error) => {
+    try {
+      chatStore.close();
+    } catch (closeError) {
+      console.error("Could not close chat history cleanly.", closeError);
+      process.exitCode = 1;
+    }
     if (error) {
       console.error("Could not close the chat gateway cleanly.", error);
       process.exitCode = 1;
