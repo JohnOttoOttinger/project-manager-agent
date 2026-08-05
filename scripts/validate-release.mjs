@@ -166,16 +166,8 @@ check(
   documentDockerfile.split(nodeImage).length - 1 === 1,
   "Document reader runtime must use the locked Node digest",
 );
-const browserDockerfile = await readFile(
-  join(projectRoot, "tests/phase7/Dockerfile.browser"),
-  "utf8",
-);
-check(
-  browserDockerfile.includes(playwrightImage),
-  "Browser tests must use the locked Playwright digest",
-);
 
-for (const root of ["apps", "scripts", "tests"]) {
+for (const root of ["apps", "scripts"]) {
   for (const path of await collectFiles(join(projectRoot, root))) {
     const name = basename(path);
     const extension = extname(path);

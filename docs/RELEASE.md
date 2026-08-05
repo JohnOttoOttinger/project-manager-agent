@@ -17,7 +17,7 @@ The learner path is locked by npm: the root `package.json` and
 `package-lock.json` pin the exact n8n release, and learners install it with
 `npm ci` during setup.
 
-The Docker-based smoke tests and the future cloud deployment additionally use
+The optional Docker path and the future cloud deployment additionally use
 versioned image tags plus multi-platform manifest digests:
 
 | Purpose | Image |
@@ -25,11 +25,9 @@ versioned image tags plus multi-platform manifest digests:
 | n8n runtime | `docker.n8n.io/n8nio/n8n:2.30.5@sha256:450853cd21a2ce36587c4c860eb26927c1ceba9496bf55f4c213b5d3a6dc8c6f` |
 | Chat build/runtime and helpers | `node:24.16.0-alpine3.22@sha256:191c9f0080fcbbc6547a85dc0ff7988072214a355aabdc1d2ec55a7dae5eea8a` |
 | Document-reader runtime | `node:24.16.0-alpine3.22@sha256:191c9f0080fcbbc6547a85dc0ff7988072214a355aabdc1d2ec55a7dae5eea8a` |
-| Browser validation | `mcr.microsoft.com/playwright:v1.61.0-noble@sha256:57b65fdc9ceabe0ef613124c7bbe2babcf9362c4d85e382fe3b03604e84b428a` |
 
-JavaScript dependencies are locked by `apps/chat/package-lock.json`,
-`services/document-worker/package-lock.json`, and
-`tests/phase7/package-lock.json`. The npm pin and the n8n image digest must
+JavaScript dependencies are locked by `apps/chat/package-lock.json` and
+`services/document-worker/package-lock.json`. The npm pin and the n8n image digest must
 reference the same n8n version; release validation enforces this. The local
 images are named `ai-solopreneur-chat:0.2.0` and
 `ai-solopreneur-document-worker:0.1.0`.
@@ -119,9 +117,12 @@ Run:
 
 ```bash
 node scripts/validate-release.mjs
-./scripts/test-phase8.sh
+node scripts/validate-workflows.mjs
 ```
 
-CI additionally repeats the Phase 3–5 and 7 Docker integration tests and the
-Phase 6 native learner-path smoke on Linux and Windows. A release is not valid
-if the tag, `VERSION`, version pins, documentation, or checksums disagree.
+The repository does not currently run automated CI/CD or test jobs. Before a
+release, complete the instructor fresh-copy checklist on every supported
+platform and manually exercise setup, chat persistence, restart recovery,
+backup, restore, safe write confirmation, and diagnostics. A release is not
+valid if the tag, `VERSION`, version pins, documentation, workflows, or
+checksums disagree.
