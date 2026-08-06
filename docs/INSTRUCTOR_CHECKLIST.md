@@ -13,7 +13,10 @@ Use this list to prepare and run a workshop in which non-technical teams reach a
 - [ ] Follow only that generated repository's README on one supported Mac and one Windows computer.
 - [ ] Confirm a clean project downloads and uses its verified private Node.js 24 runtime without admin access.
 - [ ] Run `setup.command` and `setup-windows.cmd` on a computer without existing project data.
-- [ ] Confirm all eleven workflows appear and the four Data Tables are created.
+- [ ] On Windows, run `preflight-windows.cmd` from a short local path and test
+      the actual `.cmd` launchers, including one path containing spaces.
+- [ ] Test Windows 11 ARM when the cohort may use ARM laptops.
+- [ ] Confirm all sixteen workflows appear and the four Data Tables are created.
 - [ ] Run diagnostics before configuration and confirm its `[next]` actions are accurate.
 - [ ] Add a disposable Anthropic credential, publish workflows `00` and `90`, and confirm diagnostics become all green.
 - [ ] Test a planning reply, factual task read, rejected plain `yes`, and accepted exact confirmation.
