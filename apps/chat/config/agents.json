@@ -17,33 +17,45 @@
       "id": "sales",
       "name": "Sales",
       "description": "Sales research, preparation, and follow-up workflows.",
-      "status": "coming-soon",
-      "workflowPath": "",
-      "examplePrompts": []
+      "status": "active",
+      "workflowPath": "/webhook/chat",
+      "examplePrompts": [
+        "Draft a follow-up email for an enquiry that went quiet",
+        "Prepare me for a discovery call with a new prospect"
+      ]
     },
     {
       "id": "marketing",
       "name": "Marketing",
       "description": "Campaign planning, content, and marketing operations.",
-      "status": "coming-soon",
-      "workflowPath": "",
-      "examplePrompts": []
+      "status": "active",
+      "workflowPath": "/webhook/chat",
+      "examplePrompts": [
+        "Turn our latest page into two LinkedIn posts",
+        "Draft a pitch to get us included in an industry listicle"
+      ]
     },
     {
       "id": "investment",
       "name": "Investment",
       "description": "Investment research, analysis, and decision preparation.",
-      "status": "coming-soon",
-      "workflowPath": "",
-      "examplePrompts": []
+      "status": "active",
+      "workflowPath": "/webhook/chat",
+      "examplePrompts": [
+        "Build a simple budget for next quarter's marketing spend",
+        "Summarise this quarter's revenue by product line from this export"
+      ]
     },
     {
       "id": "bookkeeping",
       "name": "Bookkeeping",
       "description": "Bookkeeping preparation, review, and reconciliation support.",
-      "status": "coming-soon",
-      "workflowPath": "",
-      "examplePrompts": []
+      "status": "active",
+      "workflowPath": "/webhook/chat",
+      "examplePrompts": [
+        "Categorise these expenses from this CSV export",
+        "Prepare a BAS-time checklist of documents I need"
+      ]
     }
   ]
 }

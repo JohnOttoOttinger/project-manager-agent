@@ -8,9 +8,10 @@
       content="A private, local workspace for reusable business agents."
     />
     <title>Project Manager</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <script src="/agent.config.js" defer></script>
-    <script src="/app.js" defer></script>
+    <link rel="stylesheet" href="/fonts/fonts-local.css?v=sd2" />
+    <link rel="stylesheet" href="/styles.css?v=sd2" />
+    <script src="/agent.config.js?v=sd2" defer></script>
+    <script src="/app.js?v=sd2" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#message-input">Skip to message box</a>
@@ -43,6 +44,21 @@
         <section class="agent-selector" aria-labelledby="agent-selector-title">
           <p class="section-label" id="agent-selector-title">Agents</p>
           <div class="agent-list" id="agent-list" role="list"></div>
+        </section>
+
+        <section
+          class="pipeline-panel"
+          id="pipeline-panel"
+          aria-labelledby="pipeline-title"
+          hidden
+        >
+          <div class="pipeline-panel__header">
+            <p class="section-label" id="pipeline-title">Content pipeline</p>
+            <span class="pipeline-panel__badge" id="pipeline-badge" hidden>
+              Sample
+            </span>
+          </div>
+          <div class="pipeline-panel__content" id="pipeline-content"></div>
         </section>
 
         <section class="history-panel" aria-labelledby="history-title">
@@ -130,6 +146,30 @@
         ></div>
 
         <div class="composer-area">
+          <div class="brand-bar" id="brand-bar" hidden>
+            <div
+              class="brand-toggle"
+              id="brand-toggle"
+              role="radiogroup"
+              aria-label="Acting for brand"
+            ></div>
+            <p class="brand-bar__note" id="brand-note"></p>
+          </div>
+
+          <section
+            class="quick-actions-section"
+            id="quick-actions-section"
+            aria-labelledby="quick-actions-title"
+            hidden
+          >
+            <p class="section-label" id="quick-actions-title">Quick actions</p>
+            <div
+              class="quick-actions"
+              id="quick-actions"
+              aria-label="Quick actions"
+            ></div>
+          </section>
+
           <section class="suggestions" id="suggestions" aria-labelledby="suggestions-title">
             <p class="section-label" id="suggestions-title">Try an example</p>
             <div class="suggestion-list" id="suggestion-list"></div>
