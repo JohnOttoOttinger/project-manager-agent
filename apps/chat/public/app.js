@@ -95,7 +95,17 @@
     suggestionList: document.querySelector("#suggestion-list"),
     suggestions: document.querySelector("#suggestions"),
     uploadButton: document.querySelector("#upload-button"),
+    brandBar: document.querySelector("#brand-bar"),
+    brandToggle: document.querySelector("#brand-toggle"),
+    brandNote: document.querySelector("#brand-note"),
+    quickActions: document.querySelector("#quick-actions"),
+    quickActionsSection: document.querySelector("#quick-actions-section"),
+    pipelinePanel: document.querySelector("#pipeline-panel"),
+    pipelineBadge: document.querySelector("#pipeline-badge"),
+    pipelineContent: document.querySelector("#pipeline-content"),
   };
+
+  const BRAND_STORAGE_KEY = "ai-solopreneur-active-brand";
 
   let sessionId = loadOrCreateSession();
   let requestInProgress = false;
@@ -156,6 +166,50 @@
           : DEFAULT_CONFIG.primaryColour,
       examplePrompts:
         prompts.length > 0 ? prompts : DEFAULT_CONFIG.examplePrompts,
+      brands: Array.isArray(supplied.brands)
+        ? supplied.brands
+            .filter(
+              (brand) =>
+                brand &&
+                typeof brand.id === "string" &&
+                typeof brand.label === "string",
+            )
+            .slice(0, 4)
+            .map((brand) => ({
+              id: brand.id.trim().slice(0, 40),
+              label: brand.label.trim().slice(0, 40),
+              colour:
+                typeof brand.colour === "string" &&
+                window.CSS?.supports("color", brand.colour.trim())
+                  ? brand.colour.trim()
+                  : DEFAULT_CONFIG.primaryColour,
+            }))
+        : [],
+      brandExamplePrompts:
+        typeof supplied.brandExamplePrompts === "object" &&
+        supplied.brandExamplePrompts !== null
+          ? supplied.brandExamplePrompts
+          : {},
+      welcomeMessages:
+        typeof supplied.welcomeMessages === "object" &&
+        supplied.welcomeMessages !== null
+          ? supplied.welcomeMessages
+          : {},
+      quickActions: Array.isArray(supplied.quickActions)
+        ? supplied.quickActions
+            .filter(
+              (action) =>
+                action &&
+                typeof action.label === "string" &&
+                typeof action.prompt === "string",
+            )
+            .slice(0, 6)
+            .map((action) => ({
+              icon: cleanText(action.icon, "", 4),
+              label: action.label.trim().slice(0, 40),
+              prompt: action.prompt.trim().slice(0, 500),
+            }))
+        : [],
     };
   }
 
@@ -216,6 +270,13 @@
     return freshSession;
   }
 
+  function welcomeMessageFor(agentId) {
+    const message = config.welcomeMessages[agentId];
+    return typeof message === "string" && message.trim()
+      ? message.trim().slice(0, 800)
+      : config.welcomeMessage;
+  }
+
   function applyAgentIdentity() {
     const name = displayAgentName();
     const description =
@@ -225,14 +286,15 @@
     document.title = `${name} · Local agent`;
     document.documentElement.style.setProperty(
       "--brand-primary",
-      config.primaryColour,
+      activeBrand()?.colour ?? config.primaryColour,
     );
     elements.agentName.textContent = name;
     elements.agentSubtitle.textContent = description;
     elements.conversationAgentName.textContent = name;
     elements.conversationTitleText.textContent = activeConversationTitle;
     elements.input.setAttribute("aria-label", `Message ${name}`);
-    elements.input.placeholder = `What should the ${name} do?`;
+    const article = name === "Project Manager" ? "the " : "";
+    elements.input.placeholder = `What should ${article}${name} do?`;
 
     const initials = getInitials(name);
     elements.agentInitials.textContent = initials;
@@ -363,6 +425,30 @@
           ? "Reply interrupted — send this again as a new message."
           : "Reply failed — send this again to retry.";
       body.append(status);
+    }
+    if (
+      kind === "agent" &&
+      text.trim().length > 0 &&
+      !["pending", "failed", "interrupted"].includes(options.status)
+    ) {
+      const actions = document.createElement("div");
+      actions.className = "message__actions";
+      const copyButton = document.createElement("button");
+      copyButton.className = "message-copy-button";
+      copyButton.type = "button";
+      copyButton.textContent = "Copy";
+      copyButton.addEventListener("click", () => {
+        void copyTextToClipboard(text).then((copied) => {
+          copyButton.textContent = copied ? "Copied ✓" : "Copy failed";
+          copyButton.classList.toggle("message-copy-button--copied", copied);
+          window.setTimeout(() => {
+            copyButton.textContent = "Copy";
+            copyButton.classList.remove("message-copy-button--copied");
+          }, 1800);
+        });
+      });
+      actions.append(copyButton);
+      body.append(actions);
     }
     wrapper.append(createAvatar(kind), body);
     elements.conversation.append(wrapper);
@@ -647,7 +733,9 @@
       elements.conversation.append(older);
     }
     if (currentMessages.length === 0) {
-      addMessage("agent", config.welcomeMessage, [], { scroll: false });
+      addMessage("agent", welcomeMessageFor(activeAgentId), [], {
+        scroll: false,
+      });
       elements.suggestions.hidden = false;
     } else {
       elements.suggestions.hidden = true;
@@ -873,12 +961,235 @@
     }
   }
 
+  async function copyTextToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.opacity = "0";
+      document.body.append(helper);
+      helper.select();
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch {
+        copied = false;
+      }
+      helper.remove();
+      return copied;
+    }
+  }
+
+  function activeBrand() {
+    if (config.brands.length === 0) {
+      return null;
+    }
+    const storedId = window.localStorage.getItem(BRAND_STORAGE_KEY);
+    return (
+      config.brands.find((brand) => brand.id === storedId) ?? config.brands[0]
+    );
+  }
+
+  function setActiveBrand(brandId) {
+    window.localStorage.setItem(BRAND_STORAGE_KEY, brandId);
+    renderBrandBar();
+    renderQuickActions();
+    renderSuggestions();
+    renderPipeline(lastPipelinePayload);
+  }
+
+  function renderBrandBar() {
+    if (config.brands.length === 0) {
+      return;
+    }
+    const current = activeBrand();
+    document.documentElement.style.setProperty(
+      "--brand-primary",
+      current.colour,
+    );
+    elements.brandBar.hidden = false;
+    elements.brandToggle.replaceChildren();
+    for (const brand of config.brands) {
+      const option = document.createElement("button");
+      option.className = "brand-toggle__option";
+      option.type = "button";
+      option.setAttribute("role", "radio");
+      option.setAttribute(
+        "aria-checked",
+        brand.id === current.id ? "true" : "false",
+      );
+      option.style.setProperty("--dot-colour", brand.colour);
+
+      const dot = document.createElement("span");
+      dot.className = "brand-toggle__dot";
+      dot.setAttribute("aria-hidden", "true");
+
+      const label = document.createElement("span");
+      label.textContent = brand.label;
+
+      option.append(dot, label);
+      option.addEventListener("click", () => {
+        if (brand.id !== activeBrand()?.id) {
+          setActiveBrand(brand.id);
+        }
+      });
+      elements.brandToggle.append(option);
+    }
+    elements.brandNote.textContent = `Acting for ${current.label} — pages and posts target this brand's site and voice.`;
+  }
+
+  function renderQuickActions() {
+    if (config.quickActions.length === 0) {
+      return;
+    }
+    const current = activeBrand();
+    elements.quickActionsSection.hidden = false;
+    elements.quickActions.replaceChildren();
+    for (const action of config.quickActions) {
+      const chip = document.createElement("button");
+      chip.className = "quick-action";
+      chip.type = "button";
+      if (action.icon) {
+        const icon = document.createElement("span");
+        icon.className = "quick-action__icon";
+        icon.setAttribute("aria-hidden", "true");
+        icon.textContent = action.icon;
+        chip.append(icon);
+      }
+      const label = document.createElement("span");
+      label.textContent = action.label;
+      chip.append(label);
+      chip.addEventListener("click", () => {
+        const prompt = action.prompt.replaceAll(
+          "{brand}",
+          current ? current.label : "the business",
+        );
+        elements.input.value = prompt;
+        elements.input.dispatchEvent(new Event("input"));
+        elements.input.focus();
+      });
+      elements.quickActions.append(chip);
+    }
+  }
+
+  let lastPipelinePayload = null;
+
+  function pipelineGroup(title, items, emptyText, current) {
+    const group = document.createElement("div");
+    group.className = "pipeline-group";
+    const heading = document.createElement("p");
+    heading.className = "pipeline-group__title";
+    heading.textContent = title;
+    group.append(heading);
+    if (items.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "pipeline-empty";
+      empty.textContent = emptyText;
+      group.append(empty);
+      return group;
+    }
+    for (const item of items) {
+      const row = document.createElement("div");
+      row.className = "pipeline-item";
+      if (
+        current &&
+        item.brand !== "general" &&
+        item.brand !== current.id
+      ) {
+        row.classList.add("pipeline-item--dimmed");
+      }
+      const dot = document.createElement("span");
+      dot.className = `pipeline-item__brand pipeline-item__brand--${item.brand}`;
+      dot.setAttribute("aria-hidden", "true");
+      dot.title = item.brand;
+      const title2 = document.createElement("span");
+      title2.className = "pipeline-item__title";
+      title2.textContent = item.title;
+      title2.title = item.title;
+      row.append(dot, title2);
+      if (item.url) {
+        const open = document.createElement("a");
+        open.href = item.url;
+        open.target = "_blank";
+        open.rel = "noreferrer";
+        open.textContent = "Review";
+        row.append(open);
+      }
+      group.append(row);
+    }
+    return group;
+  }
+
+  function renderPipeline(payload) {
+    if (!payload) {
+      return;
+    }
+    lastPipelinePayload = payload;
+    const current = activeBrand();
+    elements.pipelinePanel.hidden = false;
+    elements.pipelineBadge.hidden = payload.sample !== true;
+    elements.pipelineContent.replaceChildren(
+      pipelineGroup(
+        "Next pages",
+        payload.nextPages ?? [],
+        "Backlog is clear.",
+        current,
+      ),
+      pipelineGroup(
+        "Awaiting your review",
+        payload.awaitingReview ?? [],
+        "Nothing waiting.",
+        current,
+      ),
+      pipelineGroup(
+        "Outreach to send",
+        payload.outreach ?? [],
+        "Nothing drafted.",
+        current,
+      ),
+    );
+  }
+
+  async function loadPipeline() {
+    try {
+      const response = await fetch("/api/pipeline");
+      if (!response.ok) {
+        return;
+      }
+      renderPipeline(await response.json());
+    } catch {
+      // The pipeline card is optional; the chat works without it.
+    }
+  }
+
+  function brandExamplePromptsFor(agentId) {
+    const brand = activeBrand();
+    if (!brand) {
+      return null;
+    }
+    const byBrand = config.brandExamplePrompts[agentId];
+    const prompts =
+      byBrand && typeof byBrand === "object" ? byBrand[brand.id] : null;
+    if (!Array.isArray(prompts)) {
+      return null;
+    }
+    const cleaned = prompts
+      .filter((prompt) => typeof prompt === "string" && prompt.trim())
+      .map((prompt) => prompt.trim().slice(0, 180));
+    return cleaned.length > 0 ? cleaned : null;
+  }
+
   function renderSuggestions() {
     elements.suggestionList.replaceChildren();
     const selectedPrompts =
-      activeAgent()?.examplePrompts?.length > 0
+      brandExamplePromptsFor(activeAgentId) ??
+      (activeAgent()?.examplePrompts?.length > 0
         ? activeAgent().examplePrompts
-        : config.examplePrompts;
+        : config.examplePrompts);
     for (const prompt of selectedPrompts.slice(0, 6)) {
       const button = document.createElement("button");
       button.className = "suggestion-button";
@@ -923,7 +1234,7 @@
 
   function renderNewConversation() {
     elements.conversation.replaceChildren();
-    addMessage("agent", config.welcomeMessage);
+    addMessage("agent", welcomeMessageFor(activeAgentId));
     elements.suggestions.hidden = false;
     elements.input.value = "";
     updateCharacterCount();
@@ -1349,6 +1660,17 @@
     syncHistoryPanelAccess();
   });
 
+  function seedDemoConversation() {
+    addMessage(
+      "user",
+      "Run an off-site consensus round for the workshop pricing page.",
+    );
+    addMessage(
+      "agent",
+      "Here's a LinkedIn post drafted from the new pricing page (Datalabs voice, playbook rules applied):\n\n\"How much does a corporate Power BI workshop actually cost in Australia? We just published our full pricing — day rates, half-day options, and what moves the number. No 'contact us for a quote' games. Link in comments. #PowerBI #DataStorytelling\"\n\nReview it, then copy and paste it into LinkedIn. Next up: one listicle pitch and one review request — say \"next\" when ready.",
+    );
+  }
+
   async function initialise() {
     syncHistoryPanelAccess();
     await loadAgents();
@@ -1356,6 +1678,12 @@
     renderAgentList();
     renderSuggestions();
     renderDocuments();
+    renderBrandBar();
+    renderQuickActions();
+    void loadPipeline();
+    if (new URLSearchParams(window.location.search).get("demo") === "1") {
+      window.setTimeout(seedDemoConversation, 400);
+    }
     try {
       await loadConversationList();
       try {

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import {
   createServer,
   type IncomingMessage,
@@ -45,6 +46,7 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".woff2": "font/woff2",
 };
 
 const SECURITY_HEADERS: Readonly<Record<string, string>> = {
@@ -127,6 +129,112 @@ class PublicError extends Error {
   ) {
     super(publicMessage);
   }
+}
+
+// --- Content pipeline (GEO skills) ---------------------------------------
+// Reads the Markdown state files the GEO content skills maintain. Until those
+// skills exist, the endpoint serves labelled sample data so the sidebar card
+// can be previewed and approved.
+
+const SKILLS_DIRECTORY = fileURLToPath(
+  new URL("../../../skills", import.meta.url),
+);
+
+interface PipelineItem {
+  title: string;
+  brand: string;
+  url?: string | undefined;
+}
+
+interface PipelinePayload {
+  sample: boolean;
+  nextPages: PipelineItem[];
+  awaitingReview: PipelineItem[];
+  outreach: PipelineItem[];
+}
+
+const SAMPLE_PIPELINE: PipelinePayload = {
+  sample: true,
+  nextPages: [
+    { title: "Workshop pricing page", brand: "datalabs" },
+    { title: "Credits page", brand: "oddtoe" },
+    { title: "Power BI vs Tableau training", brand: "datalabs" },
+  ],
+  awaitingReview: [
+    { title: "How much does dashboard design cost?", brand: "datalabs" },
+  ],
+  outreach: [
+    { title: "LinkedIn post — workshop pricing", brand: "datalabs" },
+    { title: "Pitch — best data agencies listicle", brand: "datalabs" },
+  ],
+};
+
+function pipelineBrand(line: string): string {
+  if (/\(datalabs\)/i.test(line)) {
+    return "datalabs";
+  }
+  if (/\(oddtoe\)/i.test(line)) {
+    return "oddtoe";
+  }
+  return "general";
+}
+
+function pipelineTitle(line: string): string {
+  return line
+    .replace(/^\s*-\s*\[[ x~]\]\s*/i, "")
+    .replace(/\((?:datalabs|oddtoe)\)/i, "")
+    .replace(/—?\s*\[[^\]]*\]\([^)]*\)/g, "")
+    .trim();
+}
+
+function pipelineUrl(line: string): string | undefined {
+  const match = /\]\((https?:\/\/[^)]+)\)/.exec(line);
+  return match ? match[1] : undefined;
+}
+
+async function loadPipeline(): Promise<PipelinePayload> {
+  let backlog: string | null = null;
+  let outreachLog: string | null = null;
+  try {
+    backlog = await readFile(
+      `${SKILLS_DIRECTORY}/money-pages/references/backlog.md`,
+      "utf8",
+    );
+  } catch {
+    // Skill not built yet.
+  }
+  try {
+    outreachLog = await readFile(
+      `${SKILLS_DIRECTORY}/offsite-consensus/references/outreach-log.md`,
+      "utf8",
+    );
+  } catch {
+    // Skill not built yet.
+  }
+  if (backlog === null && outreachLog === null) {
+    return SAMPLE_PIPELINE;
+  }
+
+  const nextPages: PipelineItem[] = [];
+  const awaitingReview: PipelineItem[] = [];
+  for (const line of (backlog ?? "").split("\n")) {
+    if (/^\s*-\s*\[ \]/.test(line) && nextPages.length < 3) {
+      nextPages.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
+    } else if (/^\s*-\s*\[~\]/.test(line) && awaitingReview.length < 5) {
+      awaitingReview.push({
+        title: pipelineTitle(line),
+        brand: pipelineBrand(line),
+        url: pipelineUrl(line),
+      });
+    }
+  }
+  const outreach: PipelineItem[] = [];
+  for (const line of (outreachLog ?? "").split("\n")) {
+    if (/^\s*-\s*\[ \]/.test(line) && outreach.length < 5) {
+      outreach.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
+    }
+  }
+  return { sample: false, nextPages, awaitingReview, outreach };
 }
 
 function sendJson(
@@ -912,6 +1020,30 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
           schemaVersion: 1,
           agents: publicAgentDefinitions(agents),
         });
+        return;
+      }
+
+      if (url.pathname === "/api/pipeline") {
+        if (request.method !== "GET") {
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET" },
+          );
+          return;
+        }
+        try {
+          sendJson(response, 200, await loadPipeline());
+        } catch (error) {
+          options.logError?.("Pipeline state could not be read.", error);
+          sendJson(response, 200, { ...SAMPLE_PIPELINE });
+        }
         return;
       }
 

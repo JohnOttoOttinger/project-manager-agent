@@ -168,6 +168,10 @@ Honest answer: **you barely need external repos — the skills ARE the build.** 
 
 ---
 
+## 4b. Architecture principle: the five agents stay separate
+
+Otto's standing decision (11 Aug 2026): Project Manager, Sales, Marketing, Investment, and Bookkeeping are **independent agents to be developed separately over the year** — separate n8n workflows, separate skills, separate system prompts. The current state (all five active in `apps/chat/config/agents.json` but pointing at the shared `/webhook/chat` workflow) is a **placeholder** so the UI's agent switcher and per-agent × per-brand examples work. When building any agent out: give it its own n8n workflow and webhook path, update its `workflowPath` in agents.json, and never merge agent responsibilities to save time. The GEO content skills in this spec belong to Project Manager/Marketing territory — do not wire them into all five.
+
 ## 5. Guardrails (bake into every SKILL.md)
 
 1. **Draft, never publish.** Human review is the quality gate and the safety gate.
