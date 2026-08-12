@@ -5,6 +5,7 @@ task-capture
 weekly-status
 lead-conversion
 domain-research
+paid-domain-research
 linkedin-profile-lookup
 oddtoe-design-system
 geo-playbook
