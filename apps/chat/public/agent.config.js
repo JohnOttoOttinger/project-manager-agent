@@ -71,11 +71,16 @@ window.AGENT_CONFIG = Object.freeze({
     },
     sales: {
       datalabs: [
+        "Import this prospect list — I've attached the CSV",
+        "Show me the sales pipeline",
         "Draft a follow-up to a workshop enquiry that went quiet",
         "Prepare me for a discovery call with a corporate training buyer",
         "Write a proposal outline for a dashboard design project",
       ],
       oddtoe: [
+        "Import my agency list — I've attached the CSV",
+        "Show me the sales pipeline",
+        "Which prospects are flagged for review?",
         "Write a follow-up to an event organiser who went quiet after a quote",
         "Prepare questions for a venue commissioning call",
         "Draft a quote email for a projection mapping enquiry",

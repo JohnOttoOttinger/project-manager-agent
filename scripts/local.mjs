@@ -100,6 +100,9 @@ const workflowIds = {
     "phase13StartSeoArticle",
     "phase13WriteSeoArticle",
     "phase13GetSeoArticle",
+    "phase14ListProspects",
+    "phase14ProposeImportProspects",
+    "phase14ExecuteImportProspects",
   ],
 };
 
@@ -123,6 +126,9 @@ const exportedWorkflowFiles = [
   ["phase13StartSeoArticle", "56-tool-start-seo-article.json"],
   ["phase13WriteSeoArticle", "57-internal-write-seo-article.json"],
   ["phase13GetSeoArticle", "58-tool-get-seo-article.json"],
+  ["phase14ListProspects", "70-tool-list-prospects.json"],
+  ["phase14ProposeImportProspects", "71-tool-propose-import-prospects.json"],
+  ["phase14ExecuteImportProspects", "72-tool-execute-import-prospects.json"],
   ["phase3AgentHealth", "90-debug-agent-health.json"],
 ];
 

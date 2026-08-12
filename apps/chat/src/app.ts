@@ -25,9 +25,12 @@ import {
 } from "./documents.js";
 import {
   ChatStore,
+  PROSPECT_STATUSES,
   type BusinessMemoryInput,
   type HistoryMessage,
   type PaidComponentStatus,
+  type ProspectRowInput,
+  type ProspectStatus,
   type SeoArticleJobInput,
   type SeoArticleJobStatus,
   type SeoArticleVersionInput,
@@ -93,7 +96,9 @@ type ErrorCode =
   | "DOCUMENT_SERVICE_UNAVAILABLE"
   | "DOCUMENT_TEXT_TOO_LARGE"
   | "FILE_TOO_LARGE"
+  | "IMPORT_TOO_LARGE"
   | "INVALID_REQUEST"
+  | "PROSPECT_STORE_ERROR"
   | "MESSAGE_TOO_LONG"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
@@ -470,6 +475,128 @@ function businessMemoryObject(
     );
   }
   return value as Record<string, unknown>;
+}
+
+const BRAND_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const MAX_PROSPECT_IMPORT_ROWS = 200;
+
+function validateBrandSlug(value: unknown): string {
+  if (
+    typeof value !== "string" ||
+    value.length > 40 ||
+    !BRAND_SLUG_PATTERN.test(value)
+  ) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      "Choose which brand these prospects belong to.",
+    );
+  }
+  return value;
+}
+
+function prospectText(
+  value: unknown,
+  maximumLength: number,
+): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (typeof value !== "string") {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      "The prospect rows contain an invalid field.",
+    );
+  }
+  const trimmed = value.trim();
+  return trimmed.length > maximumLength
+    ? trimmed.slice(0, maximumLength)
+    : trimmed;
+}
+
+function validateProspectStatus(value: unknown): ProspectStatus | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  if (
+    typeof value !== "string" ||
+    !PROSPECT_STATUSES.includes(value as ProspectStatus)
+  ) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      `Prospect status must be one of: ${PROSPECT_STATUSES.join(", ")}.`,
+    );
+  }
+  return value as ProspectStatus;
+}
+
+function validateProspectRows(value: unknown): ProspectRowInput[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      "The import needs at least one prospect row.",
+    );
+  }
+  if (value.length > MAX_PROSPECT_IMPORT_ROWS) {
+    throw new PublicError(
+      413,
+      "IMPORT_TOO_LARGE",
+      `Import no more than ${MAX_PROSPECT_IMPORT_ROWS} prospects at a time.`,
+    );
+  }
+  return value.map((candidate) => {
+    if (
+      typeof candidate !== "object" ||
+      candidate === null ||
+      Array.isArray(candidate)
+    ) {
+      throw new PublicError(
+        400,
+        "INVALID_REQUEST",
+        "The prospect rows contain an invalid entry.",
+      );
+    }
+    const row = candidate as Record<string, unknown>;
+    const company = prospectText(row.company, 120);
+    if (company.length === 0) {
+      throw new PublicError(
+        400,
+        "INVALID_REQUEST",
+        "Every prospect row needs a company name.",
+      );
+    }
+    const rowNumber = row.rowNumber === undefined || row.rowNumber === null
+      ? undefined
+      : Number(row.rowNumber);
+    if (rowNumber !== undefined && !Number.isInteger(rowNumber)) {
+      throw new PublicError(
+        400,
+        "INVALID_REQUEST",
+        "Prospect row numbers must be whole numbers.",
+      );
+    }
+    return {
+      rowNumber,
+      company,
+      region: prospectText(row.region, 120),
+      tier: prospectText(row.tier, 40),
+      source: prospectText(row.source, 120),
+      website: prospectText(row.website, 300),
+      linkedinCompanyUrl: prospectText(row.linkedinCompanyUrl, 300),
+      contactName: prospectText(row.contactName, 120),
+      contactEmail: prospectText(row.contactEmail, 254),
+      linkedinUrl: prospectText(row.linkedinUrl, 300),
+      pdfSent: prospectText(row.pdfSent, 40),
+      sentDate: prospectText(row.sentDate, 40),
+      opened: prospectText(row.opened, 40),
+      followUpSent: prospectText(row.followUpSent, 40),
+      status: validateProspectStatus(row.status),
+      notes: prospectText(row.notes, 1000),
+    };
+  });
 }
 
 function businessMemoryObjectArray(
@@ -2155,6 +2282,138 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "BUSINESS_MEMORY_ERROR",
                 "Paid domain research is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/prospects") {
+        try {
+          if (request.method === "GET") {
+            const requestedBrand = url.searchParams.get("brand");
+            const requestedStatus = url.searchParams.get("status");
+            const requestedList = url.searchParams.get("list");
+            const requestedLimit = url.searchParams.get("limit");
+            const brand = requestedBrand === null
+              ? undefined
+              : validateBrandSlug(requestedBrand);
+            const status = requestedStatus === null
+              ? undefined
+              : validateProspectStatus(requestedStatus);
+            const listName = requestedList === null
+              ? undefined
+              : prospectText(requestedList, 120) || undefined;
+            const limit = requestedLimit === null
+              ? undefined
+              : Number(requestedLimit);
+            if (limit !== undefined && !Number.isInteger(limit)) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "The prospect limit must be a whole number.",
+              );
+            }
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              summary: chatStore.prospectPipelineSummary(brand),
+              prospects: chatStore.listProspects({
+                brand,
+                status,
+                listName,
+                limit,
+              }),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "prospect import payload",
+            );
+            const brand = validateBrandSlug(body.brand);
+            const listName = prospectText(body.listName, 120);
+            if (listName.length === 0) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "The import needs a list name.",
+              );
+            }
+            const rows = validateProspectRows(body.rows);
+            const result = chatStore.importProspects(brand, listName, rows);
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              result,
+              summary: chatStore.prospectPipelineSummary(brand),
+            });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST" },
+          );
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not access prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The prospect list is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/campaigns") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const requestedBrand = url.searchParams.get("brand");
+          const brand = requestedBrand === null
+            ? undefined
+            : validateBrandSlug(requestedBrand);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            campaigns: chatStore.listCampaigns(brand),
+          });
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not access campaigns", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The campaign list is not available right now.",
               ),
             );
           }
