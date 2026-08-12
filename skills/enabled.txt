@@ -7,3 +7,6 @@ lead-conversion
 domain-research
 linkedin-profile-lookup
 oddtoe-design-system
+geo-playbook
+money-pages
+offsite-consensus
