@@ -36,3 +36,6 @@ coverage/
 
 # Generated release kits contain large, architecture-specific Docker archives
 instructor-pack/
+
+# Private financial data — never commit (raw Xero exports + anonymization map)
+data/private/
