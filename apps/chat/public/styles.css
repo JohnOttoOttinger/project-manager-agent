@@ -2062,3 +2062,33 @@ h2 { text-transform: uppercase; }
 ::-webkit-scrollbar-track { background: #1b1f1d; }
 ::-webkit-scrollbar-thumb { background: #3c403c; border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: #4a4f42; }
+
+/* Left-align the example row, composer, and meta line with the brand toggle
+   and Quick actions above them (they were centred with margin auto). */
+.suggestions { margin-left: 0; margin-right: 0; }
+.composer { margin-left: 0; margin-right: 0; }
+.composer-meta { margin-left: 0; margin-right: 0; }
+
+/* Use the full browser window on desktop so the sidebar (agents + content
+   pipeline) fits without scrolling. Scoped to wide screens only — the
+   narrow-layout rules at 50rem/34rem stay in charge below that. */
+@media (min-width: 50.01rem) {
+  .app-shell {
+    width: min(102rem, calc(100% - 2rem));
+    height: calc(100dvh - 2rem);
+    min-height: 0;
+    margin: 1rem auto;
+    grid-template-columns: minmax(17rem, 22.5rem) minmax(0, 1fr);
+  }
+  .agent-panel { padding: 1.5rem 1.4rem 1.2rem; }
+  .suggestions, .composer, .composer-meta { max-width: 58rem; }
+  .message__body { max-width: min(46rem, calc(100% - 3rem)); }
+}
+
+/* Compact sidebar: only the ACTIVE agent shows its description, so all five
+   agents + the content pipeline fit on screen without scrolling. */
+@media (min-width: 50.01rem) {
+  .agent-button:not([aria-pressed="true"]) .agent-button__description { display: none; }
+  .agent-button { padding: 0.6rem 0.8rem; }
+  .agent-list { gap: 0.45rem; }
+}
