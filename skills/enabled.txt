@@ -11,3 +11,5 @@ oddtoe-design-system
 geo-playbook
 money-pages
 offsite-consensus
+my-business
+seo-article-writer
