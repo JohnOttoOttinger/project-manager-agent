@@ -238,7 +238,9 @@ if (agentWorkflow) {
     "Validation: document count and text-size limits are missing",
   );
   check(
-    /agentId !== 'project-manager'/.test(validationCode),
+    /'project-manager', 'sales', 'marketing', 'investment', 'bookkeeping'/.test(
+      validationCode,
+    ) && /\.includes\(agentId\)/.test(validationCode),
     "Validation: active agent allow-list check is missing",
   );
   check(
