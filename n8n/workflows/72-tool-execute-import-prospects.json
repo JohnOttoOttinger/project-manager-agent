@@ -1,0 +1,371 @@
+{
+  "name": "72 - TOOL - execute_import_prospects",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Confirmed import executor\nOnly 40 - CONFIRM - Task Write calls this workflow, after the user has replied with the exact confirmation phrase. It posts the stored, already-validated rows to the chat app's local prospect store and returns the import counts. It is not wired to the agent as a tool.",
+        "height": 300,
+        "width": 560,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -650,
+        -310
+      ],
+      "id": "72000000-0000-4000-8000-000000000001",
+      "name": "Confirmed import explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "name": "proposedInputJson",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000002",
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst requestId = typeof $json.requestId === 'string' ? $json.requestId.trim() : '';\nconst proposedInputJson = typeof $json.proposedInputJson === 'string' ? $json.proposedInputJson : '';\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet error = null;\nlet proposedInput = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The confirmed import needs a valid conversation session.' };\n} else if (!uuidPattern.test(requestId)) {\n  error = { code: 'INVALID_REQUEST', message: 'The confirmed import needs the confirmed action ID.' };\n} else {\n  try {\n    proposedInput = JSON.parse(proposedInputJson);\n  } catch {\n    error = { code: 'INVALID_STORED_PROPOSAL', message: 'The stored import proposal is invalid. Ask for a new proposal.' };\n  }\n  if (!error && (\n    typeof proposedInput?.brand !== 'string' ||\n    typeof proposedInput?.listName !== 'string' ||\n    !Array.isArray(proposedInput?.rows) ||\n    proposedInput.rows.length === 0 ||\n    proposedInput.rows.length > 200\n  )) {\n    error = { code: 'INVALID_STORED_PROPOSAL', message: 'The stored import proposal is invalid. Ask for a new proposal.' };\n  }\n}\n\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    requestId,\n    brand: proposedInput?.brand ?? '',\n    listName: proposedInput?.listName ?? '',\n    rows: proposedInput?.rows ?? [],\n    auditInput: { brand: proposedInput?.brand ?? '', listName: proposedInput?.listName ?? '', rowCount: proposedInput?.rows?.length ?? 0 },\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000003",
+      "name": "Validate Confirmed Import"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "72000000-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000005",
+      "name": "Input Is Valid?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3000/api/prospects",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ brand: $('Validate Confirmed Import').item.json.brand, listName: $('Validate Confirmed Import').item.json.listName, rows: $('Validate Confirmed Import').item.json.rows }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "72000000-0000-4000-8000-000000000006",
+      "name": "Write Prospects",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const input = $('Validate Confirmed Import').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1 || typeof body.result !== 'object' || body.result === null) {\n  const message = typeof body?.error?.message === 'string'\n    ? body.error.message\n    : 'The prospect import failed. Check the chat app is running, then ask for a new proposal.';\n  return [{\n    json: {\n      ...input,\n      response: {\n        ok: false,\n        error: { code: 'IMPORT_FAILED', message }\n      }\n    }\n  }];\n}\nreturn [{\n  json: {\n    ...input,\n    response: {\n      ok: true,\n      result: body.result,\n      summary: body.summary\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "72000000-0000-4000-8000-000000000007",
+      "name": "Shape Import Result"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.requestId ?? ''),\n    toolName: 'execute_import_prospects',\n    proposedInput: JSON.stringify($json.auditInput ?? $json.proposedInput ?? {}),\n    result: JSON.stringify(response),\n    error,\n    response\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000008",
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000009",
+      "name": "Write Tool Audit",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        80
+      ],
+      "id": "72000000-0000-4000-8000-000000000010",
+      "name": "Return Tool Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Confirmed Import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Confirmed Import": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Write Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Prospects": {
+      "main": [
+        [
+          {
+            "node": "Shape Import Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Import Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 30,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "72000000-0000-4000-8000-000000000099",
+  "meta": {
+    "phase": 14,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "write",
+    "confirmation": "executed-only-via-40-confirm-task-write"
+  },
+  "id": "phase14ExecuteImportProspects",
+  "tags": []
+}

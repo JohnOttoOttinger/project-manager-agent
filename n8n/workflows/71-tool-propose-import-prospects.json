@@ -1,0 +1,603 @@
+{
+  "name": "71 - TOOL - Propose import_prospects",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Write-risk import tool, proposal only\nParses pasted or attached CSV/TSV text into prospect rows, validates every row, and stores the exact parsed rows as a pending action. Nothing is imported until the user replies with the exact confirmation phrase, which 40 - CONFIRM - Task Write checks before 72 executes the import.\n\nColumn headers are matched loosely (Company, Region, Tier, Source, Website, Contact Name, Contact Email, LinkedIn URL, PDF Sent, Sent Date, Opened, Follow-up Sent, Status, Notes). Company is required; at most 200 rows.",
+        "height": 380,
+        "width": 560,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -650,
+        -360
+      ],
+      "id": "71000000-0000-4000-8000-000000000001",
+      "name": "Import proposal explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "brand",
+              "type": "string"
+            },
+            {
+              "name": "listName",
+              "type": "string"
+            },
+            {
+              "name": "csvText",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000002",
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst brand = typeof $json.brand === 'string' ? $json.brand.trim().toLowerCase() : '';\nconst listName = typeof $json.listName === 'string' ? $json.listName.trim() : '';\nconst csvText = typeof $json.csvText === 'string' ? $json.csvText : '';\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst brandPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;\nconst statuses = ['imported', 'needs_review', 'enriched', 'emailed', 'opened', 'followed_up', 'replied', 'closed'];\nconst maxRows = 200;\nlet error = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The import proposal needs a valid conversation session.' };\n} else if (brand === '' || brand.length > 40 || !brandPattern.test(brand)) {\n  error = { code: 'INVALID_BRAND', message: 'Say which brand this list belongs to, such as oddtoe or datalabs.' };\n} else if (listName === '' || listName.length > 120) {\n  error = { code: 'INVALID_LIST', message: 'Give the list a short name, such as \"Agency list Aug 2026\".' };\n} else if (csvText.trim() === '') {\n  error = { code: 'EMPTY_IMPORT', message: 'There is no table text to import. Attach the CSV or paste the rows first.' };\n} else if (csvText.length > 200000) {\n  error = { code: 'IMPORT_TOO_LARGE', message: 'That table is too large. Import at most 200 rows at a time.' };\n}\n\nconst warnings = [];\nlet rows = [];\nif (!error) {\n  const parseDelimited = (text, delimiter) => {\n    const parsed = [];\n    let row = [];\n    let field = '';\n    let inQuotes = false;\n    for (let index = 0; index < text.length; index += 1) {\n      const character = text[index];\n      if (inQuotes) {\n        if (character === '\"') {\n          if (text[index + 1] === '\"') { field += '\"'; index += 1; } else { inQuotes = false; }\n        } else { field += character; }\n      } else if (character === '\"') {\n        inQuotes = true;\n      } else if (character === delimiter) {\n        row.push(field); field = '';\n      } else if (character === '\\n') {\n        row.push(field); parsed.push(row); row = []; field = '';\n      } else if (character !== '\\r') {\n        field += character;\n      }\n    }\n    if (field !== '' || row.length > 0) { row.push(field); parsed.push(row); }\n    return parsed.filter((line) => line.some((cell) => cell.trim() !== ''));\n  };\n  const firstLine = csvText.split('\\n', 1)[0] ?? '';\n  const delimiter = (firstLine.match(/\\t/g) ?? []).length >= (firstLine.match(/,/g) ?? []).length && firstLine.includes('\\t') ? '\\t' : ',';\n  const table = parseDelimited(csvText, delimiter);\n  if (table.length < 2) {\n    error = { code: 'EMPTY_IMPORT', message: 'The table needs a header row plus at least one prospect row.' };\n  } else {\n    const headerMap = {\n      '': 'rowNumber', 'no': 'rowNumber', 'row': 'rowNumber', 'rownumber': 'rowNumber',\n      'company': 'company', 'companyname': 'company', 'agency': 'company',\n      'region': 'region', 'location': 'region', 'city': 'region',\n      'tier': 'tier',\n      'source': 'source',\n      'website': 'website', 'site': 'website', 'url': 'website',\n      'linkedincompanyurl': 'linkedinCompanyUrl', 'companylinkedin': 'linkedinCompanyUrl', 'companylinkedinurl': 'linkedinCompanyUrl',\n      'contactname': 'contactName', 'contact': 'contactName', 'name': 'contactName',\n      'contactemail': 'contactEmail', 'email': 'contactEmail', 'emailaddress': 'contactEmail',\n      'linkedinurl': 'linkedinUrl', 'linkedin': 'linkedinUrl',\n      'pdfsent': 'pdfSent',\n      'sentdate': 'sentDate', 'datesent': 'sentDate',\n      'opened': 'opened',\n      'followupsent': 'followUpSent', 'followup': 'followUpSent',\n      'status': 'status',\n      'notes': 'notes', 'note': 'notes', 'comments': 'notes'\n    };\n    const header = table[0].map((cell) => headerMap[cell.trim().toLowerCase().replace(/[^a-z0-9]/g, '')] ?? null);\n    const unknownHeaders = table[0].filter((cell, index) => header[index] === null && cell.trim() !== '');\n    if (!header.includes('company')) {\n      error = { code: 'MISSING_COMPANY', message: 'The table needs a Company column.' };\n    } else {\n      if (unknownHeaders.length > 0) {\n        warnings.push(`Ignored ${unknownHeaders.length} unrecognised column(s): ${unknownHeaders.slice(0, 5).join(', ')}.`);\n      }\n      const dataRows = table.slice(1);\n      if (dataRows.length > maxRows) {\n        error = { code: 'IMPORT_TOO_LARGE', message: `That table has ${dataRows.length} rows. Import at most ${maxRows} at a time.` };\n      } else {\n        let skippedNoCompany = 0;\n        let invalidStatuses = 0;\n        dataRows.forEach((cells, dataIndex) => {\n          const record = {};\n          header.forEach((field, columnIndex) => {\n            if (field !== null && field !== 'rowNumber') {\n              const value = (cells[columnIndex] ?? '').trim();\n              if (value !== '') { record[field] = value.slice(0, field === 'notes' ? 1000 : 300); }\n            } else if (field === 'rowNumber') {\n              const value = Number.parseInt((cells[columnIndex] ?? '').trim(), 10);\n              if (Number.isInteger(value)) { record.rowNumber = value; }\n            }\n          });\n          if (typeof record.company !== 'string' || record.company === '') {\n            skippedNoCompany += 1;\n            return;\n          }\n          if (record.rowNumber === undefined) { record.rowNumber = dataIndex + 1; }\n          if (record.status !== undefined) {\n            const normalised = record.status.toLowerCase().replace(/[\\s-]+/g, '_');\n            if (statuses.includes(normalised)) {\n              record.status = normalised;\n            } else {\n              invalidStatuses += 1;\n              record.notes = record.notes ? `${record.notes} | Original status: ${record.status}` : `Original status: ${record.status}`;\n              delete record.status;\n            }\n          }\n          rows.push(record);\n        });\n        if (skippedNoCompany > 0) { warnings.push(`Skipped ${skippedNoCompany} row(s) with no company name.`); }\n        if (invalidStatuses > 0) { warnings.push(`Moved ${invalidStatuses} unrecognised status value(s) into notes.`); }\n        if (rows.length === 0) {\n          error = { code: 'EMPTY_IMPORT', message: 'No usable prospect rows were found. Every row needs a company name.' };\n        }\n      }\n    }\n  }\n}\n\nconst proposedInput = error ? {} : { brand, listName, rows };\nconst auditInput = { brand, listName, rowCount: rows.length, characterCount: csvText.length };\nconst actionId = error ? '' : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => { const random = Math.floor(Math.random() * 16); const value = character === 'x' ? random : (random & 0x3) | 0x8; return value.toString(16); });\nconst confirmationText = error ? '' : `CONFIRM ${actionId.replaceAll('-', '').slice(-8).toUpperCase()}`;\nconst expiresAt = error ? '' : new Date(Date.now() + 5 * 60 * 1000).toISOString();\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    actionId,\n    actionType: 'import_prospects',\n    brand,\n    listName,\n    rowCount: rows.length,\n    warnings,\n    preview: rows.slice(0, 5).map((row) => row.company),\n    proposedInput,\n    auditInput,\n    confirmationText,\n    expiresAt,\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000003",
+      "name": "Validate Import Proposal"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "71000000-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000005",
+      "name": "Proposal Is Valid?"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sessionId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Import Proposal').item.json.sessionId }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "superseded",
+            "consumedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "actionId",
+              "displayName": "actionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "actionType",
+              "displayName": "actionType",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "confirmationText",
+              "displayName": "confirmationText",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "expiresAt",
+              "displayName": "expiresAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            },
+            {
+              "id": "consumedAt",
+              "displayName": "consumedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        0
+      ],
+      "id": "71000000-0000-4000-8000-000000000006",
+      "name": "Supersede Older Proposals",
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actionId": "={{ $('Validate Import Proposal').item.json.actionId }}",
+            "sessionId": "={{ $('Validate Import Proposal').item.json.sessionId }}",
+            "actionType": "import_prospects",
+            "proposedInput": "={{ JSON.stringify($('Validate Import Proposal').item.json.proposedInput) }}",
+            "confirmationText": "={{ $('Validate Import Proposal').item.json.confirmationText }}",
+            "status": "pending",
+            "expiresAt": "={{ $('Validate Import Proposal').item.json.expiresAt }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "actionId",
+              "displayName": "actionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "actionType",
+              "displayName": "actionType",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "confirmationText",
+              "displayName": "confirmationText",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "expiresAt",
+              "displayName": "expiresAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "consumedAt",
+              "displayName": "consumedAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": false,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        460,
+        0
+      ],
+      "id": "71000000-0000-4000-8000-000000000007",
+      "name": "Insert Pending Action",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const proposal = $('Validate Import Proposal').first().json;\nif (!Number.isInteger($json.id)) {\n  return {\n    json: {\n      ...proposal,\n      response: {\n        ok: false,\n        error: {\n          code: 'CONFIRMATION_DATA_UNAVAILABLE',\n          message: 'The import proposal could not be saved. Rerun local setup, then try again.'\n        }\n      }\n    }\n  };\n}\nreturn {\n  json: {\n    ...proposal,\n    response: {\n      ok: true,\n      confirmationRequired: true,\n      action: {\n        type: 'import_prospects',\n        brand: proposal.brand,\n        listName: proposal.listName,\n        rowCount: proposal.rowCount,\n        preview: proposal.preview,\n        warnings: proposal.warnings\n      },\n      confirmation: {\n        phrase: proposal.confirmationText,\n        expiresAt: proposal.expiresAt\n      },\n      message: `No prospects changed. ${proposal.rowCount} row(s) are ready to import into \"${proposal.listName}\" for ${proposal.brand}. Ask the user to reply with exactly \"${proposal.confirmationText}\" within five minutes.`\n    }\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        0
+      ],
+      "id": "71000000-0000-4000-8000-000000000008",
+      "name": "Shape Import Proposal"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String(''),\n    toolName: 'propose_import_prospects',\n    proposedInput: JSON.stringify($json.auditInput ?? $json.proposedInput ?? {}),\n    result: JSON.stringify(response),\n    error,\n    response\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000009",
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1180,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000010",
+      "name": "Write Tool Audit",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        80
+      ],
+      "id": "71000000-0000-4000-8000-000000000011",
+      "name": "Return Tool Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Import Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Import Proposal": {
+      "main": [
+        [
+          {
+            "node": "Proposal Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proposal Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Supersede Older Proposals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supersede Older Proposals": {
+      "main": [
+        [
+          {
+            "node": "Insert Pending Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Pending Action": {
+      "main": [
+        [
+          {
+            "node": "Shape Import Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Import Proposal": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "71000000-0000-4000-8000-000000000099",
+  "meta": {
+    "phase": 14,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "write",
+    "taskMutation": "none",
+    "confirmation": "required-before-execution"
+  },
+  "id": "phase14ProposeImportProspects",
+  "tags": []
+}

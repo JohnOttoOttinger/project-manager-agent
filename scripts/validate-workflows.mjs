@@ -28,6 +28,9 @@ const expectedFiles = [
   "57-internal-write-seo-article.json",
   "58-tool-get-seo-article.json",
   "60-tool-find-signals.json",
+  "70-tool-list-prospects.json",
+  "71-tool-propose-import-prospects.json",
+  "72-tool-execute-import-prospects.json",
   "90-debug-agent-health.json",
 ];
 const failures = [];
@@ -364,6 +367,8 @@ if (agentWorkflow) {
         "get_paid_domain_research",
         "start_seo_article",
         "get_seo_article",
+        "list_prospects",
+        "propose_import_prospects",
       ]),
     "Agent: only the reviewed task and domain-research tools may be connected",
   );
@@ -1704,8 +1709,12 @@ if (confirmWorkflow) {
     .sort();
   check(
     JSON.stringify(executionTargets) ===
-      JSON.stringify(["phase4CreateTask", "phase4UpdateTaskStatus"]),
-    "Confirmation may dispatch only the two reviewed task write workers",
+      JSON.stringify([
+        "phase14ExecuteImportProspects",
+        "phase4CreateTask",
+        "phase4UpdateTaskStatus",
+      ]),
+    "Confirmation may dispatch only the three reviewed confirmed-write workers",
   );
 }
 
@@ -1734,6 +1743,7 @@ const OPTIONAL_SKILL_IDS = [
   "geo-playbook",
   "money-pages",
   "offsite-consensus",
+  "sales-outreach",
 ];
 
 const skillBundle = await compileSkills(join(projectRoot, "skills"));

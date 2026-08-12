@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -242,6 +242,139 @@ export interface BusinessMemorySummary {
   warningCount: number;
   researchedAt: string;
   updatedAt: string;
+}
+
+export const PROSPECT_STATUSES = [
+  "imported",
+  "needs_review",
+  "enriched",
+  "emailed",
+  "opened",
+  "followed_up",
+  "replied",
+  "closed",
+] as const;
+
+export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
+
+export interface ProspectRowInput {
+  rowNumber?: number | undefined;
+  company: string;
+  region?: string | undefined;
+  tier?: string | undefined;
+  source?: string | undefined;
+  website?: string | undefined;
+  linkedinCompanyUrl?: string | undefined;
+  contactName?: string | undefined;
+  contactEmail?: string | undefined;
+  linkedinUrl?: string | undefined;
+  pdfSent?: string | undefined;
+  sentDate?: string | undefined;
+  opened?: string | undefined;
+  followUpSent?: string | undefined;
+  status?: ProspectStatus | undefined;
+  notes?: string | undefined;
+}
+
+export interface ProspectRecord {
+  prospectId: string;
+  brand: string;
+  listName: string;
+  rowNumber: number | undefined;
+  company: string;
+  region: string;
+  tier: string;
+  source: string;
+  website: string;
+  linkedinCompanyUrl: string;
+  contactName: string;
+  contactEmail: string;
+  linkedinUrl: string;
+  confidence: string;
+  flagReason: string;
+  pdfSent: string;
+  sentDate: string;
+  opened: string;
+  followUpSent: string;
+  status: ProspectStatus;
+  notes: string;
+  campaignId: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProspectImportResult {
+  brand: string;
+  listName: string;
+  inserted: number;
+  duplicates: number;
+  duplicateCompanies: string[];
+  total: number;
+}
+
+export interface ProspectPipelineSummary {
+  brand: string | undefined;
+  total: number;
+  byStatus: Partial<Record<ProspectStatus, number>>;
+  listNames: string[];
+  lastUpdatedAt: string | undefined;
+}
+
+interface ProspectRow {
+  prospect_id: string;
+  brand: string;
+  list_name: string;
+  company_key: string;
+  row_number: number | null;
+  company: string;
+  region: string;
+  tier: string;
+  source: string;
+  website: string;
+  linkedin_company_url: string;
+  contact_name: string;
+  contact_email: string;
+  linkedin_url: string;
+  confidence: string;
+  flag_reason: string;
+  pdf_sent: string;
+  sent_date: string;
+  opened: string;
+  follow_up_sent: string;
+  status: ProspectStatus;
+  notes: string;
+  campaign_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function prospectFromRow(row: ProspectRow): ProspectRecord {
+  return {
+    prospectId: row.prospect_id,
+    brand: row.brand,
+    listName: row.list_name,
+    rowNumber: row.row_number ?? undefined,
+    company: row.company,
+    region: row.region,
+    tier: row.tier,
+    source: row.source,
+    website: row.website,
+    linkedinCompanyUrl: row.linkedin_company_url,
+    contactName: row.contact_name,
+    contactEmail: row.contact_email,
+    linkedinUrl: row.linkedin_url,
+    confidence: row.confidence,
+    flagReason: row.flag_reason,
+    pdfSent: row.pdf_sent,
+    sentDate: row.sent_date,
+    opened: row.opened,
+    followUpSent: row.follow_up_sent,
+    status: row.status,
+    notes: row.notes,
+    campaignId: row.campaign_id ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 export interface BeginTurnInput {
@@ -887,6 +1020,78 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 6) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE prospects (
+            prospect_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            list_name TEXT NOT NULL,
+            company_key TEXT NOT NULL,
+            row_number INTEGER,
+            company TEXT NOT NULL,
+            region TEXT NOT NULL DEFAULT '',
+            tier TEXT NOT NULL DEFAULT '',
+            source TEXT NOT NULL DEFAULT '',
+            website TEXT NOT NULL DEFAULT '',
+            linkedin_company_url TEXT NOT NULL DEFAULT '',
+            contact_name TEXT NOT NULL DEFAULT '',
+            contact_email TEXT NOT NULL DEFAULT '',
+            linkedin_url TEXT NOT NULL DEFAULT '',
+            confidence TEXT NOT NULL DEFAULT ''
+              CHECK (confidence IN ('', 'high', 'medium', 'low', 'none')),
+            flag_reason TEXT NOT NULL DEFAULT '',
+            pdf_sent TEXT NOT NULL DEFAULT '',
+            sent_date TEXT NOT NULL DEFAULT '',
+            opened TEXT NOT NULL DEFAULT '',
+            follow_up_sent TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'imported'
+              CHECK (status IN ('imported', 'needs_review', 'enriched', 'emailed', 'opened', 'followed_up', 'replied', 'closed')),
+            notes TEXT NOT NULL DEFAULT '',
+            campaign_id TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(brand, list_name, company_key)
+          ) STRICT;
+
+          CREATE INDEX prospects_brand_status
+          ON prospects(brand, status, updated_at DESC);
+
+          CREATE INDEX prospects_brand_list
+          ON prospects(brand, list_name, row_number ASC);
+
+          CREATE TABLE campaigns (
+            campaign_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'draft'
+              CHECK (status IN ('draft', 'active', 'completed')),
+            brief_json TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          ) STRICT;
+
+          CREATE INDEX campaigns_brand_updated
+          ON campaigns(brand, updated_at DESC);
+
+          CREATE TABLE outreach_events (
+            event_id TEXT PRIMARY KEY,
+            prospect_id TEXT NOT NULL REFERENCES prospects(prospect_id) ON DELETE CASCADE,
+            campaign_id TEXT,
+            event_type TEXT NOT NULL
+              CHECK (event_type IN ('imported', 'enriched', 'flagged', 'emailed', 'opened', 'clicked', 'followed_up', 'replied', 'status_change')),
+            detail TEXT NOT NULL DEFAULT '',
+            occurred_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+          ) STRICT;
+
+          CREATE INDEX outreach_events_prospect
+          ON outreach_events(prospect_id, occurred_at DESC);
+
+          PRAGMA user_version = 6;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -894,6 +1099,9 @@ export class ChatStore {
     this.database.prepare("SELECT job_id FROM seo_article_jobs LIMIT 1").all();
     this.database.prepare("SELECT version_id FROM seo_article_versions LIMIT 1").all();
     this.database.prepare("SELECT brief_id FROM seo_article_briefs LIMIT 1").all();
+    this.database.prepare("SELECT prospect_id FROM prospects LIMIT 1").all();
+    this.database.prepare("SELECT campaign_id FROM campaigns LIMIT 1").all();
+    this.database.prepare("SELECT event_id FROM outreach_events LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -1684,6 +1892,180 @@ export class ChatStore {
         updatedAt: row.updated_at,
       };
     });
+  }
+
+  importProspects(
+    brand: string,
+    listName: string,
+    rows: readonly ProspectRowInput[],
+  ): ProspectImportResult {
+    const now = nowIso();
+    let inserted = 0;
+    const duplicateCompanies: string[] = [];
+    this.transaction(() => {
+      const existing = this.database.prepare(
+        `SELECT prospect_id FROM prospects
+         WHERE brand = ? AND list_name = ? AND company_key = ?`,
+      );
+      const insert = this.database.prepare(
+        `INSERT INTO prospects (
+           prospect_id, brand, list_name, company_key, row_number, company,
+           region, tier, source, website, linkedin_company_url,
+           contact_name, contact_email, linkedin_url,
+           pdf_sent, sent_date, opened, follow_up_sent,
+           status, notes, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      );
+      const insertEvent = this.database.prepare(
+        `INSERT INTO outreach_events (
+           event_id, prospect_id, event_type, detail, occurred_at, created_at
+         ) VALUES (?, ?, 'imported', ?, ?, ?)`,
+      );
+      for (const row of rows) {
+        const company = row.company.trim();
+        const companyKey = company.toLowerCase();
+        if (existing.get(brand, listName, companyKey) !== undefined) {
+          duplicateCompanies.push(company);
+          continue;
+        }
+        const prospectId = randomUUID();
+        insert.run(
+          prospectId,
+          brand,
+          listName,
+          companyKey,
+          Number.isInteger(row.rowNumber) ? Number(row.rowNumber) : null,
+          company,
+          row.region?.trim() ?? "",
+          row.tier?.trim() ?? "",
+          row.source?.trim() ?? "",
+          row.website?.trim() ?? "",
+          row.linkedinCompanyUrl?.trim() ?? "",
+          row.contactName?.trim() ?? "",
+          row.contactEmail?.trim() ?? "",
+          row.linkedinUrl?.trim() ?? "",
+          row.pdfSent?.trim() ?? "",
+          row.sentDate?.trim() ?? "",
+          row.opened?.trim() ?? "",
+          row.followUpSent?.trim() ?? "",
+          row.status ?? "imported",
+          row.notes?.trim() ?? "",
+          now,
+          now,
+        );
+        insertEvent.run(randomUUID(), prospectId, `Imported into ${listName}`, now, now);
+        inserted += 1;
+      }
+    });
+    return {
+      brand,
+      listName,
+      inserted,
+      duplicates: duplicateCompanies.length,
+      duplicateCompanies,
+      total: rows.length,
+    };
+  }
+
+  listProspects(filters: {
+    brand?: string | undefined;
+    status?: ProspectStatus | undefined;
+    listName?: string | undefined;
+    limit?: number | undefined;
+  }): ProspectRecord[] {
+    const boundedLimit = Math.max(1, Math.min(filters.limit ?? 100, 500));
+    const conditions: string[] = [];
+    const parameters: string[] = [];
+    if (filters.brand !== undefined) {
+      conditions.push("brand = ?");
+      parameters.push(filters.brand);
+    }
+    if (filters.status !== undefined) {
+      conditions.push("status = ?");
+      parameters.push(filters.status);
+    }
+    if (filters.listName !== undefined) {
+      conditions.push("list_name = ?");
+      parameters.push(filters.listName);
+    }
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM prospects ${where}
+         ORDER BY list_name ASC, row_number ASC, company ASC
+         LIMIT ?`,
+      )
+      .all(...parameters, boundedLimit) as unknown as ProspectRow[];
+    return rows.map(prospectFromRow);
+  }
+
+  prospectPipelineSummary(brand?: string): ProspectPipelineSummary {
+    const where = brand === undefined ? "" : "WHERE brand = ?";
+    const parameters = brand === undefined ? [] : [brand];
+    const statusRows = this.database
+      .prepare(
+        `SELECT status, COUNT(*) AS status_count FROM prospects ${where}
+         GROUP BY status`,
+      )
+      .all(...parameters) as unknown as Array<{
+      status: ProspectStatus;
+      status_count: number;
+    }>;
+    const listRows = this.database
+      .prepare(
+        `SELECT DISTINCT list_name FROM prospects ${where} ORDER BY list_name ASC`,
+      )
+      .all(...parameters) as unknown as Array<{ list_name: string }>;
+    const updatedRow = this.database
+      .prepare(`SELECT MAX(updated_at) AS last_updated FROM prospects ${where}`)
+      .get(...parameters) as { last_updated: string | null } | undefined;
+    const byStatus: Partial<Record<ProspectStatus, number>> = {};
+    let total = 0;
+    for (const row of statusRows) {
+      byStatus[row.status] = row.status_count;
+      total += row.status_count;
+    }
+    return {
+      brand,
+      total,
+      byStatus,
+      listNames: listRows.map((row) => row.list_name),
+      lastUpdatedAt: updatedRow?.last_updated ?? undefined,
+    };
+  }
+
+  listCampaigns(brand?: string): Array<{
+    campaignId: string;
+    brand: string;
+    name: string;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+  }> {
+    const where = brand === undefined ? "" : "WHERE brand = ?";
+    const parameters = brand === undefined ? [] : [brand];
+    const rows = this.database
+      .prepare(
+        `SELECT campaign_id, brand, name, status, created_at, updated_at
+         FROM campaigns ${where}
+         ORDER BY updated_at DESC`,
+      )
+      .all(...parameters) as unknown as Array<{
+      campaign_id: string;
+      brand: string;
+      name: string;
+      status: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+    return rows.map((row) => ({
+      campaignId: row.campaign_id,
+      brand: row.brand,
+      name: row.name,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
   }
 
   prepareArticleBrief(

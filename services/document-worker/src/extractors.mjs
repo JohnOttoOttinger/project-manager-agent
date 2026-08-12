@@ -55,8 +55,10 @@ function detectDocumentType(buffer, fileName, suppliedMimeType) {
 
   if (
     suppliedMimeType === "text/plain" ||
+    suppliedMimeType === "text/csv" ||
     suppliedMimeType === "application/octet-stream" ||
-    extension === ".txt"
+    extension === ".txt" ||
+    extension === ".csv"
   ) {
     if (buffer.includes(0)) {
       throw new DocumentError(
