@@ -80,10 +80,10 @@ window.AGENT_CONFIG = Object.freeze({
       oddtoe: [
         "Import my agency list — I've attached the CSV",
         "Show me the sales pipeline",
+        "Enrich 3 prospects as a test",
         "Which prospects are flagged for review?",
+        "Fill in the LinkedIn company URLs — I'll paste them",
         "Write a follow-up to an event organiser who went quiet after a quote",
-        "Prepare questions for a venue commissioning call",
-        "Draft a quote email for a projection mapping enquiry",
       ],
     },
     marketing: {

@@ -31,6 +31,11 @@ const expectedFiles = [
   "70-tool-list-prospects.json",
   "71-tool-propose-import-prospects.json",
   "72-tool-execute-import-prospects.json",
+  "73-tool-propose-update-prospects.json",
+  "74-tool-execute-update-prospects.json",
+  "75-tool-start-enrichment.json",
+  "76-internal-run-enrichment.json",
+  "77-tool-get-enrichment.json",
   "90-debug-agent-health.json",
 ];
 const failures = [];
@@ -204,7 +209,7 @@ if (agentWorkflow) {
   );
   check(
     agentWorkflow.nodes.filter((node) => node.type !== "n8n-nodes-base.stickyNote")
-      .length <= 26,
+      .length <= 29,
     "Agent workflow must keep confirmation routing and tool wiring explainable",
   );
   check(
@@ -369,6 +374,9 @@ if (agentWorkflow) {
         "get_seo_article",
         "list_prospects",
         "propose_import_prospects",
+        "propose_update_prospects",
+        "start_enrichment",
+        "get_enrichment",
       ]),
     "Agent: only the reviewed task and domain-research tools may be connected",
   );
@@ -1711,10 +1719,11 @@ if (confirmWorkflow) {
     JSON.stringify(executionTargets) ===
       JSON.stringify([
         "phase14ExecuteImportProspects",
+        "phase15ExecuteUpdateProspects",
         "phase4CreateTask",
         "phase4UpdateTaskStatus",
       ]),
-    "Confirmation may dispatch only the three reviewed confirmed-write workers",
+    "Confirmation may dispatch only the four reviewed confirmed-write workers",
   );
 }
 

@@ -1,0 +1,362 @@
+{
+  "name": "77 - TOOL - get_enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Read-only enrichment status tool\nReports the saved state of one enrichment job started in this conversation: status, stage, counts, skipped companies, provider cost, and errors. It never starts a run and never makes a paid call.",
+        "height": 280,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -650,
+        -300
+      ],
+      "id": "77000000-0000-4000-8000-000000000001",
+      "name": "Read tool explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "jobId",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000002",
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst jobId = typeof $json.jobId === 'string' ? $json.jobId.trim() : '';\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet error = null;\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The enrichment check needs a valid conversation session.' };\n} else if (!uuidPattern.test(jobId)) {\n  error = { code: 'INVALID_JOB', message: 'Pass the exact enrichment job ID that start_enrichment returned in this conversation.' };\n}\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    jobId,\n    proposedInput: { jobId },\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000003",
+      "name": "Validate Job Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "77000000-0000-4000-8000-000000000044",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000004",
+      "name": "Input Is Valid?"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://127.0.0.1:3000/api/prospects/enrichment-jobs?sessionId=' + encodeURIComponent($('Validate Job Request').item.json.sessionId) + '&jobId=' + encodeURIComponent($('Validate Job Request').item.json.jobId) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "77000000-0000-4000-8000-000000000005",
+      "name": "Read Enrichment Job",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const input = $('Validate Job Request').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1 || !body.job) {\n  const message = typeof body?.error?.message === 'string'\n    ? body.error.message\n    : 'That enrichment job is not registered to this conversation.';\n  return [{\n    json: {\n      ...input,\n      response: { ok: false, error: { code: 'ENRICHMENT_JOB_NOT_FOUND', message } }\n    }\n  }];\n}\nconst job = body.job;\nlet guidance;\nif (job.status === 'queued' || job.status === 'running') {\n  guidance = `Still working (stage: ${job.stage}). Ask again in a few minutes.`;\n} else if (job.status === 'failed') {\n  guidance = job.errorCode === 'APIFY_START_FAILED'\n    ? 'The Apify run could not start. The \"Apify API\" credential is probably missing in n8n \u2014 see docs/PROSPECT_ENRICHMENT.md, then start a new enrichment.'\n    : 'The job failed. Start a new enrichment after checking the error.';\n} else {\n  guidance = 'Finished. Use list_prospects to see the enriched contacts and anything flagged for review.';\n}\nreturn [{\n  json: {\n    ...input,\n    response: {\n      ok: true,\n      job: {\n        jobId: job.jobId,\n        status: job.status,\n        stage: job.stage,\n        brand: job.brand,\n        listName: job.listName,\n        targetCount: job.targetCount,\n        enrichedCount: job.enrichedCount,\n        flaggedCount: job.flaggedCount,\n        skipped: job.skipped,\n        providerCostUsd: job.providerCostUsd ?? null,\n        errorCode: job.errorCode ?? null,\n        errorMessage: job.errorMessage ?? null,\n        updatedAt: job.updatedAt\n      },\n      guidance\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "77000000-0000-4000-8000-000000000006",
+      "name": "Shape Job Result"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String(''),\n    toolName: 'get_enrichment',\n    proposedInput: JSON.stringify($json.auditInput ?? $json.proposedInput ?? {}),\n    result: JSON.stringify(response),\n    error,\n    response\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000007",
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000008",
+      "name": "Write Tool Audit",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        80
+      ],
+      "id": "77000000-0000-4000-8000-000000000009",
+      "name": "Return Tool Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Job Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Job Request": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read Enrichment Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Enrichment Job": {
+      "main": [
+        [
+          {
+            "node": "Shape Job Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Job Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "77000000-0000-4000-8000-000000000099",
+  "meta": {
+    "phase": 15,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "read"
+  },
+  "id": "phase15GetEnrichment",
+  "tags": []
+}
