@@ -103,6 +103,11 @@ const workflowIds = {
     "phase14ListProspects",
     "phase14ProposeImportProspects",
     "phase14ExecuteImportProspects",
+    "phase15ProposeUpdateProspects",
+    "phase15ExecuteUpdateProspects",
+    "phase15StartEnrichment",
+    "phase15RunEnrichment",
+    "phase15GetEnrichment",
   ],
 };
 
@@ -129,6 +134,11 @@ const exportedWorkflowFiles = [
   ["phase14ListProspects", "70-tool-list-prospects.json"],
   ["phase14ProposeImportProspects", "71-tool-propose-import-prospects.json"],
   ["phase14ExecuteImportProspects", "72-tool-execute-import-prospects.json"],
+  ["phase15ProposeUpdateProspects", "73-tool-propose-update-prospects.json"],
+  ["phase15ExecuteUpdateProspects", "74-tool-execute-update-prospects.json"],
+  ["phase15StartEnrichment", "75-tool-start-enrichment.json"],
+  ["phase15RunEnrichment", "76-internal-run-enrichment.json"],
+  ["phase15GetEnrichment", "77-tool-get-enrichment.json"],
   ["phase3AgentHealth", "90-debug-agent-health.json"],
 ];
 

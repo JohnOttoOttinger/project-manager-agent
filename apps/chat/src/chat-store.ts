@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -320,6 +320,68 @@ export interface ProspectPipelineSummary {
   lastUpdatedAt: string | undefined;
 }
 
+export type EnrichmentJobStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "partial"
+  | "failed";
+
+export interface EnrichmentJobRecord {
+  jobId: string;
+  sessionId: string;
+  requestId: string;
+  brand: string;
+  listName: string;
+  status: EnrichmentJobStatus;
+  stage: string;
+  targetCount: number;
+  enrichedCount: number;
+  flaggedCount: number;
+  skipped: string[];
+  providerCostUsd: number | undefined;
+  errorCode: string | undefined;
+  errorMessage: string | undefined;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const PROSPECT_CONFIDENCES = ["high", "medium", "low", "none"] as const;
+
+export type ProspectConfidence = (typeof PROSPECT_CONFIDENCES)[number];
+
+export interface EnrichmentResultInput {
+  prospectId: string;
+  contactName?: string | undefined;
+  contactEmail?: string | undefined;
+  linkedinUrl?: string | undefined;
+  jobTitle?: string | undefined;
+  confidence: ProspectConfidence;
+  flagReason?: string | undefined;
+}
+
+export interface ProspectUpdateInput {
+  company: string;
+  listName?: string | undefined;
+  fields: {
+    linkedinCompanyUrl?: string | undefined;
+    contactName?: string | undefined;
+    contactEmail?: string | undefined;
+    linkedinUrl?: string | undefined;
+    website?: string | undefined;
+    region?: string | undefined;
+    tier?: string | undefined;
+    status?: ProspectStatus | undefined;
+    notes?: string | undefined;
+  };
+}
+
+export interface ProspectUpdateResult {
+  company: string;
+  outcome: "updated" | "not_found" | "ambiguous";
+  changedFields: string[];
+}
+
 interface ProspectRow {
   prospect_id: string;
   brand: string;
@@ -346,6 +408,55 @@ interface ProspectRow {
   campaign_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface EnrichmentJobRow {
+  job_id: string;
+  session_id: string;
+  request_id: string;
+  brand: string;
+  list_name: string;
+  status: EnrichmentJobStatus;
+  stage: string;
+  target_count: number;
+  enriched_count: number;
+  flagged_count: number;
+  skipped_json: string;
+  provider_cost_usd: number | null;
+  error_code: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function enrichmentJobFromRow(row: EnrichmentJobRow): EnrichmentJobRecord {
+  let skipped: string[] = [];
+  try {
+    const parsed = JSON.parse(row.skipped_json) as unknown;
+    if (Array.isArray(parsed)) {
+      skipped = parsed.filter((item): item is string => typeof item === "string");
+    }
+  } catch {
+    skipped = [];
+  }
+  return {
+    jobId: row.job_id,
+    sessionId: row.session_id,
+    requestId: row.request_id,
+    brand: row.brand,
+    listName: row.list_name,
+    status: row.status,
+    stage: row.stage,
+    targetCount: row.target_count,
+    enrichedCount: row.enriched_count,
+    flaggedCount: row.flagged_count,
+    skipped,
+    providerCostUsd: row.provider_cost_usd ?? undefined,
+    errorCode: row.error_code ?? undefined,
+    errorMessage: row.error_message ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 function prospectFromRow(row: ProspectRow): ProspectRecord {
@@ -1092,6 +1203,36 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 7) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE enrichment_jobs (
+            job_id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            request_id TEXT NOT NULL,
+            brand TEXT NOT NULL,
+            list_name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL CHECK (status IN ('queued', 'running', 'completed', 'partial', 'failed')),
+            stage TEXT NOT NULL,
+            target_count INTEGER NOT NULL DEFAULT 0,
+            enriched_count INTEGER NOT NULL DEFAULT 0,
+            flagged_count INTEGER NOT NULL DEFAULT 0,
+            skipped_json TEXT NOT NULL DEFAULT '[]',
+            provider_cost_usd REAL,
+            error_code TEXT,
+            error_message TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(session_id, request_id)
+          ) STRICT;
+
+          CREATE INDEX enrichment_jobs_session_updated
+          ON enrichment_jobs(session_id, updated_at DESC);
+
+          PRAGMA user_version = 7;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1102,6 +1243,7 @@ export class ChatStore {
     this.database.prepare("SELECT prospect_id FROM prospects LIMIT 1").all();
     this.database.prepare("SELECT campaign_id FROM campaigns LIMIT 1").all();
     this.database.prepare("SELECT event_id FROM outreach_events LIMIT 1").all();
+    this.database.prepare("SELECT job_id FROM enrichment_jobs LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -2066,6 +2208,282 @@ export class ChatStore {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
+  }
+
+  listEnrichableProspects(
+    brand: string,
+    listName: string | undefined,
+    limit: number,
+  ): { eligible: ProspectRecord[]; missingUrl: string[] } {
+    const boundedLimit = Math.max(1, Math.min(limit, 200));
+    const listCondition = listName === undefined ? "" : "AND list_name = ?";
+    const parameters = listName === undefined ? [brand] : [brand, listName];
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM prospects
+         WHERE brand = ? ${listCondition}
+           AND status IN ('imported', 'needs_review')
+           AND contact_email = ''
+         ORDER BY list_name ASC, row_number ASC, company ASC`,
+      )
+      .all(...parameters) as unknown as ProspectRow[];
+    const records = rows.map(prospectFromRow);
+    const eligible = records
+      .filter((record) => record.linkedinCompanyUrl !== "")
+      .slice(0, boundedLimit);
+    const missingUrl = records
+      .filter((record) => record.linkedinCompanyUrl === "")
+      .map((record) => record.company);
+    return { eligible, missingUrl };
+  }
+
+  registerEnrichmentJob(input: {
+    sessionId: string;
+    requestId: string;
+    brand: string;
+    listName: string;
+    targetCount: number;
+  }): { job: EnrichmentJobRecord; created: boolean } {
+    const existing = this.database
+      .prepare(
+        `SELECT * FROM enrichment_jobs WHERE session_id = ? AND request_id = ?`,
+      )
+      .get(input.sessionId, input.requestId) as EnrichmentJobRow | undefined;
+    if (existing !== undefined) {
+      return { job: enrichmentJobFromRow(existing), created: false };
+    }
+    const now = nowIso();
+    const jobId = randomUUID();
+    this.database
+      .prepare(
+        `INSERT INTO enrichment_jobs (
+           job_id, session_id, request_id, brand, list_name,
+           status, stage, target_count, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, 'queued', 'queued', ?, ?, ?)`,
+      )
+      .run(
+        jobId,
+        input.sessionId,
+        input.requestId,
+        input.brand,
+        input.listName,
+        input.targetCount,
+        now,
+        now,
+      );
+    const row = this.database
+      .prepare(`SELECT * FROM enrichment_jobs WHERE job_id = ?`)
+      .get(jobId) as unknown as EnrichmentJobRow;
+    return { job: enrichmentJobFromRow(row), created: true };
+  }
+
+  updateEnrichmentJob(
+    jobId: string,
+    changes: {
+      status?: EnrichmentJobStatus | undefined;
+      stage?: string | undefined;
+      enrichedCount?: number | undefined;
+      flaggedCount?: number | undefined;
+      skipped?: string[] | undefined;
+      providerCostUsd?: number | undefined;
+      errorCode?: string | undefined;
+      errorMessage?: string | undefined;
+    },
+  ): EnrichmentJobRecord | undefined {
+    const row = this.database
+      .prepare(`SELECT * FROM enrichment_jobs WHERE job_id = ?`)
+      .get(jobId) as EnrichmentJobRow | undefined;
+    if (row === undefined) {
+      return undefined;
+    }
+    this.database
+      .prepare(
+        `UPDATE enrichment_jobs SET
+           status = ?, stage = ?, enriched_count = ?, flagged_count = ?,
+           skipped_json = ?, provider_cost_usd = ?, error_code = ?,
+           error_message = ?, updated_at = ?
+         WHERE job_id = ?`,
+      )
+      .run(
+        changes.status ?? row.status,
+        changes.stage ?? row.stage,
+        changes.enrichedCount ?? row.enriched_count,
+        changes.flaggedCount ?? row.flagged_count,
+        changes.skipped === undefined
+          ? row.skipped_json
+          : JSON.stringify(changes.skipped.slice(0, 200)),
+        changes.providerCostUsd ?? row.provider_cost_usd,
+        changes.errorCode ?? row.error_code,
+        changes.errorMessage ?? row.error_message,
+        nowIso(),
+        jobId,
+      );
+    const updated = this.database
+      .prepare(`SELECT * FROM enrichment_jobs WHERE job_id = ?`)
+      .get(jobId) as unknown as EnrichmentJobRow;
+    return enrichmentJobFromRow(updated);
+  }
+
+  getEnrichmentJob(
+    sessionId: string,
+    jobId: string,
+  ): EnrichmentJobRecord | undefined {
+    const row = this.database
+      .prepare(
+        `SELECT * FROM enrichment_jobs WHERE job_id = ? AND session_id = ?`,
+      )
+      .get(jobId, sessionId) as EnrichmentJobRow | undefined;
+    return row === undefined ? undefined : enrichmentJobFromRow(row);
+  }
+
+  applyEnrichmentResults(
+    jobId: string,
+    results: readonly EnrichmentResultInput[],
+  ): { enriched: number; flagged: number; missing: number } {
+    const now = nowIso();
+    let enriched = 0;
+    let flagged = 0;
+    let missing = 0;
+    this.transaction(() => {
+      const read = this.database.prepare(
+        `SELECT * FROM prospects WHERE prospect_id = ?`,
+      );
+      const write = this.database.prepare(
+        `UPDATE prospects SET
+           contact_name = ?, contact_email = ?, linkedin_url = ?,
+           confidence = ?, flag_reason = ?, status = ?, notes = ?, updated_at = ?
+         WHERE prospect_id = ?`,
+      );
+      const insertEvent = this.database.prepare(
+        `INSERT INTO outreach_events (
+           event_id, prospect_id, event_type, detail, occurred_at, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?)`,
+      );
+      for (const result of results) {
+        const row = read.get(result.prospectId) as ProspectRow | undefined;
+        if (row === undefined) {
+          missing += 1;
+          continue;
+        }
+        const isHigh = result.confidence === "high";
+        const status: ProspectStatus = isHigh ? "enriched" : "needs_review";
+        const roleNote = result.jobTitle
+          ? `Role: ${result.jobTitle}`
+          : "";
+        const notes = roleNote === ""
+          ? row.notes
+          : row.notes === ""
+            ? roleNote
+            : `${row.notes} | ${roleNote}`;
+        write.run(
+          result.contactName ?? "",
+          result.contactEmail ?? "",
+          result.linkedinUrl ?? "",
+          result.confidence,
+          result.flagReason ?? "",
+          status,
+          notes.slice(0, 1000),
+          now,
+          result.prospectId,
+        );
+        insertEvent.run(
+          randomUUID(),
+          result.prospectId,
+          isHigh ? "enriched" : "flagged",
+          isHigh
+            ? `Enriched: ${result.contactName ?? ""} <${result.contactEmail ?? ""}>`
+            : `Flagged (${result.confidence}): ${result.flagReason ?? "needs review"}`,
+          now,
+          now,
+        );
+        if (isHigh) {
+          enriched += 1;
+        } else {
+          flagged += 1;
+        }
+      }
+    });
+    return { enriched, flagged, missing };
+  }
+
+  updateProspectFields(
+    brand: string,
+    updates: readonly ProspectUpdateInput[],
+  ): ProspectUpdateResult[] {
+    const now = nowIso();
+    const outcomes: ProspectUpdateResult[] = [];
+    this.transaction(() => {
+      const insertEvent = this.database.prepare(
+        `INSERT INTO outreach_events (
+           event_id, prospect_id, event_type, detail, occurred_at, created_at
+         ) VALUES (?, ?, 'status_change', ?, ?, ?)`,
+      );
+      for (const update of updates) {
+        const companyKey = update.company.trim().toLowerCase();
+        const listCondition = update.listName === undefined ? "" : "AND list_name = ?";
+        const parameters = update.listName === undefined
+          ? [brand, companyKey]
+          : [brand, companyKey, update.listName];
+        const rows = this.database
+          .prepare(
+            `SELECT * FROM prospects
+             WHERE brand = ? AND company_key = ? ${listCondition}`,
+          )
+          .all(...parameters) as unknown as ProspectRow[];
+        if (rows.length === 0) {
+          outcomes.push({ company: update.company, outcome: "not_found", changedFields: [] });
+          continue;
+        }
+        if (rows.length > 1) {
+          outcomes.push({ company: update.company, outcome: "ambiguous", changedFields: [] });
+          continue;
+        }
+        const row = rows[0]!;
+        const columnByField: Record<string, string> = {
+          linkedinCompanyUrl: "linkedin_company_url",
+          contactName: "contact_name",
+          contactEmail: "contact_email",
+          linkedinUrl: "linkedin_url",
+          website: "website",
+          region: "region",
+          tier: "tier",
+          status: "status",
+          notes: "notes",
+        };
+        const assignments: string[] = [];
+        const values: Array<string | number> = [];
+        const changedFields: string[] = [];
+        for (const [field, column] of Object.entries(columnByField)) {
+          const value = (update.fields as Record<string, unknown>)[field];
+          if (typeof value === "string") {
+            assignments.push(`${column} = ?`);
+            values.push(value);
+            changedFields.push(field);
+          }
+        }
+        if (assignments.length === 0) {
+          outcomes.push({ company: update.company, outcome: "updated", changedFields: [] });
+          continue;
+        }
+        this.database
+          .prepare(
+            `UPDATE prospects SET ${assignments.join(", ")}, updated_at = ?
+             WHERE prospect_id = ?`,
+          )
+          .run(...values, now, row.prospect_id);
+        if (typeof update.fields.status === "string" && update.fields.status !== row.status) {
+          insertEvent.run(
+            randomUUID(),
+            row.prospect_id,
+            `Status ${row.status} -> ${update.fields.status} (manual update)`,
+            now,
+            now,
+          );
+        }
+        outcomes.push({ company: update.company, outcome: "updated", changedFields });
+      }
+    });
+    return outcomes;
   }
 
   prepareArticleBrief(

@@ -1,0 +1,638 @@
+{
+  "name": "75 - TOOL - start_enrichment",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Paid external read, bounded\nStarts one background enrichment job for prospects that have a LinkedIn company URL and no contact email yet. The worker (76) makes one bounded Apify actor run (harvestapi/linkedin-company-employees, one-by-one batch, 3 profiles per company, hard cost ceiling) and one Claude call per company to pick the best contact without guessing.\n\nIt never sends email and never writes outside the local prospect store. Requires the user-created 'Apify API' Header Auth credential; without it the job fails with a clear message and no charge.",
+        "height": 400,
+        "width": 560,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -650,
+        -400
+      ],
+      "id": "75000000-0000-4000-8000-000000000001",
+      "name": "Enrichment start explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "name": "brand",
+              "type": "string"
+            },
+            {
+              "name": "listName",
+              "type": "string"
+            },
+            {
+              "name": "limit",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000002",
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst requestId = typeof $json.requestId === 'string' ? $json.requestId.trim() : '';\nconst brand = typeof $json.brand === 'string' ? $json.brand.trim().toLowerCase() : '';\nconst listName = typeof $json.listName === 'string' ? $json.listName.trim() : '';\nconst rawLimit = typeof $json.limit === 'string' ? $json.limit.trim() : '';\nconst limit = rawLimit === '' ? 33 : Number.parseInt(rawLimit, 10);\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst brandPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;\nlet error = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The enrichment request needs a valid conversation session.' };\n} else if (!uuidPattern.test(requestId)) {\n  error = { code: 'INVALID_REQUEST', message: 'The enrichment request could not be identified. Send the message again.' };\n} else if (brand === '' || brand.length > 40 || !brandPattern.test(brand)) {\n  error = { code: 'INVALID_BRAND', message: 'Say which brand to enrich prospects for, such as oddtoe or datalabs.' };\n} else if (!Number.isInteger(limit) || limit < 1 || limit > 100) {\n  error = { code: 'INVALID_LIMIT', message: 'The enrichment limit must be a whole number between 1 and 100.' };\n} else if (listName.length > 120) {\n  error = { code: 'INVALID_LIST', message: 'The list name must be 120 characters or fewer.' };\n}\n\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    requestId,\n    brand,\n    listName,\n    limit,\n    proposedInput: { brand, listName, limit },\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000003",
+      "name": "Validate Enrichment Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75000000-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000005",
+      "name": "Input Is Valid?"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://127.0.0.1:3000/api/prospects/enrichable?brand=' + encodeURIComponent($('Validate Enrichment Input').item.json.brand) + '&limit=' + $('Validate Enrichment Input').item.json.limit + ($('Validate Enrichment Input').item.json.listName !== '' ? '&list=' + encodeURIComponent($('Validate Enrichment Input').item.json.listName) : '') }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "id": "75000000-0000-4000-8000-000000000006",
+      "name": "Read Enrichable Prospects",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const input = $('Validate Enrichment Input').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1 || !Array.isArray(body.eligible)) {\n  return [{\n    json: {\n      ...input,\n      ready: false,\n      response: {\n        ok: false,\n        error: {\n          code: 'PROSPECT_DATA_UNAVAILABLE',\n          message: 'The local prospect store is not available. Check the chat app is running, then try again.'\n        }\n      }\n    }\n  }];\n}\nconst eligible = body.eligible;\nconst missingUrl = Array.isArray(body.missingUrl) ? body.missingUrl : [];\nif (eligible.length === 0) {\n  const urlNote = missingUrl.length > 0\n    ? ` ${missingUrl.length} prospect(s) are waiting on a LinkedIn company URL first: ${missingUrl.slice(0, 10).join(', ')}${missingUrl.length > 10 ? '\u2026' : ''}. Propose updates to fill linkedinCompanyUrl, then start enrichment again.`\n    : ' Import prospects first, or check that they are not already enriched.';\n  return [{\n    json: {\n      ...input,\n      ready: false,\n      response: {\n        ok: true,\n        started: false,\n        message: `No prospects are ready to enrich.${urlNote}`,\n        missingUrlCount: missingUrl.length\n      }\n    }\n  }];\n}\nconst estimatedCostUsd = Math.round(eligible.length * (0.02 + 3 * 0.012) * 100) / 100;\nreturn [{\n  json: {\n    ...input,\n    ready: true,\n    eligible,\n    missingUrl,\n    estimatedCostUsd\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "id": "75000000-0000-4000-8000-000000000007",
+      "name": "Check Eligible Prospects"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75000000-0000-4000-8000-000000000018",
+              "leftValue": "={{ $json.ready === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        0
+      ],
+      "id": "75000000-0000-4000-8000-000000000008",
+      "name": "Ready To Enrich?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3000/api/prospects/enrichment-jobs",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sessionId: $json.sessionId, requestId: $json.requestId, brand: $json.brand, listName: $json.listName, targetCount: $json.eligible.length }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        960,
+        -100
+      ],
+      "id": "75000000-0000-4000-8000-000000000009",
+      "name": "Register Enrichment Job",
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Check Eligible Prospects').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1 || !body.job?.jobId) {\n  return [{\n    json: {\n      ...prepared,\n      response: {\n        ok: false,\n        error: {\n          code: 'JOB_REGISTRATION_FAILED',\n          message: 'The enrichment job could not be registered. Check the chat app is running, then try again.'\n        }\n      }\n    }\n  }];\n}\nconst missingNote = prepared.missingUrl.length > 0\n  ? ` ${prepared.missingUrl.length} prospect(s) were skipped because they have no LinkedIn company URL yet.`\n  : '';\nreturn [{\n  json: {\n    ...prepared,\n    jobId: body.job.jobId,\n    alreadyRunning: body.created === false,\n    response: {\n      ok: true,\n      started: body.created !== false,\n      jobId: body.job.jobId,\n      companies: prepared.eligible.length,\n      estimatedCostUsd: prepared.estimatedCostUsd,\n      missingUrlCount: prepared.missingUrl.length,\n      message: body.created === false\n        ? `An enrichment job for this request already exists (job ${body.job.jobId}). Use get_enrichment to check it.`\n        : `Enrichment started for ${prepared.eligible.length} compan${prepared.eligible.length === 1 ? 'y' : 'ies'} (job ${body.job.jobId}). Estimated provider cost about $${prepared.estimatedCostUsd} from the Apify free credit.${missingNote} It runs in the background \u2014 ask again in a few minutes and I will use get_enrichment to report.`\n    }\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        -100
+      ],
+      "id": "75000000-0000-4000-8000-000000000010",
+      "name": "Shape Start Result"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75000000-0000-4000-8000-000000000019",
+              "leftValue": "={{ $json.response.started === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        -100
+      ],
+      "id": "75000000-0000-4000-8000-000000000011",
+      "name": "New Job?"
+    },
+    {
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "phase15RunEnrichment",
+          "mode": "list",
+          "cachedResultName": "76 - INTERNAL - run_enrichment"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "jobId": "={{ $json.jobId }}",
+            "brand": "={{ $json.brand }}",
+            "prospectsJson": "={{ JSON.stringify($json.eligible) }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "jobId",
+              "displayName": "jobId",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prospectsJson",
+              "displayName": "prospectsJson",
+              "type": "string",
+              "display": true,
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": true,
+          "convertFieldsToString": false
+        },
+        "mode": "once",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        1680,
+        -180
+      ],
+      "id": "75000000-0000-4000-8000-000000000012",
+      "name": "Queue Enrichment Worker",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const shaped = $('Shape Start Result').first()?.json ?? $('Check Eligible Prospects').first().json;\nreturn [{ json: shaped }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1920,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000013",
+      "name": "Merge Result Paths"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.requestId ?? ''),\n    toolName: 'start_enrichment',\n    proposedInput: JSON.stringify($json.auditInput ?? $json.proposedInput ?? {}),\n    result: JSON.stringify(response),\n    error,\n    response\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000014",
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000015",
+      "name": "Write Tool Audit",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2640,
+        80
+      ],
+      "id": "75000000-0000-4000-8000-000000000016",
+      "name": "Return Tool Result"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Enrichment Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Enrichment Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read Enrichable Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Enrichable Prospects": {
+      "main": [
+        [
+          {
+            "node": "Check Eligible Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Eligible Prospects": {
+      "main": [
+        [
+          {
+            "node": "Ready To Enrich?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ready To Enrich?": {
+      "main": [
+        [
+          {
+            "node": "Register Enrichment Job",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Result Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Enrichment Job": {
+      "main": [
+        [
+          {
+            "node": "Shape Start Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Start Result": {
+      "main": [
+        [
+          {
+            "node": "New Job?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Job?": {
+      "main": [
+        [
+          {
+            "node": "Queue Enrichment Worker",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Result Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Queue Enrichment Worker": {
+      "main": [
+        [
+          {
+            "node": "Merge Result Paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Result Paths": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 60,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "versionId": "75000000-0000-4000-8000-000000000099",
+  "meta": {
+    "phase": 15,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "paid_external_read",
+    "authorization": "direct-current-user-request-with-hard-provider-cost-ceiling",
+    "externalWrite": "none",
+    "localWrite": "prospect-contact-fields-and-enrichment-job",
+    "externalRead": "fixed-apify-actor-and-anthropic-endpoints",
+    "paidCallPolicy": "one-bounded-apify-run-per-job-no-automatic-retry"
+  },
+  "id": "phase15StartEnrichment",
+  "tags": []
+}

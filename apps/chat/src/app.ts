@@ -25,8 +25,11 @@ import {
 } from "./documents.js";
 import {
   ChatStore,
+  PROSPECT_CONFIDENCES,
   PROSPECT_STATUSES,
   type BusinessMemoryInput,
+  type EnrichmentJobStatus,
+  type ProspectConfidence,
   type HistoryMessage,
   type PaidComponentStatus,
   type ProspectRowInput,
@@ -2282,6 +2285,350 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "BUSINESS_MEMORY_ERROR",
                 "Paid domain research is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/prospects/enrichment-jobs") {
+        try {
+          if (request.method === "GET") {
+            const sessionId = validateSessionId(url.searchParams.get("sessionId"));
+            const jobId = businessMemoryText(
+              url.searchParams.get("jobId"),
+              "job ID",
+              160,
+            );
+            const job = jobId
+              ? chatStore.getEnrichmentJob(sessionId, jobId)
+              : undefined;
+            if (job === undefined) {
+              throw new PublicError(
+                404,
+                "RESEARCH_JOB_NOT_FOUND",
+                "That enrichment job is not registered to this conversation.",
+              );
+            }
+            sendJson(response, 200, { schemaVersion: 1, job });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "enrichment job payload",
+            );
+            const registered = chatStore.registerEnrichmentJob({
+              sessionId: validateSessionId(body.sessionId),
+              requestId: businessMemoryText(body.requestId, "request ID", 160),
+              brand: validateBrandSlug(body.brand),
+              listName: prospectText(body.listName, 120),
+              targetCount: Number.isInteger(Number(body.targetCount))
+                ? Number(body.targetCount)
+                : 0,
+            });
+            sendJson(response, 200, { schemaVersion: 1, ...registered });
+            return;
+          }
+          if (request.method === "PATCH") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "enrichment job update",
+            );
+            const jobId = businessMemoryText(body.jobId, "job ID", 160);
+            const job = chatStore.updateEnrichmentJob(jobId, {
+              status: typeof body.status === "string"
+                ? (body.status as EnrichmentJobStatus)
+                : undefined,
+              stage: typeof body.stage === "string"
+                ? body.stage.slice(0, 120)
+                : undefined,
+              enrichedCount: Number.isInteger(Number(body.enrichedCount)) && body.enrichedCount !== undefined
+                ? Number(body.enrichedCount)
+                : undefined,
+              flaggedCount: Number.isInteger(Number(body.flaggedCount)) && body.flaggedCount !== undefined
+                ? Number(body.flaggedCount)
+                : undefined,
+              skipped: Array.isArray(body.skipped)
+                ? body.skipped.filter(
+                    (item): item is string => typeof item === "string",
+                  )
+                : undefined,
+              providerCostUsd: typeof body.providerCostUsd === "number" &&
+                Number.isFinite(body.providerCostUsd)
+                ? body.providerCostUsd
+                : undefined,
+              errorCode: typeof body.errorCode === "string"
+                ? body.errorCode.slice(0, 80)
+                : undefined,
+              errorMessage: typeof body.errorMessage === "string"
+                ? body.errorMessage.slice(0, 500)
+                : undefined,
+            });
+            if (job === undefined) {
+              throw new PublicError(
+                404,
+                "RESEARCH_JOB_NOT_FOUND",
+                "That enrichment job does not exist.",
+              );
+            }
+            sendJson(response, 200, { schemaVersion: 1, job });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST, PATCH" },
+          );
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not access enrichment jobs", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The enrichment job store is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/prospects/enrichment-results") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request, MAX_REQUEST_BYTES),
+            "enrichment results payload",
+          );
+          const jobId = businessMemoryText(body.jobId, "job ID", 160);
+          const rawResults = businessMemoryObjectArray(
+            body.results,
+            "enrichment results",
+            200,
+          );
+          const results = rawResults.map((candidate) => {
+            const prospectId = businessMemoryText(
+              candidate.prospectId,
+              "prospect ID",
+              64,
+            );
+            const confidence = typeof candidate.confidence === "string" &&
+              PROSPECT_CONFIDENCES.includes(
+                candidate.confidence as ProspectConfidence,
+              )
+              ? (candidate.confidence as ProspectConfidence)
+              : "low";
+            return {
+              prospectId,
+              contactName: prospectText(candidate.contactName, 120),
+              contactEmail: prospectText(candidate.contactEmail, 254),
+              linkedinUrl: prospectText(candidate.linkedinUrl, 300),
+              jobTitle: prospectText(candidate.jobTitle, 160),
+              confidence,
+              flagReason: prospectText(candidate.flagReason, 300),
+            };
+          });
+          const applied = chatStore.applyEnrichmentResults(jobId, results);
+          sendJson(response, 200, { schemaVersion: 1, applied });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not apply enrichment results", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The enrichment results could not be saved.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/prospects/updates") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "prospect update payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const rawUpdates = businessMemoryObjectArray(
+            body.updates,
+            "prospect updates",
+            100,
+          );
+          const updates = rawUpdates.map((candidate) => {
+            const company = prospectText(candidate.company, 120);
+            if (company.length === 0) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Every prospect update needs a company name.",
+              );
+            }
+            const fields = businessMemoryObject(
+              candidate.fields,
+              "prospect update fields",
+            );
+            const linkedinCompanyUrl = prospectText(
+              fields.linkedinCompanyUrl,
+              300,
+            );
+            if (
+              linkedinCompanyUrl !== "" &&
+              !/^https:\/\/(www\.)?linkedin\.com\/company\//i.test(
+                linkedinCompanyUrl,
+              )
+            ) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "LinkedIn company URLs must start with https://www.linkedin.com/company/",
+              );
+            }
+            return {
+              company,
+              listName: prospectText(candidate.listName, 120) || undefined,
+              fields: {
+                linkedinCompanyUrl: linkedinCompanyUrl || undefined,
+                contactName: prospectText(fields.contactName, 120) || undefined,
+                contactEmail: prospectText(fields.contactEmail, 254) || undefined,
+                linkedinUrl: prospectText(fields.linkedinUrl, 300) || undefined,
+                website: prospectText(fields.website, 300) || undefined,
+                region: prospectText(fields.region, 120) || undefined,
+                tier: prospectText(fields.tier, 40) || undefined,
+                status: validateProspectStatus(fields.status),
+                notes: prospectText(fields.notes, 1000) || undefined,
+              },
+            };
+          });
+          const outcomes = chatStore.updateProspectFields(brand, updates);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            outcomes,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not update prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The prospect updates could not be saved.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/prospects/enrichable") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const requestedList = url.searchParams.get("list");
+          const listName = requestedList === null
+            ? undefined
+            : prospectText(requestedList, 120) || undefined;
+          const requestedLimit = url.searchParams.get("limit");
+          const limit = requestedLimit === null ? 200 : Number(requestedLimit);
+          if (!Number.isInteger(limit)) {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "The prospect limit must be a whole number.",
+            );
+          }
+          const { eligible, missingUrl } = chatStore.listEnrichableProspects(
+            brand,
+            listName,
+            limit,
+          );
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            eligible: eligible.map((row) => ({
+              prospectId: row.prospectId,
+              company: row.company,
+              listName: row.listName,
+              linkedinCompanyUrl: row.linkedinCompanyUrl,
+              region: row.region,
+              tier: row.tier,
+            })),
+            missingUrl,
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not list enrichable prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The prospect list is not available right now.",
               ),
             );
           }

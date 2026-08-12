@@ -60,7 +60,12 @@
         "60-tool-find-signals.json",
         "70-tool-list-prospects.json",
         "71-tool-propose-import-prospects.json",
-        "72-tool-execute-import-prospects.json"
+        "72-tool-execute-import-prospects.json",
+        "73-tool-propose-update-prospects.json",
+        "74-tool-execute-update-prospects.json",
+        "75-tool-start-enrichment.json",
+        "76-internal-run-enrichment.json",
+        "77-tool-get-enrichment.json"
       ]
     },
     {

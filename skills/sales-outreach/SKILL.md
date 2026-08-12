@@ -4,8 +4,15 @@ When the user works on outbound prospecting — an agency list, a venue list, an
 
 ## The stages and today's tools
 
-- **List.** Import rows with `propose_import_prospects` and read them with `list_prospects`. These are the only prospect tools available today.
-- **Enrich, reach out, track, follow up.** These stages exist in the pipeline statuses but have no tools yet. Never claim to enrich a contact, send or draft a campaign in Mailchimp, or pull open rates. If the user asks for one of these, say that stage is not built yet and offer what the list can already tell them.
+- **List.** Import rows with `propose_import_prospects`, read them with `list_prospects`, and correct or fill fields with `propose_update_prospects` (both writes go through the exact confirmation phrase).
+- **Enrich.** `start_enrichment` finds contact names and emails via one bounded Apify run plus a Claude pick per company; `get_enrichment` reports the job. Enrichment only processes prospects that already have a LinkedIn company URL and no contact email — filling those URLs (via an update proposal) comes first. It costs about $0.06 per company from the user's Apify free credit; honour "test on a few first" with the limit parameter, and never start it twice for one request.
+- **Reach out, track, follow up.** These stages exist in the pipeline statuses but have no tools yet. Never claim to send or draft a campaign in Mailchimp or pull open rates. If the user asks for one of these, say that stage is not built yet and offer what the list can already tell them.
+
+## Enrichment results
+
+- Rows come back with a confidence level. `high` becomes status `enriched`; `medium`, `low`, and `none` become `needs_review` with a flag reason. Surface flagged rows for the user's judgement before any outreach — never quietly promote a flagged contact.
+- Every contact detail is clamped to the scraped data: an email, name, or URL the picker invented is dropped automatically, so a blank field means "not found", never "forgot to fill".
+- If a job fails with APIFY_START_FAILED, the Apify API credential is missing in n8n — point the user to docs/PROSPECT_ENRICHMENT.md rather than retrying.
 
 ## Importing a list
 
