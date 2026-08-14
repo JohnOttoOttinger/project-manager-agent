@@ -3,12 +3,12 @@
 ## Two kits, one token set
 
 - **Datalabs**: `design-kit.html` — v1, Otto-styled, snapshot of Datalabs page 52964. Accent `#c39f76`.
-- **Oddtoe**: `design-kit-oddtoe.html` — **v0 SEED (14 Aug 2026), NOT yet Otto-styled.** Generated from the
-  Datalabs kit with accent → `#ddccb1`, Datalabs fixed blocks removed, offers row seeded with two of Otto's
-  homepage info_banners, footer seeded with delimiter + project-enquiry Gravity form (id=1). Lives as Oddtoe
-  draft page 16132 ("MONEY PAGE DESIGN KIT — MASTER (never publish)"). Otto art-directs it in WPBakery, then
-  re-snapshot. **Do not compose Oddtoe money pages from the v0 seed** — wait for Otto's v1.
-  Oddtoe gaps: hero background + hero image media, fixed footer blocks, Ronneby page bg-color meta value.
+- **Oddtoe**: `design-kit-oddtoe.html` — **v1 (re-snapshot 14 Aug 2026, Otto-styled)** from Oddtoe master
+  page 16132. Accent warm sand `#ddccb1`; page + rows plum `#26161f`. Required page settings for every
+  composed Oddtoe page: template `page-custom.php`, `crum_page_custom_bg_color=#26161f`, bg repeat,
+  `dfd_headers_header_style=6`. Offers row = info_banner cards (swap per page); footer = delimiter +
+  project-enquiry Gravity form (id=1). Oddtoe pricing facts are still TO FILL (see brands.md) — no
+  Oddtoe page may quote a price until Otto provides ranges.
   Tokens are identical across both kits; everything below applies to both unless an accent/ID is named.
 
 **Source of truth for layout:** `design-kit.html` — tokenized snapshot of Otto's WPBakery/Ronneby dummy page
