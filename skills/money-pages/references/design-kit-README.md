@@ -66,6 +66,7 @@ Never alter row/column/styling attributes; content goes only where tokens are.
 
 - Patterns are the top-level `[vc_row]` blocks, labelled with HTML comments and `el_id="pat-*"`.
 - **Strip all HTML comments** before sending content to WordPress (WPBakery can mangle stray text between rows).
+- After Otto re-saves a master in WPBakery, wpautop may inject stray `</p>` fragments right after `[vc_column_text]` tags in the snapshot — when composing, replace a block's FULL inner content (regex across `.*?` to `[/vc_column_text]`), never anchor on exact whitespace.
 - Repeatable: section variants, table row, article rows. One per page: intro (only H1), FAQ.
 - FAQ: 4–8 Q&As. To add Q6+, duplicate a `vc_tta_section` with a NEW unique `tab_id` and add `FAQ_Q6/FAQ_A6` to the JSON-LD too.
 - Everything below the "FIXED FOOTER BLOCKS" comment ships as-is (Otto, 14 Aug 2026).
