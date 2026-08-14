@@ -12,6 +12,7 @@ Use this skill when Otto asks for the next money page, a pricing page, a compari
 5. **Top of the draft body**, include an HTML comment block with the Yoast fields for manual paste:
    `<!-- YOAST SEO TITLE: ... (max ~60 chars) | META DESCRIPTION: ... (max ~155 chars) -->`
 6. **Push as a draft.** With shell access, run `scripts/wp-post.sh <datalabs|oddtoe> "<Title>" <html-file>` (requires WP Application Passwords in the repo `.env` — see docs/WORDPRESS_AUTOMATION_CHECKLIST.md). Without shell access, output the complete page + Yoast block for Otto to paste into WordPress himself. NEVER publish — drafts only (banned.md rule 4).
+   **Page settings (learned 14 Aug 2026):** design-kit pages depend on three page-level settings the content itself can't provide — `template: page-custom.php` (wp-post.sh sets it via REST; kills the theme title band + boxed width), and two Ronneby meta fields REST can NOT set: **Custom background color `#2f2e3a`** and **header style `2`** (`crum_page_custom_bg_color` / `dfd_headers_header_style` in the page's wp-admin settings). Without the background, `bg_check="row-background-dark"` rows render white text on a white page — invisible. Set them in wp-admin (or via browser automation) right after the draft is created.
 7. **Update the backlog.** Mark the item `[~]` with the wp-admin edit link:
    `- [~] Workshop pricing page (datalabs) — [review](https://www.datalabsagency.com/wp-admin/post.php?post=ID&action=edit)`
    When Otto says he has published it, mark it `[x]` and suggest running offsite-consensus for it.
