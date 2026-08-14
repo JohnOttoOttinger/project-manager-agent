@@ -1,7 +1,7 @@
 # Design Kit v1 — token reference & workflows
 
 **Source of truth for layout:** `design-kit.html` — tokenized snapshot of Otto's WPBakery/Ronneby dummy page
-("MONEY PAGE TEMPLATE — DUMMY (do not publish)", page 52964 on datalabsagency.com), taken 14 Aug 2026.
+("MONEY PAGE DESIGN KIT — MASTER (never publish)", page 52964 on datalabsagency.com), taken 14 Aug 2026.
 When Otto restyles the dummy, re-snapshot per SKILL.md and re-apply the tokens.
 
 **Rules baked into the kit** (do not undo, final per Otto 14 Aug 2026):
