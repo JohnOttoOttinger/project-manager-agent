@@ -13,7 +13,7 @@ The app's Content pipeline card reads this file — keep the format exact.
 
 ## Oddtoe (goal: commissions and bookings)
 
-- [~] Brand activation ideas (oddtoe) — [review](https://www.oddtoe.com/wp-admin/post.php?post=16133&action=edit)
+- [x] Brand activation ideas (oddtoe) — [live](https://www.oddtoe.com/brand-activation-ideas/) (page 16133, published 14 Aug 2026)
 
 - [ ] Oddtoe credits page (oddtoe)
 - [ ] Case study — strongest installation (oddtoe)
