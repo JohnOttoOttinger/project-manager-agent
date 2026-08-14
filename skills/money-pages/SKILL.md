@@ -58,6 +58,13 @@ An orphan page gets crawled (Yoast sitemap) but not weighted; internal links do 
 4. Applied links are recorded in `references/links-ledger.md` (append-only). If Otto removes a link, mark it "(removed by Otto)" — never re-add.
 5. Standing targets beyond in-body links (Otto handles in wp-admin): the footer "Pricing & Guides" block, and optionally one submenu entry for genuinely commercial pages (e.g. Workshop Pricing under Data Training).
 
+**Link-pass field notes (learned 14 Aug 2026, first run):**
+- **Verify the anchor RENDERS before planning it.** WPBakery keeps rows with `disable_element="yes"` in raw content — the discovery script sees them but they never render (the homepage 167 has whole legacy sections like this). Check the sentence exists in the live page's DOM/HTML, not just the raw.
+- **WP rewrites hrefs on save** (pretty URL → `/?page_id=N`), and it renders them back pretty. The apply script compares href-agnostically for idempotency (fixed same day; a literal compare caused duplicate sentences).
+- **Style new in-content links inline**: `<a style="color: #c39f76;" href=...>` (Oddtoe: `#ddccb1`). The theme's link colour is context-dependent and plain links can render white-on-dark (invisible).
+- **After the pass, request indexing for the EDITED source pages too** (Google Search Console URL inspection; Bing picks up via sitemap lastmod) — the new page was submitted at publish, but Google finds the internal links faster when the changed sources are resubmitted.
+- WAF note: REST calls (GET and POST) need a browser-like User-Agent — generic client UAs get 403s.
+
 ## Guardrails
 
 Everything in geo-playbook `banned.md` applies. One page = one brand. After the site publishes, remind Otto the Cloudflare cache holds HTML ~4 hours — verify with a cache-buster URL, or purge.
