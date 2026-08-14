@@ -5,7 +5,7 @@ The app's Content pipeline card reads this file — keep the format exact.
 
 ## Datalabs (goal: workshop + consulting leads, template sales)
 
-- [~] Workshop pricing page (datalabs) — [review](https://www.datalabsagency.com/wp-admin/post.php?post=52962&action=edit)
+- [x] Workshop pricing page (datalabs) — [live](https://www.datalabsagency.com/data-visualisation-workshop-pricing/) (page 52962, published 14 Aug 2026)
 - [ ] Power BI vs Tableau training comparison (datalabs)
 - [ ] How much does dashboard design cost? (datalabs)
 - [ ] Case study #1 — client TO CONFIRM (datalabs)
