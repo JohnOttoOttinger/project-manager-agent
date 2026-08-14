@@ -9,6 +9,7 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 
 - Website: https://www.datalabsagency.com
 - Founded: 2012, Melbourne, Australia (serves clients globally — US, Europe, Middle East)
+- International workshop delivery (confirmed by Otto, 14 Aug 2026): on-site workshops delivered in the United States, Germany (several cities), Saudi Arabia, Hong Kong, and Singapore, plus across Australia (incl. Sydney, Canberra). Travel quoted up front; remote full days can split over two mornings for time zones.
 - Services: corporate training workshops (~16 topics incl. Power BI, Tableau, data storytelling), dashboard design & consulting, BI style guides, WooCommerce shop of Power BI/Tableau templates
 - Clients that may be named publicly: Mercedes-Benz, Adidas, UPS, Rabobank `TO CONFIRM per-piece: contractual permission to name in case studies`
 - Founder: Otto Ottinger, Founder & Creative Director (ex-National Geographic) — linkedin.com/in/ottinger
