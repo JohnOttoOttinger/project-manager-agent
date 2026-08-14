@@ -168,7 +168,11 @@ def cmd_apply(args):
         url = f"{site}/wp-json/wp/v2/{kind}/{pid}?context=edit"
         item = req(url, auth=auth)
         raw = item["content"]["raw"]
-        if e["replace"] in raw:
+        # Compare href-agnostically: WP plugins rewrite stored hrefs (e.g. pretty URL
+        # -> /?page_id=N), so a literal `replace in raw` check misses an already-applied
+        # edit and re-applying DUPLICATES the sentence (happened 14 Aug 2026).
+        strip_href = lambda s: re.sub(r'href="[^"]*"', 'href=""', s)
+        if strip_href(e["replace"]) in strip_href(raw):
             skipped.append((pid, "link already present"))
             continue
         if e["search"] not in raw:
