@@ -49,6 +49,10 @@ hero = fill(blocks['intro'], {
 })
 
 # ---------- table builder (styles copied from the kit exemplars) ----------
+# Datalabs link style (Otto, 16 Aug 2026): in-content links are
+# <strong><a class="dfd-custom-link-decorated" href=...>label</a></strong> -- never inline colours.
+# The class is driven by Ronneby Theme Options -> Styling options -> Link options
+# (tan #c39f76 base, olive #8a8f6a hover) + the Custom CSS underline block (dotted, size inherit).
 TH = "style=\"padding: 14px 18px; text-align: left; background-color: #000000 !important; border: none !important; border-bottom: 2px solid #c39f76 !important; font-family: 'Bebas Neue', sans-serif; font-size: 21px; font-weight: normal; letter-spacing: 1px; color: #ffffff !important; white-space: nowrap;\""
 THR = TH.replace('text-align: left', 'text-align: right')
 def td(bg, align='left', color='#ffffff', bold=False, nowrap=False):
@@ -130,7 +134,7 @@ for crit, course, pub, priv in [
 fmt_table = ('<div style="overflow-x: auto;">\n<table style="width: 100%; border-collapse: collapse !important; background-color: #000000 !important; border: none !important;">\n<thead>\n<tr>'
     + f'<th scope="col" {CTH}>&nbsp;</th><th scope="col" {CTH}>Self-paced course</th><th scope="col" {CTH}>Public class</th><th scope="col" {CTHREC}>Private team workshop</th>'
     + '</tr>\n</thead>\n<tbody>\n' + '\n'.join(fmt_rows) + '\n</tbody>\n</table>\n</div>'
-    + '\n<p style="text-align: left; font-size: 13px; font-style: italic; color: #8a8a95; margin-top: 10px;">Our self-paced courses &mdash; An Introduction to Data Visualization and Storytelling, and Designing Great Dashboards &mdash; are $127 each in the <a href="https://www.datalabsagency.com/shop/" style="color: #c39f76;">Datalabs shop</a>.</p>')
+    + '\n<p style="text-align: left; font-size: 13px; font-style: italic; color: #8a8a95; margin-top: 10px;">Our self-paced courses &mdash; An Introduction to Data Visualization and Storytelling, and Designing Great Dashboards &mdash; are $127 each in the <strong><a class="dfd-custom-link-decorated" href="https://www.datalabsagency.com/shop/">Datalabs shop</a></strong>.</p>')
 t_compare = table_row(
     'Three ways to learn...', 'Private workshop or public course &mdash; which should you book?',
     'The right format depends on how many people need the skills and how tailored the content must be. Here is how the three options differ:',
