@@ -19,6 +19,24 @@ case "$BRAND" in
   *) echo "Unknown brand: $BRAND (use datalabs|oddtoe)" >&2; exit 1;;
 esac
 
+# Spacer hygiene (Otto's rule, 16 Aug 2026): collapse consecutive dfd_spacers before pushing.
+# merge-spacers.py aborts (non-zero) unless spacing totals + all non-spacer content are preserved;
+# on abort we push the body unmerged rather than fail the draft.
+MERGER="$(dirname "$0")/merge-spacers.py"
+if [ -f "$MERGER" ]; then
+  MERGED="$(mktemp)"
+  if python3 - "$BODY_FILE" <<PY > "$MERGED"
+import sys, importlib.util
+spec = importlib.util.spec_from_file_location("m", "$MERGER")
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+content = open(sys.argv[1], encoding="utf-8").read()
+new, before, after, runs = m.process(content)
+sys.stderr.write(f"spacer merge: {before} -> {after}\n")
+sys.stdout.write(new)
+PY
+  then BODY_FILE="$MERGED"; else echo "spacer merge skipped (safety abort) — pushing unmerged" >&2; fi
+fi
+
 # Public byline belongs to the human/brand author, never the agent user.
 PAYLOAD="$(python3 - "$TITLE" "$BODY_FILE" "$AUTHOR_ID" <<'PY'
 import json, sys
