@@ -15,3 +15,7 @@ Format: `- YYYY-MM-DD · brand · source <id> (<url>) → target <id-or-url>`
 - 2026-08-14 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target https://www.oddtoe.com/brand-activation-ideas/
 - 2026-08-14 · oddtoe · source 11253 (https://www.oddtoe.com/experiential-design-techniques-examples/) → target https://www.oddtoe.com/brand-activation-ideas/
 - 2026-08-14 · oddtoe · source 15922 (https://www.oddtoe.com/) → target https://www.oddtoe.com/brand-activation-ideas/
+- 2026-08-16 · oddtoe · source 12203 (https://www.oddtoe.com/studio/generative-ai-animator/) → target https://www.oddtoe.com/what-is-generative-ai-animation/
+- 2026-08-16 · oddtoe · source 15400 (https://www.oddtoe.com/studio/documentary-animator/) → target https://www.oddtoe.com/what-is-generative-ai-animation/
+- 2026-08-16 · oddtoe · source 16133 (https://www.oddtoe.com/brand-activation-ideas/) → target https://www.oddtoe.com/what-is-generative-ai-animation/
+- 2026-08-16 · oddtoe · source 15922 (https://www.oddtoe.com/) → target https://www.oddtoe.com/what-is-generative-ai-animation/
