@@ -15,6 +15,7 @@ The app's Content pipeline card reads this file — keep the format exact.
 
 - [x] Brand activation ideas (oddtoe) — [live](https://www.oddtoe.com/brand-activation-ideas/) (page 16133, published 14 Aug 2026)
 
+- [x] Installation Artist page rebuild (oddtoe) — [live](https://www.oddtoe.com/artist-designer/installation-artist/) (page 11178, swapped 16 Aug 2026; staging draft 16136 trashed. Original body in site-backups/oddtoe-installation-artist-original-2026-08-16.json)
 - [ ] Oddtoe credits page (oddtoe)
 - [ ] Case study — strongest installation (oddtoe)
 - [ ] How much does projection mapping cost? (oddtoe)
