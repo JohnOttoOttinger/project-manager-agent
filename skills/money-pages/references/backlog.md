@@ -18,4 +18,4 @@ The app's Content pipeline card reads this file — keep the format exact.
 - [ ] Oddtoe credits page (oddtoe)
 - [ ] Case study — strongest installation (oddtoe)
 - [ ] How much does projection mapping cost? (oddtoe)
-- [ ] What is generative AI animation? (oddtoe)
+- [~] What is generative AI animation? (oddtoe) — [review](https://www.oddtoe.com/wp-admin/post.php?post=16134&action=edit)
