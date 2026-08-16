@@ -7,4 +7,6 @@ Every drafted artifact goes here when created. `- [ ]` = drafted, awaiting Otto'
 - [ ] LinkedIn post 3 — agency build-partner (oddtoe) — drafted 2026-08-16
 - [ ] Pitch — Australia Experiences brand-activation-ideas guide (oddtoe) — drafted 2026-08-16
 - [ ] Review request template — Google/LinkedIn, client TBD by Otto (oddtoe) — drafted 2026-08-16 (HOLD until GBP verified)
-(drafts: references/drafts/2026-08-16-brand-activation-ideas-batch.md)
+- [ ] Clutch profile copy (oddtoe) — drafted 2026-08-16, Otto creates account
+- [ ] Sortlist profile copy (oddtoe) — drafted 2026-08-16, Otto creates account
+(drafts: references/drafts/2026-08-16-brand-activation-ideas-batch.md, references/drafts/2026-08-16-oddtoe-directory-profiles.md)
