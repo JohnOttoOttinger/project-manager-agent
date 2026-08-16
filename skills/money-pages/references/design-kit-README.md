@@ -55,7 +55,12 @@ Never alter row/column/styling attributes; content goes only where tokens are.
 | `{{TABLE_HEADING/SUBTITLE/INTRO}}` | table row | Section head / lead-in / one-sentence table explainer |
 | *(table)* | table row | No token — the kit contains TWO fully styled exemplar `<table>`s to copy exactly (the `!important` flags are mandatory — Ronneby's table CSS overrides plain inline styles). Keep `scope="col"`; `overflow-x` wrapper stays (horizontal scroll on mobile, never stacked rows). Oddtoe: accent `#c39f76` → `#ddccb1` |
 
-**Table defaults (Otto approved, 14 Aug 2026):**
+**Table defaults (Otto approved, 14 Aug 2026; cell-content rule added 16 Aug 2026):**
+- **Cells are factual, never poetic (Otto's general rule):** every cell carries a concrete, comparable
+  fact in plain words a buyer immediately understands ("Weeks to months", "Changes from shot to shot") —
+  no metaphors, wordplay, or clever fragments ("Rarely survives one" ✗). Criteria labels should be
+  tangible questions a buyer would ask. Poetry belongs in prose, not tables. Also avoid unexplained
+  jargon anywhere ("campaign loops" ✗ → "social video").
 - **Pricing exemplar** (first table): black cells, Bebas `th` with tan underline, zebra `#111111` rows, bold row labels, right-aligned bold tan price in the LAST column.
 - **Comparison exemplar** (second table): criterion column + 2–3 option columns; the RECOMMENDED option gets a tan `th` (black text) and `#111111` cells — no zebra, no badges. Checkmark cells: tan `✓` / dim `—` (`#8a8a95`), centered; never a red cross.
 - **Footnote**: small italic dimmed line inside the table block, right under the table (GST, travel, minimums).

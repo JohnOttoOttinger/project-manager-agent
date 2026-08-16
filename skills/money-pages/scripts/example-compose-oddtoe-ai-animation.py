@@ -38,21 +38,21 @@ hero = fill(blocks['intro'], {
     'HOOK': 'Generative AI animation is animation made with AI image and video models under an artist&rsquo;s direction &mdash; <strong>designed, directed, and edited</strong> like any other film. Here is what it is, where it works, and how a <strong>Melbourne studio</strong> uses it for brands, documentaries, events, and original series.',
     'SECTION_A_SUBTITLE': 'The plain-language definition...',
     'SECTION_A_HEADING': 'What is generative AI animation?',
-    'SECTION_A_INTRO': 'Generative AI animation is animation created with artificial-intelligence image and video models, directed by an artist rather than typed into existence. At Oddtoe it is a <strong>hybrid workflow</strong> &mdash; generative AI combined with <strong>advanced rigging</strong> and <strong>traditional motion design</strong> &mdash; so the result holds one consistent style instead of a lucky dip of outputs.',
+    'SECTION_A_INTRO': 'Generative AI animation is animation created with artificial-intelligence image and video models, directed by an artist rather than typed into existence. At Oddtoe it is a <strong>hybrid workflow</strong>: for consistency and easy amendment, generated imagery is combined with <strong>character rigging</strong> and <strong>traditional motion design</strong>, so the result holds one style across every scene.',
     'CANONICAL_SENTENCE': CANON,
     'SECTION_B_SUBTITLE': 'Brands, filmmakers, institutions...',
     'SECTION_B_HEADING': 'Who uses it, and for what?',
-    'SECTION_B_ANSWER': 'Brands use generative AI animation for <strong>branded content</strong>, characters, and campaign loops; documentary makers use it for <strong>animated maps, diagrams, and reconstructions</strong>; venues and events use it for screen and <strong>projection content</strong>. Oddtoe works both as a studio in its own right and as a resource inside other studios&rsquo; productions.',
+    'SECTION_B_ANSWER': 'Brands use generative AI animation for <strong>branded content</strong>, characters, and social video; documentary makers use it for <strong>animated maps, diagrams, and reconstructions</strong>; venues and events use it for screen and <strong>projection content</strong>. Oddtoe works both as a studio in its own right and as a resource inside other studios&rsquo; productions.',
     'SECTION_B_CONTEXT': 'Inside other productions, Oddtoe takes whichever seat the project needs &mdash; art director, head of animation, lead animator, character designer, or background artist. That flexibility is a feature of the medium: generative AI compresses the production pipeline, so one experienced <a href="/studio/generative-ai-animator/">generative AI animator</a> can carry roles that once needed a department. For brand teams, that means animated content at a pace and budget that hand animation rarely allows.',
     'PRIMARY_CTA_TEXT': 'Start a conversation',
     'PRIMARY_CTA_URL': CONTACT,
 })
 
 art1 = fill(blocks['article1'], {
-    'ARTICLE_1_SUBTITLE': 'From campaign loops to documentaries...',
+    'ARTICLE_1_SUBTITLE': 'From brand campaigns to documentaries...',
     'ARTICLE_1_HEADING': 'Where AI animation fits in real work',
-    'ARTICLE_1_BODY': f'''{P}<strong>Branded content and campaign loops.</strong> Short, styled animation for campaigns, YouTube channels, and social &mdash; where a brand needs a <strong>cohesive look</strong> across many pieces, not one lucky render. This is where art direction earns its keep: the hundredth asset still looks like the first.</p>
-{P}<strong>Documentary graphics.</strong> Animated maps, ways to visualise time and place, conceptual diagrams, reconstructions &mdash; the visual library of <a href="/studio/documentary-animator/">documentary animation</a> is enormous, and generative tools widen it further. Oddtoe works in 2D and 3D non-fiction animation, with a visual-storytelling background that began at National Geographic.</p>
+    'ARTICLE_1_BODY': f'''{P}<strong>Branded content and social video.</strong> Short, styled animation for campaigns, YouTube channels, and social feeds &mdash; where a brand needs a <strong>cohesive look</strong> across many pieces. This is where art direction earns its keep: the hundredth video still matches the first.</p>
+{P}<strong>Documentary graphics.</strong> Animated maps, ways to visualise time and place, conceptual diagrams, reconstructions &mdash; the possible styles for <a href="/studio/documentary-animator/">documentary animation</a> are enormous, and generative tools widen them further. Oddtoe works in 2D and 3D non-fiction animation, with a visual-storytelling background that began at National Geographic.</p>
 {P}<strong>Characters that persist.</strong> A <a href="/artist-designer/character-designer/">designed character</a>, kept consistent across episodes, formats, and campaigns &mdash; the hardest thing to get from raw AI tools and the most valuable thing a directed workflow delivers.</p>
 {P}<strong>Screens, events, and projection.</strong> Looping animated content for event screens and <a href="/artist-designer/projection-artist/">projection</a> &mdash; AI animation is a natural feed for physical experiences, which is why it appears throughout our <a href="/brand-activation-ideas/">brand activation ideas</a>.</p>
 {P}<strong>Original series and art.</strong> Oddtoe also makes its own work &mdash; <a href="/studio/original-stories/">original stories</a> generated with AI and the human mind, including <em>The Top 100 Comedians of All Time Will Be Bots</em> (Oddtoe, 2023). Making our own series is how the studio stays ahead of the tools.</p>''',
@@ -67,10 +67,11 @@ def ctd(bg, bold=False):
     return f'style="{s}"'
 rows = []
 for crit, trad, diy, led in [
-    ('Style consistency', 'Handcrafted and consistent', 'Changes shot to shot', 'Directed and consistent'),
-    ('Speed to first cut', 'Slowest', 'Instant, but generic', 'Fast, with direction'),
-    ('Works from a brand brief', 'Yes, at a price', 'Rarely survives one', 'Yes &mdash; that is the job'),
-    ('Revisions that stick', 'Slow to change', 'Every change is a re-roll', 'Rigged and editable'),
+    ('Who makes it', 'Animators, frame by frame', 'You, prompting a tool', 'An artist directing AI models'),
+    ('Style consistency between scenes', 'Consistent', 'Changes from shot to shot', 'Consistent &mdash; held by character design and rigging'),
+    ('Typical time to a first cut', 'Weeks to months', 'Minutes', 'Days to weeks'),
+    ('Making a change', 'Redrawn by hand', 'Re-generate and hope &mdash; each attempt differs', 'Edited directly &mdash; characters stay rigged'),
+    ('Best for', 'Signature hand-crafted films', 'Quick experiments', 'Brand campaigns, series, and client work'),
 ]:
     cells = f'<td {ctd("#000000", bold=True)}>{crit}</td><td {ctd("#000000")}>{trad}</td><td {ctd("#000000")}>{diy}</td><td {ctd("#111111")}>{led}</td>'
     rows.append('<tr>' + cells + '</tr>')
@@ -85,28 +86,28 @@ tbl = re.sub(r'(\[vc_column_text css=""\]).*?(\[/vc_column_text\])', lambda m2: 
 art2 = fill(blocks['article2'], {
     'ARTICLE_2_SUBTITLE': 'Why direction beats prompting...',
     'ARTICLE_2_HEADING': 'Artist-led, not prompt-fed',
-    'ARTICLE_2_BODY': f'''{P}Anyone can generate a striking image. The hard part &mdash; the part clients actually pay for &mdash; is generating the <strong>same world twice</strong>: a character who looks like herself in shot forty, a palette that holds across a campaign, a style a brand can own. Raw AI consistency simply is not there yet, which is why every Oddtoe method <strong>begins with a quality illustration</strong> and lets the AI interpret the scene &mdash; direction first, generation second. That is a craft problem, not a prompting problem, and it is why Oddtoe treats AI models as crew rather than as vending machines.</p>
-{P}The studio&rsquo;s range comes from an unusual r&eacute;sum&eacute;: political cartoonist, puppeteer, <strong>data visualiser</strong>, street artist &mdash; and, since 2006, work for organisations including <strong>National Geographic</strong>. Each of those trades is a different way of deciding what an image must say before deciding how it looks. Generative AI rewards exactly that kind of decision-making, and punishes its absence.</p>
+    'ARTICLE_2_BODY': f'''{P}Anyone can generate a striking image. The hard part &mdash; the part clients actually pay for &mdash; is generating the <strong>same world twice</strong>: a character who looks the same in every scene, and a style your brand can use again and again. Raw AI consistency simply is not there yet, which is why every Oddtoe method <strong>begins with a quality illustration</strong> and lets the AI interpret the scene &mdash; direction first, generation second. That is a craft problem, not a prompting problem, and it is why Oddtoe treats AI models as crew rather than as vending machines.</p>
+{P}The studio&rsquo;s range comes from an unusual r&eacute;sum&eacute;: political cartoonist, puppeteer, <strong>data visualiser</strong>, street artist &mdash; and, since 2006, work for organisations including <strong>National Geographic</strong>. Each of those trades is a different way of deciding what an image must say before deciding how it looks. Generative AI rewards that kind of decision-making.</p>
 {P}There is also an honest artistic case for the medium. AI systems produce permutations, glitches, and odd choices &mdash; and under direction, those become material. Oddtoe&rsquo;s <a href="/studio/original-stories/">original stories</a> lean into that strangeness deliberately; commercial work tames it deliberately. Both are choices an artist makes, which is the whole point.</p>
-{P}If your team is weighing up AI animation, the practical question is not &ldquo;which tool?&rdquo; but &ldquo;who is directing?&rdquo; Bring the brief; the <a href="/studio/generative-ai-animator/">studio</a> brings the taste, the rigging, and the motion design that turn generated frames into finished film.</p>''',
+{P}If your team is weighing up AI animation, the practical question is not &ldquo;which tool?&rdquo; but &ldquo;who is directing?&rdquo; Bring the brief; the <a href="/studio/generative-ai-animator/">studio</a> brings the design, rigging, and motion-design craft that turns generated frames into finished film.</p>''',
 })
 
 sec_c = fill(blocks['section1'], {
     'SECTION_C_SUBTITLE': 'Generative AI plus craft...',
     'SECTION_C_HEADING': 'How does the hybrid workflow work?',
-    'SECTION_C_ANSWER': 'Oddtoe&rsquo;s process is a <strong>hybrid workflow</strong>: generative AI models supply imagery and movement, combined with <strong>advanced rigging</strong> and <strong>traditional motion design</strong>. The artist designs first, generates second, then rigs, edits, and composites &mdash; so revisions are edits, not re-rolls.',
+    'SECTION_C_ANSWER': 'Oddtoe&rsquo;s process is a <strong>hybrid workflow</strong>: generative AI models supply imagery and movement, and &mdash; for consistency and easy amendment &mdash; Oddtoe combines them with <strong>character rigging</strong> and <strong>traditional motion design</strong>. The artist designs first, generates second, then rigs, edits, and composites, so a revision is an edit, not a fresh generation.',
     'SECTION_C_DETAIL': 'That structure is what makes the medium dependable enough for client work: a change to a character, a colour, or a line of action is made the way animators have always made it, with the AI doing the expensive rendering underneath. Oddtoe has prototyped and documented five distinct methods &mdash; from illustration-first motion design to repeatable AI-rigged characters and straight-to-video with an illustration filter &mdash; on our <a href="/my-product/atheism-documentary/">AI animation process</a> page, and the full capability lives on the <a href="/studio/generative-ai-animator/">generative AI animator</a> page.',
 })
 sec_d = fill(blocks['section2'], {
     'SECTION_D_SUBTITLE': 'The right tool for the brief...',
     'SECTION_D_HEADING': 'When should you choose AI animation?',
-    'SECTION_D_ANSWER': 'Choose generative AI animation when you need animated content at <strong>pace or scale</strong> &mdash; series, campaigns, loops &mdash; or looks that would be impractical to shoot or hand-animate, and when <strong>style consistency</strong> matters enough that you want an artist directing it.',
-    'SECTION_D_RATIONALE': 'It is not the right tool for everything: some briefs deserve hand animation&rsquo;s line, and some need live action&rsquo;s truth. A studio that works across generative AI, traditional motion design, and physical media will tell you which &mdash; and that honesty is worth more than any single technique.',
+    'SECTION_D_ANSWER': 'Choose generative AI animation when you need animated content at <strong>pace or scale</strong> &mdash; series, campaigns, screen content &mdash; or looks that would be impractical to shoot or hand-animate, and when <strong>style consistency</strong> matters enough that you want an artist directing it.',
+    'SECTION_D_RATIONALE': 'It is not the right tool for everything: some briefs are better served by hand animation, and some by live action. A studio that works across generative AI, traditional motion design, and physical media will tell you which &mdash; and that honesty is worth more than any single technique.',
 })
 
 faq_pairs = [
     ('Is generative AI animation just typing prompts?',
-     'No. At Oddtoe it is a hybrid workflow combining generative AI with advanced rigging and traditional motion design, under an artist&rsquo;s direction. Prompting produces raw material; design, rigging, editing, and compositing turn it into finished, revisable film.'),
+     'No. At Oddtoe it is a hybrid workflow: generative AI supplies imagery and movement, and for consistency and easy amendment Oddtoe combines it with character rigging and traditional motion design, under an artist&rsquo;s direction. Prompting produces raw material; design, rigging, and editing turn it into finished, revisable film.'),
     ('Can AI animation keep a consistent brand style?',
      'Yes &mdash; with character design and art direction up front. Brands have longer-term needs and a cohesive style to protect, and holding that consistency across shots and campaigns is precisely what an artist-led workflow delivers and raw prompt tools do not.'),
     ('Can generative AI animation be used in documentaries?',
