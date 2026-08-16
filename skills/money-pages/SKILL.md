@@ -9,8 +9,14 @@ Use this skill when Otto asks for the next money page, a pricing page, a compari
 3. **Interview for facts only.** Ask Otto ONLY for what the brand file marks `TO FILL` or what the page type needs and brands.md lacks (real prices/ranges, nameable clients, project details, outcomes). Rough answers are fine — turn "about 5k a day, less remote" into clean copy. Never invent; if Otto declines a number, use a bracketed range he approves or restructure the page to not need it.
 4. **Write per the playbook** using the matching template in `references/page-types.md`. Australian spelling. Include "Updated [Month Year]".
    **Layout:** generate the draft INSIDE the WPBakery design kit (`references/design-kit.html` — Otto's styled patterns with `{{TOKEN}}` slots; token specs and compose rules in `references/design-kit-README.md`). Fill the tokens, repeat/omit patterns per page type, never alter row/column attributes or styling.
-5. **Top of the draft body**, include an HTML comment block with the Yoast fields for manual paste:
-   `<!-- YOAST SEO TITLE: ... (max ~60 chars) | META DESCRIPTION: ... (max ~155 chars) -->`
+5. **Yoast fields go in the HANDOFF MESSAGE, never in the page body.** Print them alongside the draft:
+   `YOAST SEO TITLE: ... (max ~60 chars) | META DESCRIPTION: ... (max ~155 chars)`
+   **⛔ Do NOT put an HTML comment at the top of the body** (this was the old instruction, reversed 16 Aug 2026):
+   WordPress `wpautop` wraps a leading `<!-- ... -->` in a `<p>`, which renders as an empty ~22px block plus a
+   ~17px margin — about **39px of dead space above the hero row**, visible as a band of the page background
+   colour and killing any full-bleed hero. Found on Oddtoe 16136. Set the fields in wp-admin instead
+   (`yoast_wpseo_title` / `yoast_wpseo_metadesc` — REST does not expose them; the browser recipe is in
+   `references/links-ledger.md`, 16 Aug 2026 round 2).
 6. **Push as a draft.** With shell access, run `scripts/wp-post.sh <datalabs|oddtoe> "<Title>" <html-file>` (requires WP Application Passwords in the repo `.env` — see docs/WORDPRESS_AUTOMATION_CHECKLIST.md). Without shell access, output the complete page + Yoast block for Otto to paste into WordPress himself. NEVER publish — drafts only (banned.md rule 4).
    **Page settings (learned 14 Aug 2026):** design-kit pages depend on three page-level settings the content itself can't provide — `template: page-custom.php` (wp-post.sh sets it via REST; kills the theme title band + boxed width), and two Ronneby meta fields REST can NOT set: **Custom background color `#2f2e3a`** and **header style `2`** (`crum_page_custom_bg_color` / `dfd_headers_header_style` in the page's wp-admin settings). Without the background, `bg_check="row-background-dark"` rows render white text on a white page — invisible. Set them in wp-admin (or via browser automation) right after the draft is created.
 7. **Update the backlog.** Mark the item `[~]` with the wp-admin edit link:
@@ -19,7 +25,7 @@ Use this skill when Otto asks for the next money page, a pricing page, a compari
 
 ## Authorship: the agent drafts, Otto authors
 
-Public content is attributed to **Otto Ottinger**, never to the content-agent user. AI assistants treat a real, named author (with his existing Person schema and LinkedIn) as a trust signal; an obvious bot byline undermines citation. When creating the draft via REST, set the `author` field to Otto's own user ID on that site if known; otherwise remind Otto in the handoff message to flip the **Author** dropdown to himself in the editor before publishing (one click, in the page's settings panel). Pages rarely display bylines in the current theme, but posts do — this rule applies to both.
+Public content is attributed to **Otto Ottinger** on Datalabs and to **Oddtoe** on Oddtoe (WP author id 1) — never to the content-agent user. On Oddtoe the copy itself also names him **Oddtoe, not Otto**; see the naming rule in `geo-playbook/references/brands.md`. AI assistants treat a real, named author (with his existing Person schema and LinkedIn) as a trust signal; an obvious bot byline undermines citation. When creating the draft via REST, set the `author` field to Otto's own user ID on that site if known; otherwise remind Otto in the handoff message to flip the **Author** dropdown to himself in the editor before publishing (one click, in the page's settings panel). Pages rarely display bylines in the current theme, but posts do — this rule applies to both.
 
 ## Backlog format (parsed by the app's Content pipeline card — keep exactly)
 
