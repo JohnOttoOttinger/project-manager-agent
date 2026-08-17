@@ -12,6 +12,7 @@ const expectedFiles = [
   "10-setup-local-task-data.json",
   "11-setup-sync-enabled-skills.json",
   "12-setup-signal-data.json",
+  "13-setup-lost-lead-data.json",
   "20-tool-list-tasks.json",
   "21-tool-create-task.json",
   "22-tool-update-task-status.json",
@@ -36,6 +37,11 @@ const expectedFiles = [
   "75-tool-start-enrichment.json",
   "76-internal-run-enrichment.json",
   "77-tool-get-enrichment.json",
+  "80-tool-list-lost-leads.json",
+  "81-tool-propose-log-lost-lead.json",
+  "82-tool-propose-lead-feedback.json",
+  "83-internal-write-lost-lead.json",
+  "84-internal-update-lost-lead.json",
   "90-debug-agent-health.json",
 ];
 const failures = [];
@@ -209,7 +215,7 @@ if (agentWorkflow) {
   );
   check(
     agentWorkflow.nodes.filter((node) => node.type !== "n8n-nodes-base.stickyNote")
-      .length <= 29,
+      .length <= 32,
     "Agent workflow must keep confirmation routing and tool wiring explainable",
   );
   check(
@@ -246,7 +252,7 @@ if (agentWorkflow) {
     "Validation: document count and text-size limits are missing",
   );
   check(
-    /'project-manager', 'sales', 'marketing', 'investment', 'bookkeeping'/.test(
+    /'project-manager', 'business-development', 'sales', 'marketing', 'investment', 'bookkeeping'/.test(
       validationCode,
     ) && /\.includes\(agentId\)/.test(validationCode),
     "Validation: active agent allow-list check is missing",
@@ -377,6 +383,9 @@ if (agentWorkflow) {
         "propose_update_prospects",
         "start_enrichment",
         "get_enrichment",
+        "list_lost_leads",
+        "log_lost_lead",
+        "record_lead_feedback",
       ]),
     "Agent: only the reviewed task and domain-research tools may be connected",
   );
@@ -1720,11 +1729,47 @@ if (confirmWorkflow) {
       JSON.stringify([
         "phase14ExecuteImportProspects",
         "phase15ExecuteUpdateProspects",
+        "phase16UpdateLostLead",
+        "phase16WriteLostLead",
         "phase4CreateTask",
         "phase4UpdateTaskStatus",
       ]),
-    "Confirmation may dispatch only the four reviewed confirmed-write workers",
+    "Confirmation may dispatch only the six reviewed confirmed-write workers",
   );
+}
+
+for (const [file, actionType] of [
+  ["81-tool-propose-log-lost-lead.json", "log_lost_lead"],
+  ["82-tool-propose-lead-feedback.json", "update_lost_lead"],
+]) {
+  const proposalWorkflow = workflows.get(file);
+  check(proposalWorkflow !== undefined, `${file}: missing lost-lead proposal workflow`);
+  if (proposalWorkflow) {
+    const httpNodes = proposalWorkflow.nodes.filter(
+      (node) => node.type === "n8n-nodes-base.httpRequest",
+    );
+    check(httpNodes.length === 0, `${file}: proposals must not call any HTTP endpoint`);
+    const tables = proposalWorkflow.nodes
+      .filter((node) => node.type === "n8n-nodes-base.dataTable")
+      .map((node) => node.parameters?.dataTableId?.value)
+      .sort();
+    check(
+      tables.every((table) => ["pending_actions", "tool_audit"].includes(table)),
+      `${file}: proposals may touch only pending_actions and tool_audit`,
+    );
+    const insert = proposalWorkflow.nodes.find(
+      (node) => node.name === "Insert Pending Action",
+    );
+    check(
+      insert?.parameters?.columns?.value?.actionType === actionType &&
+        insert?.parameters?.columns?.value?.status === "pending",
+      `${file}: the stored pending action must use actionType ${actionType}`,
+    );
+    const executes = proposalWorkflow.nodes.filter(
+      (node) => node.type === "n8n-nodes-base.executeWorkflow",
+    );
+    check(executes.length === 0, `${file}: proposals must never execute another workflow`);
+  }
 }
 
 const REVIEWED_SKILL_IDS = [
@@ -1735,6 +1780,7 @@ const REVIEWED_SKILL_IDS = [
   "domain-research",
   "paid-domain-research",
   "seo-article-writer",
+  "lost-lead-review",
 ];
 // Skills that ship switched off. A learner may enable any of them, so the
 // check below guarantees the reviewed set is still present and that nothing
@@ -1807,6 +1853,9 @@ check(
           "internal_background_only",
         ],
         ["get_seo_article", "read", "automatic"],
+        ["list_lost_leads", "read", "automatic"],
+        ["log_lost_lead", "write", "confirmation_required"],
+        ["record_lead_feedback", "write", "confirmation_required"],
       ]),
   "Tool policy must classify the reviewed task, research, and article tools",
 );

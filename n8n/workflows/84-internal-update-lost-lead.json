@@ -1,0 +1,435 @@
+{
+  "name": "84 - INTERNAL - update_lost_lead",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Bounded updater. Reachable only through 40 - CONFIRM - Task Write\nafter an exact confirmation. Update-only; no delete tool exists.",
+        "width": 440,
+        "height": 130
+      }
+    },
+    {
+      "id": "t0",
+      "name": "Tool Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "name": "proposedInputJson",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Validate Update Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst requestId = typeof $json.requestId === 'string' ? $json.requestId.trim() : '';\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet proposedInput = null;\nlet error = null;\n\nif (!uuidPattern.test(sessionId) || !uuidPattern.test(requestId)) {\n  error = { code: 'INVALID_REQUEST', message: 'The confirmed update is missing its session or request identifier.' };\n} else {\n  try {\n    proposedInput = JSON.parse(typeof $json.proposedInputJson === 'string' ? $json.proposedInputJson : '');\n  } catch {\n    error = { code: 'INVALID_STORED_PROPOSAL', message: 'The confirmed proposal could not be read.' };\n  }\n}\nif (!error && (typeof proposedInput !== 'object' || proposedInput === null ||\n    !/^LL-[0-9a-f]{6}$/.test(String(proposedInput.leadId ?? '')))) {\n  error = { code: 'INVALID_STORED_PROPOSAL', message: 'The confirmed proposal has no valid lead ID.' };\n}\n\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    requestId,\n    proposedInput: proposedInput ?? {},\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Input Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000161n9",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Find Lost Lead",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "lost_leads",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "leadId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Update Input').item.json.proposedInput.leadId }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n3",
+      "name": "Decide Update Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        -90
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Validate Update Input').first().json;\nconst rows = $input.all().map((item) => item.json).filter((row) => Number.isInteger(row.id));\nif (rows.length === 0) {\n  return [{\n    json: {\n      ...input,\n      update: false,\n      response: {\n        ok: false,\n        error: {\n          code: 'LEAD_NOT_FOUND',\n          message: `No lost lead matches ${input.proposedInput.leadId}. List the lost leads and use an exact lead ID.`\n        }\n      }\n    }\n  }];\n}\nconst existing = rows[0];\nif (String(existing.lastRequestId ?? '') === input.requestId) {\n  return [{\n    json: {\n      ...input,\n      update: false,\n      response: {\n        ok: true,\n        repeated: true,\n        lead: { leadId: String(existing.leadId ?? ''), company: String(existing.company ?? '') },\n        message: 'This confirmed feedback update was already applied. Nothing changed.'\n      }\n    }\n  }];\n}\nconst changes = {};\nconst proposed = input.proposedInput;\nif (typeof proposed.feedbackText === 'string' && proposed.feedbackText !== '') changes.feedbackText = proposed.feedbackText;\nif (typeof proposed.lossReasons === 'string' && proposed.lossReasons !== '') changes.lossReasons = proposed.lossReasons;\nif (typeof proposed.doorOpen === 'string' && proposed.doorOpen !== '' && proposed.doorOpen !== 'unknown') changes.doorOpen = proposed.doorOpen;\nif (typeof proposed.feedbackAskedAt === 'string' && proposed.feedbackAskedAt !== '') changes.feedbackAskedAt = proposed.feedbackAskedAt;\nif (typeof proposed.nextTouch === 'string' && proposed.nextTouch !== '') changes.nextTouch = proposed.nextTouch;\nreturn [{ json: { ...input, update: true, rowId: existing.id, changes } }];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "Update Row?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        -90
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000161n8",
+              "leftValue": "={{ $json.update === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Update Lost Lead",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -160
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "lost_leads",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "leadId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Update Input').item.json.proposedInput.leadId }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "lastRequestId": "={{ $('Validate Update Input').item.json.requestId }}",
+            "feedbackText": "={{ $('Decide Update Action').item.json.changes.feedbackText ?? $json.feedbackText }}",
+            "lossReasons": "={{ $('Decide Update Action').item.json.changes.lossReasons ?? $json.lossReasons }}",
+            "doorOpen": "={{ $('Decide Update Action').item.json.changes.doorOpen ?? $json.doorOpen }}",
+            "feedbackAskedAt": "={{ $('Decide Update Action').item.json.changes.feedbackAskedAt ?? $json.feedbackAskedAt }}",
+            "nextTouch": "={{ $('Decide Update Action').item.json.changes.nextTouch ?? $json.nextTouch }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "n5",
+      "name": "Shape Update Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "const decided = $('Decide Update Action').first().json;\nif (!Number.isInteger($json.id)) {\n  return {\n    json: {\n      ...decided,\n      response: {\n        ok: false,\n        error: {\n          code: 'LOST_LEAD_DATA_UNAVAILABLE',\n          message: 'The feedback update could not be saved. Ask for a new proposal.'\n        }\n      }\n    }\n  };\n}\nconst changed = Object.keys(decided.changes);\nreturn {\n  json: {\n    ...decided,\n    response: {\n      ok: true,\n      lead: { leadId: decided.proposedInput.leadId },\n      summary: `Lost lead ${decided.proposedInput.leadId} now records: ${changed.join(', ') || 'no field changes'}.`,\n      message: `Feedback for ${decided.proposedInput.leadId} was saved (${changed.join(', ') || 'no field changes'}).`\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "a1",
+      "name": "Prepare Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $json.response;\nconst proposedInput = $json.proposedInput ?? {};\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.requestId ?? ''),\n    toolName: 'update_lost_lead',\n    proposedInput: JSON.stringify(proposedInput),\n    result: JSON.stringify(response),\n    error: response?.ok === false ? String(response.error?.message ?? 'Tool call failed') : '',\n    response\n  }\n};"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Write Tool Audit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a3",
+      "name": "Return Tool Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Update Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Update Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Find Lost Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Lost Lead": {
+      "main": [
+        [
+          {
+            "node": "Decide Update Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Update Action": {
+      "main": [
+        [
+          {
+            "node": "Update Row?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Row?": {
+      "main": [
+        [
+          {
+            "node": "Update Lost Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lost Lead": {
+      "main": [
+        [
+          {
+            "node": "Shape Update Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Update Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001684",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "bounded_local_write"
+  },
+  "id": "phase16UpdateLostLead",
+  "tags": []
+}

@@ -1,0 +1,22 @@
+{
+  "_comment": "Terms and pages the Analytics agent alerts on. Edit freely — one line per item.",
+  "queries": [
+    "prop maker",
+    "prop makers",
+    "movie prop maker",
+    "film prop fabrication companies australia",
+    "prop fabricator",
+    "animation agency",
+    "animation agents",
+    "animation conferences",
+    "ai animation studio"
+  ],
+  "pages": [
+    "https://www.oddtoe.com/my-product/babbling-with-baobabs/",
+    "https://www.oddtoe.com/artist-designer/kinetic-sculptor/",
+    "https://www.oddtoe.com/artist-designer/installation-artist/",
+    "https://www.oddtoe.com/artist-designer/prop-designer-maker/",
+    "https://www.oddtoe.com/brand-activation-ideas/",
+    "https://www.oddtoe.com/what-is-generative-ai-animation/"
+  ]
+}

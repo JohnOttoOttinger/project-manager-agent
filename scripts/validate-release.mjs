@@ -256,7 +256,7 @@ check(
 const workflows = (
   await readdir(join(projectRoot, "n8n/workflows"), { withFileTypes: true })
 ).filter((entry) => entry.isFile() && entry.name.endsWith(".json"));
-check(workflows.length === 22, `Release must contain 22 workflows, found ${workflows.length}`);
+check(workflows.length === 36, `Release must contain 36 workflows, found ${workflows.length}`);
 
 if (failures.length > 0) {
   for (const failure of failures) {

@@ -1,0 +1,436 @@
+{
+  "name": "83 - INTERNAL - write_lost_lead",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Bounded writer. Reachable only through 40 - CONFIRM - Task Write\nafter an exact confirmation. Idempotent on requestId. Not model-callable.",
+        "width": 440,
+        "height": 130
+      }
+    },
+    {
+      "id": "t0",
+      "name": "Tool Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "name": "proposedInputJson",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Validate Write Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst requestId = typeof $json.requestId === 'string' ? $json.requestId.trim() : '';\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet proposedInput = null;\nlet error = null;\n\nif (!uuidPattern.test(sessionId) || !uuidPattern.test(requestId)) {\n  error = { code: 'INVALID_REQUEST', message: 'The confirmed write is missing its session or request identifier.' };\n} else {\n  try {\n    proposedInput = JSON.parse(typeof $json.proposedInputJson === 'string' ? $json.proposedInputJson : '');\n  } catch {\n    error = { code: 'INVALID_STORED_PROPOSAL', message: 'The confirmed proposal could not be read.' };\n  }\n}\nconst required = ['contactName', 'company', 'offer', 'source', 'enquiryDate', 'lostDate'];\nif (!error && (typeof proposedInput !== 'object' || proposedInput === null ||\n    !required.every((key) => typeof proposedInput[key] === 'string' && proposedInput[key].trim() !== ''))) {\n  error = { code: 'INVALID_STORED_PROPOSAL', message: 'The confirmed proposal is incomplete.' };\n}\n\nconst leadId = error ? '' : 'LL-' + Array.from({ length: 6 }, () => '0123456789abcdef'[Math.floor(Math.random() * 16)]).join('');\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    requestId,\n    leadId,\n    proposedInput: proposedInput ?? {},\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Input Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000161n9",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Find Existing Request",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "lost_leads",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "requestId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Write Input').item.json.requestId }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n3",
+      "name": "Decide Write Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        -90
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Validate Write Input').first().json;\nconst rows = $input.all().map((item) => item.json).filter((row) => Number.isInteger(row.id));\nif (rows.length > 0) {\n  const existing = rows[0];\n  return [{\n    json: {\n      ...input,\n      insert: false,\n      response: {\n        ok: true,\n        repeated: true,\n        lead: { leadId: String(existing.leadId ?? ''), company: String(existing.company ?? '') },\n        message: 'This confirmed lost lead was already recorded. Nothing changed.'\n      }\n    }\n  }];\n}\nreturn [{ json: { ...input, insert: true } }];"
+      }
+    },
+    {
+      "id": "n8",
+      "name": "Create New Row?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        680,
+        -90
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000161n8",
+              "leftValue": "={{ $json.insert === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Insert Lost Lead",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        900,
+        -160
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "lost_leads",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "requestId": "={{ $('Validate Write Input').item.json.requestId }}",
+            "lastRequestId": "={{ $('Validate Write Input').item.json.requestId }}",
+            "leadId": "={{ $('Validate Write Input').item.json.leadId }}",
+            "contactName": "={{ $('Validate Write Input').item.json.proposedInput.contactName }}",
+            "company": "={{ $('Validate Write Input').item.json.proposedInput.company }}",
+            "offer": "={{ $('Validate Write Input').item.json.proposedInput.offer }}",
+            "source": "={{ $('Validate Write Input').item.json.proposedInput.source }}",
+            "enquiryDate": "={{ $('Validate Write Input').item.json.proposedInput.enquiryDate }}",
+            "lostDate": "={{ $('Validate Write Input').item.json.proposedInput.lostDate }}",
+            "competitorsPresent": "={{ $('Validate Write Input').item.json.proposedInput.competitorsPresent }}",
+            "competitorNotes": "={{ $('Validate Write Input').item.json.proposedInput.competitorNotes }}",
+            "statedConcerns": "={{ $('Validate Write Input').item.json.proposedInput.statedConcerns }}",
+            "lossReasons": "={{ $('Validate Write Input').item.json.proposedInput.lossReasons }}",
+            "feedbackAskedAt": "",
+            "feedbackText": "",
+            "doorOpen": "={{ $('Validate Write Input').item.json.proposedInput.doorOpen }}",
+            "nextTouch": "={{ $('Validate Write Input').item.json.proposedInput.nextTouch }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "n5",
+      "name": "Shape Write Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Validate Write Input').first().json;\nif (!Number.isInteger($json.id)) {\n  return {\n    json: {\n      ...input,\n      response: {\n        ok: false,\n        error: {\n          code: 'LOST_LEAD_DATA_UNAVAILABLE',\n          message: 'The lost lead could not be saved. Run 13 - SETUP - Lost Lead Data, then ask for a new proposal.'\n        }\n      }\n    }\n  };\n}\nreturn {\n  json: {\n    ...input,\n    response: {\n      ok: true,\n      lead: { leadId: input.leadId, company: input.proposedInput.company, lostDate: input.proposedInput.lostDate },\n      summary: `Lost lead ${input.leadId} (${input.proposedInput.company}) is recorded.`,\n      message: `Lost lead ${input.leadId} for ${input.proposedInput.company} was saved.`\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "a1",
+      "name": "Prepare Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $json.response;\nconst proposedInput = $json.proposedInput ?? {};\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.requestId ?? ''),\n    toolName: 'write_lost_lead',\n    proposedInput: JSON.stringify(proposedInput),\n    result: JSON.stringify(response),\n    error: response?.ok === false ? String(response.error?.message ?? 'Tool call failed') : '',\n    response\n  }\n};"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Write Tool Audit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a3",
+      "name": "Return Tool Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Write Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Write Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Find Existing Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Existing Request": {
+      "main": [
+        [
+          {
+            "node": "Decide Write Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decide Write Action": {
+      "main": [
+        [
+          {
+            "node": "Create New Row?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create New Row?": {
+      "main": [
+        [
+          {
+            "node": "Insert Lost Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Lost Lead": {
+      "main": [
+        [
+          {
+            "node": "Shape Write Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Write Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001683",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "bounded_local_write"
+  },
+  "id": "phase16WriteLostLead",
+  "tags": []
+}
