@@ -118,3 +118,38 @@ the goal is knowing what is working.
 Every credential goes in `.env` (gitignored) or a file outside the repo,
 referenced by path. Read-only scopes wherever the API offers them. The agent has
 no business holding write access to money.
+
+---
+
+## Update — Gravity Forms REST enabled (17 Aug 2026)
+
+**Done.** `gf/v2` namespace now registered and returning data.
+
+- Enabled at Forms → Settings → REST API
+- The existing WordPress app password does **not** work: `otto-content-agent` is
+  an Editor with no `gravityforms_*` capabilities, so it gets `rest_forbidden`.
+  Rather than widen that account's role, a scoped key was created instead.
+- **Read-only** GF v2 API key, description "Analytics agent - read entries",
+  bound to the Oddtoe user. Stored in `.env` as `GF_ODDTOE_CONSUMER_KEY` /
+  `GF_ODDTOE_CONSUMER_SECRET`. It cannot write, delete or modify anything.
+
+### What it returns
+
+| | |
+|---|---|
+| Form 1 "Oddtoe Core Form" | **144 entries** |
+| Form 3 "Oddtoe Comic Inquiry" | 0 entries |
+| Date range | 2023-06-01 → 2026-08-15 |
+| Per entry | `date_created`, `ip`, field values, `form_id`, `id` |
+
+**Dates were not visible in the admin table** — this is genuinely new. Enquiry
+volume by month shows a clear ramp: 1 in March 2026, then 6, 9, **13**, 12 —
+June and July are the busiest months on record, roughly triple the winter rate.
+That trend was invisible before today.
+
+Endpoint shape:
+
+    GET /wp-json/gf/v2/forms
+    GET /wp-json/gf/v2/forms/1/entries?paging[page_size]=200
+
+Basic auth with the consumer key and secret.
