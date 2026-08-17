@@ -23,7 +23,34 @@ A theme appears to carry:
 - **tactical tasks** — a checkbox list underneath it
 - **attribution** — which work, done anywhere in the app, counted toward it
 
-## The design tension to resolve first
+## DECIDED (Otto, 17 Aug 2026)
+
+> "Strategy as a layer. I see the Analytics area being the reporting tab or area."
+
+**Strategy owns intent. Analytics owns measurement.** Strategy defines themes —
+outcome, budget, surfaces, tasks — and other agents attach work to them.
+Analytics reports what those themes are returning, because it is the only part
+of the app that reads real numbers.
+
+This resolves the tension below in favour of option 1. Option 2 is dead.
+
+### What that buys us
+
+**The Analytics watchlist is already a proto-theme.**
+`skills/analytics/references/watchlist.json` holds a list of queries and pages to
+track. A theme is that, plus a name, an outcome, a budget and tasks. So the
+migration is: themes become the source, and the global watchlist becomes derived
+from the union of active themes' surfaces. Analytics barely changes — it reports
+per theme instead of once globally.
+
+**Attribution should be by declared surface, not manual tagging.**
+A theme names the pages, queries and campaigns that belong to it; anything
+happening on those counts automatically. A solo operator will not reliably tag
+every action, and a tracker that depends on remembering to tag decays within a
+fortnight. Manual attachment stays as the fallback for work with no URL — a
+pitch, a call, a lost lead.
+
+## The design tension to resolve first — RESOLVED, see above
 
 **Themes are cross-cutting, but the app is organised by agent.**
 
