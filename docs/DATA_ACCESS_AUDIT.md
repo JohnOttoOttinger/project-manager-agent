@@ -153,3 +153,40 @@ Endpoint shape:
     GET /wp-json/gf/v2/forms/1/entries?paging[page_size]=200
 
 Basic auth with the consumer key and secret.
+
+---
+
+## Update — WooCommerce and Ahrefs (17 Aug 2026)
+
+### WooCommerce
+
+| Endpoint | Access |
+|---|---|
+| `wc/store/v1/products` | **Public, no auth** — products readable immediately |
+| `wp/v2/product` | Works with the existing WP app password |
+| `wc/v3/*` (orders, customers, reports) | **403** — needs a WooCommerce consumer key or `manage_woocommerce` |
+
+No WC key was created: see `ODDTOE_STORE_AUDIT.md` — there is one order in the
+store's history and it is Otto's own 2021 test. Nothing to read.
+
+### Ahrefs
+
+Otto is on **Ahrefs Webmaster Tools**, the free tier (the dashboard shows an
+"Upgrade" prompt). **The Ahrefs API is not available on free plans**, so there is
+no automatic path today. Access tiers:
+
+| Route | Tier | Notes |
+|---|---|---|
+| CSV export from any report | **Manual** | Works now. Otto exports, agent reads the file |
+| Reading the dashboard in his browser | **Assisted** | Works now, agent drives it while he's logged in |
+| Ahrefs API v3 | **Automatic** | Paid tier only. Verify current pricing before recommending — historically well beyond a solo operator's justification |
+
+**What Ahrefs adds that Search Console cannot:** backlinks and referring domains,
+competitor keywords and traffic, keyword difficulty and volume, content gaps.
+Search Console only ever describes Otto's own site. They are complementary rather
+than overlapping, so Ahrefs is worth reading — just not worth an API bill yet.
+
+**Flag from the dashboard:** Oddtoe shows **Domain Rating 0 with 433 referring
+domains** (+144 recently). That combination usually means a large volume of
+low-quality or spam links rather than earned ones. Worth investigating before
+treating referring-domain growth as a good sign.
