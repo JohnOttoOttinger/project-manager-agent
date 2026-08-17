@@ -51,8 +51,21 @@ work out; don't rediscover it.
 **Known 404s on this plan:** `referring-domains`. Use **Backlinks** instead — it
 carries the same information with more detail, grouped by linking page.
 
-**Content gap** has no stable URL; it needs competitor targets selected in the
-form. Reach it from the Site Explorer sidebar under Competitive analysis.
+## Site Explorer only works on oddtoe.com (verified 17 Aug 2026)
+
+Any target Otto does not own returns **"Domain not verified — you can only check
+verified domains and their subdomains on a free plan."** Tested against
+`eness.com` on both `overview` and `organic-keywords`, with and without the
+`%2F` trailing slash.
+
+**So competitor keywords, competitor traffic and the Content gap report are all
+unavailable on this plan.** The Content gap row in the table above is aspirational
+— it needs a paid month. Don't burn time hunting for a URL that works; there
+isn't one.
+
+What replaces it: read the competitors' own sitemaps and pages directly. That
+gives what they publish and how they position, though not what they rank for.
+Worked example in `ahrefs/2026-08-17-content-gap.md`.
 
 ## How to ask Otto
 
