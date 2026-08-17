@@ -1,0 +1,203 @@
+{
+  "name": "13 - SETUP - Lost Lead Data",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Creates the lost_leads Data Table (idempotent, no sample rows).\nRun once from here or through the temporary setup-lost-lead-data webhook.",
+        "width": 420,
+        "height": 130
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Run Setup",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "n2",
+      "name": "Temporary Setup Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -420,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "setup-lost-lead-data",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "41000000-0000-4000-8000-000000001613"
+    },
+    {
+      "id": "n3",
+      "name": "Create Lost Leads Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -180,
+        90
+      ],
+      "parameters": {
+        "resource": "table",
+        "operation": "create",
+        "tableName": "lost_leads",
+        "columns": {
+          "column": [
+            {
+              "name": "requestId",
+              "type": "string"
+            },
+            {
+              "name": "lastRequestId",
+              "type": "string"
+            },
+            {
+              "name": "leadId",
+              "type": "string"
+            },
+            {
+              "name": "contactName",
+              "type": "string"
+            },
+            {
+              "name": "company",
+              "type": "string"
+            },
+            {
+              "name": "offer",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            },
+            {
+              "name": "enquiryDate",
+              "type": "string"
+            },
+            {
+              "name": "lostDate",
+              "type": "string"
+            },
+            {
+              "name": "competitorsPresent",
+              "type": "string"
+            },
+            {
+              "name": "competitorNotes",
+              "type": "string"
+            },
+            {
+              "name": "statedConcerns",
+              "type": "string"
+            },
+            {
+              "name": "lossReasons",
+              "type": "string"
+            },
+            {
+              "name": "feedbackAskedAt",
+              "type": "string"
+            },
+            {
+              "name": "feedbackText",
+              "type": "string"
+            },
+            {
+              "name": "doorOpen",
+              "type": "string"
+            },
+            {
+              "name": "nextTouch",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "createIfNotExists": true
+        }
+      }
+    },
+    {
+      "id": "n4",
+      "name": "Setup Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        60,
+        90
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: { ok: true, message: 'The lost-lead table is ready.' } }];"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Setup": {
+      "main": [
+        [
+          {
+            "node": "Create Lost Leads Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Temporary Setup Webhook": {
+      "main": [
+        [
+          {
+            "node": "Create Lost Leads Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Lost Leads Table": {
+      "main": [
+        [
+          {
+            "node": "Setup Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001613",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "setup"
+  },
+  "id": "phase16LostLeadSetup",
+  "tags": []
+}

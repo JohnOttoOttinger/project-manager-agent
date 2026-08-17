@@ -1,0 +1,402 @@
+{
+  "name": "81 - TOOL - propose_log_lost_lead",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Proposal-only: validates a lost-lead record and stores it as a\npending action behind the exact-confirmation gate. Never writes a lead.",
+        "width": 420,
+        "height": 130
+      }
+    },
+    {
+      "id": "t0",
+      "name": "Tool Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "contactName",
+              "type": "string"
+            },
+            {
+              "name": "company",
+              "type": "string"
+            },
+            {
+              "name": "offer",
+              "type": "string"
+            },
+            {
+              "name": "source",
+              "type": "string"
+            },
+            {
+              "name": "enquiryDate",
+              "type": "string"
+            },
+            {
+              "name": "lostDate",
+              "type": "string"
+            },
+            {
+              "name": "competitorsPresent",
+              "type": "string"
+            },
+            {
+              "name": "competitorNotes",
+              "type": "string"
+            },
+            {
+              "name": "statedConcerns",
+              "type": "string"
+            },
+            {
+              "name": "lossReasons",
+              "type": "string"
+            },
+            {
+              "name": "doorOpen",
+              "type": "string"
+            },
+            {
+              "name": "nextTouch",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Validate Proposal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const text = (key, fallback = '') => typeof $json[key] === 'string' ? $json[key].trim() : fallback;\nconst lower = (key, fallback) => {\n  const value = text(key);\n  return value === '' ? fallback : value.toLowerCase();\n};\nconst sessionId = text('sessionId');\nconst contactName = text('contactName');\nconst company = text('company');\nconst offer = text('offer');\nconst source = lower('source', 'other');\nconst enquiryDate = text('enquiryDate');\nconst lostDate = text('lostDate');\nconst competitorsPresent = lower('competitorsPresent', 'unknown');\nconst competitorNotes = text('competitorNotes');\nconst statedConcerns = text('statedConcerns');\nconst lossReasonsRaw = lower('lossReasons', 'unknown');\nconst doorOpen = lower('doorOpen', 'unknown');\nconst nextTouch = text('nextTouch');\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;\nconst sources = ['web-form', 'referral', 'outreach', 'repeat-client', 'other'];\nconst yesNoUnknown = ['yes', 'no', 'unknown'];\nconst reasonList = ['price', 'timing', 'location', 'scope', 'relationship', 'in-house', 'unknown'];\nconst lossReasons = lossReasonsRaw.split(',').map((value) => value.trim()).filter(Boolean);\nconst validDate = (value) => datePattern.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));\nconst proposedInput = {\n  contactName, company, offer, source, enquiryDate, lostDate,\n  competitorsPresent, competitorNotes, statedConcerns,\n  lossReasons: lossReasons.join(','), doorOpen, nextTouch\n};\nlet error = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The lost-lead proposal needs a valid conversation session.' };\n} else if (contactName.length === 0 || contactName.length > 80) {\n  error = { code: 'INVALID_CONTACT', message: 'Contact name is required and must be 80 characters or fewer.' };\n} else if (company.length === 0 || company.length > 120) {\n  error = { code: 'INVALID_COMPANY', message: 'Company is required and must be 120 characters or fewer.' };\n} else if (offer.length === 0 || offer.length > 200) {\n  error = { code: 'INVALID_OFFER', message: 'The offer summary is required and must be 200 characters or fewer.' };\n} else if (!sources.includes(source)) {\n  error = { code: 'INVALID_SOURCE', message: `Source must be one of: ${sources.join(', ')}.` };\n} else if (!validDate(enquiryDate)) {\n  error = { code: 'INVALID_ENQUIRY_DATE', message: 'Enquiry date must use YYYY-MM-DD.' };\n} else if (!validDate(lostDate)) {\n  error = { code: 'INVALID_LOST_DATE', message: 'Lost date must use YYYY-MM-DD.' };\n} else if (lostDate < enquiryDate) {\n  error = { code: 'INVALID_DATE_ORDER', message: 'The lost date cannot be before the enquiry date.' };\n} else if (!yesNoUnknown.includes(competitorsPresent)) {\n  error = { code: 'INVALID_COMPETITORS', message: 'Competitors present must be yes, no, or unknown.' };\n} else if (competitorNotes.length > 500) {\n  error = { code: 'NOTES_TOO_LONG', message: 'Competitor notes must be 500 characters or fewer.' };\n} else if (statedConcerns.length > 500) {\n  error = { code: 'CONCERNS_TOO_LONG', message: 'Stated concerns must be 500 characters or fewer.' };\n} else if (lossReasons.length === 0 || !lossReasons.every((reason) => reasonList.includes(reason))) {\n  error = { code: 'INVALID_REASONS', message: `Each loss reason must be one of: ${reasonList.join(', ')}.` };\n} else if (!yesNoUnknown.includes(doorOpen)) {\n  error = { code: 'INVALID_DOOR_OPEN', message: 'Door open must be yes, no, or unknown.' };\n} else if (nextTouch !== '' && !validDate(nextTouch)) {\n  error = { code: 'INVALID_NEXT_TOUCH', message: 'The next-touch date must use YYYY-MM-DD or be empty.' };\n}\n\nconst actionId = error ? '' : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => { const random = Math.floor(Math.random() * 16); const value = character === 'x' ? random : (random & 0x3) | 0x8; return value.toString(16); });\nconst confirmationText = error ? '' : `CONFIRM ${actionId.replaceAll('-', '').slice(-8).toUpperCase()}`;\nconst expiresAt = error ? '' : new Date(Date.now() + 5 * 60 * 1000).toISOString();\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    actionId,\n    actionType: 'log_lost_lead',\n    proposedInput,\n    confirmationText,\n    expiresAt,\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Proposal Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000160n9",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Supersede Older Proposals",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sessionId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Proposal').item.json.sessionId }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "superseded",
+            "consumedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n3",
+      "name": "Insert Pending Action",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        460,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actionId": "={{ $('Validate Proposal').item.json.actionId }}",
+            "sessionId": "={{ $('Validate Proposal').item.json.sessionId }}",
+            "actionType": "log_lost_lead",
+            "proposedInput": "={{ JSON.stringify($('Validate Proposal').item.json.proposedInput) }}",
+            "confirmationText": "={{ $('Validate Proposal').item.json.confirmationText }}",
+            "status": "pending",
+            "expiresAt": "={{ $('Validate Proposal').item.json.expiresAt }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "n4",
+      "name": "Shape Proposal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -90
+      ],
+      "parameters": {
+        "jsCode": "const proposal = $('Validate Proposal').first().json;\nif (!Number.isInteger($json.id)) {\n  return {\n    json: {\n      ...proposal,\n      response: {\n        ok: false,\n        error: {\n          code: 'CONFIRMATION_DATA_UNAVAILABLE',\n          message: 'The proposal could not be saved. Rerun local setup, then try again.'\n        }\n      }\n    }\n  };\n}\nreturn {\n  json: {\n    ...proposal,\n    response: {\n      ok: true,\n      confirmationRequired: true,\n      action: { type: 'log_lost_lead', arguments: proposal.proposedInput },\n      confirmation: {\n        phrase: proposal.confirmationText,\n        expiresAt: proposal.expiresAt\n      },\n      message: `No record changed. Ask the user to reply with exactly \"${proposal.confirmationText}\" within five minutes.`\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "a1",
+      "name": "Prepare Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $json.response;\nconst proposedInput = $json.proposedInput ?? {};\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.actionId ?? $json.requestId ?? ''),\n    toolName: 'log_lost_lead_proposal',\n    proposedInput: JSON.stringify(proposedInput),\n    result: JSON.stringify(response),\n    error: response?.ok === false ? String(response.error?.message ?? 'Tool call failed') : '',\n    response\n  }\n};"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Write Tool Audit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a3",
+      "name": "Return Tool Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Proposal": {
+      "main": [
+        [
+          {
+            "node": "Proposal Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proposal Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Supersede Older Proposals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supersede Older Proposals": {
+      "main": [
+        [
+          {
+            "node": "Insert Pending Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Pending Action": {
+      "main": [
+        [
+          {
+            "node": "Shape Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Proposal": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001681",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "proposal"
+  },
+  "id": "phase16ProposeLogLostLead",
+  "tags": []
+}

@@ -1,0 +1,306 @@
+{
+  "name": "80 - TOOL - list_lost_leads",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Read-only lost-lead list with small aggregates.\nFilters: company substring, one loss reason, since date.",
+        "width": 420,
+        "height": 130
+      }
+    },
+    {
+      "id": "t0",
+      "name": "Tool Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "company",
+              "type": "string"
+            },
+            {
+              "name": "lossReason",
+              "type": "string"
+            },
+            {
+              "name": "since",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Validate List Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst company = typeof $json.company === 'string' ? $json.company.trim() : '';\nconst lossReason = typeof $json.lossReason === 'string' && $json.lossReason.trim() !== ''\n  ? $json.lossReason.trim().toLowerCase()\n  : 'all';\nconst since = typeof $json.since === 'string' ? $json.since.trim() : '';\nconst proposedInput = { sessionId, company, lossReason, since };\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst reasons = ['all', 'price', 'timing', 'location', 'scope', 'relationship', 'in-house', 'unknown'];\nconst datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;\nlet error = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The lost-lead request needs a valid conversation session.' };\n} else if (!reasons.includes(lossReason)) {\n  error = { code: 'INVALID_REASON', message: `Loss reason must be one of: ${reasons.join(', ')}.` };\n} else if (since !== '' && (!datePattern.test(since) || Number.isNaN(Date.parse(`${since}T00:00:00Z`)))) {\n  error = { code: 'INVALID_SINCE', message: 'The since filter must use YYYY-MM-DD or be empty.' };\n}\n\nreturn {\n  json: {\n    valid: error === null,\n    sessionId, company, lossReason, since, proposedInput,\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Input Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000160n9",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Read Lost Leads",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "lost_leads",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": []
+        },
+        "returnAll": false,
+        "limit": 200,
+        "orderBy": true,
+        "orderByColumn": "createdAt",
+        "orderByDirection": "ASC"
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n3",
+      "name": "Shape List Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        -90
+      ],
+      "parameters": {
+        "jsCode": "const input = $('Validate List Input').first().json;\nconst rows = $input.all().map((item) => item.json);\nconst dataError = rows.find((row) => typeof row.error === 'string' && row.error !== '');\n\nif (dataError) {\n  return [{\n    json: {\n      ...input,\n      response: {\n        ok: false,\n        error: {\n          code: 'LOST_LEAD_DATA_UNAVAILABLE',\n          message: 'Lost-lead data is not ready. Run 13 - SETUP - Lost Lead Data, then try again.'\n        }\n      }\n    }\n  }];\n}\n\nconst companyFilter = input.company.toLowerCase();\nconst leads = rows\n  .filter((row) => Number.isInteger(row.id))\n  .filter((row) => companyFilter === '' || String(row.company ?? '').toLowerCase().includes(companyFilter))\n  .filter((row) => input.lossReason === 'all' || String(row.lossReasons ?? '').split(',').map((value) => value.trim()).includes(input.lossReason))\n  .filter((row) => input.since === '' || String(row.lostDate ?? '') >= input.since)\n  .map((row) => ({\n    leadId: String(row.leadId ?? ''),\n    contactName: String(row.contactName ?? ''),\n    company: String(row.company ?? ''),\n    offer: String(row.offer ?? ''),\n    source: String(row.source ?? ''),\n    enquiryDate: String(row.enquiryDate ?? ''),\n    lostDate: String(row.lostDate ?? ''),\n    competitorsPresent: String(row.competitorsPresent ?? 'unknown'),\n    competitorNotes: String(row.competitorNotes ?? ''),\n    statedConcerns: String(row.statedConcerns ?? ''),\n    lossReasons: String(row.lossReasons ?? 'unknown'),\n    feedbackAskedAt: String(row.feedbackAskedAt ?? ''),\n    feedbackText: String(row.feedbackText ?? ''),\n    doorOpen: String(row.doorOpen ?? 'unknown'),\n    nextTouch: String(row.nextTouch ?? ''),\n    updatedAt: row.updatedAt\n  }))\n  .sort((a, b) => (a.lostDate < b.lostDate ? 1 : -1));\n\nconst reasonCounts = {};\nlet withCompetitors = 0;\nlet withFeedback = 0;\nfor (const lead of leads) {\n  for (const reason of lead.lossReasons.split(',').map((value) => value.trim()).filter(Boolean)) {\n    reasonCounts[reason] = (reasonCounts[reason] ?? 0) + 1;\n  }\n  if (lead.competitorsPresent === 'yes') withCompetitors += 1;\n  if (lead.feedbackText !== '') withFeedback += 1;\n}\n\nreturn [{\n  json: {\n    ...input,\n    response: {\n      ok: true,\n      leads,\n      totals: {\n        count: leads.length,\n        byLossReason: reasonCounts,\n        withCompetitorsPresent: withCompetitors,\n        withFeedbackRecorded: withFeedback,\n        patternNoteThreshold: 5\n      },\n      message: leads.length === 0\n        ? 'No lost leads are recorded yet.'\n        : `${leads.length} lost lead(s) on file.`\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "a1",
+      "name": "Prepare Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $json.response;\nconst proposedInput = $json.proposedInput ?? {};\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.actionId ?? $json.requestId ?? ''),\n    toolName: 'list_lost_leads',\n    proposedInput: JSON.stringify(proposedInput),\n    result: JSON.stringify(response),\n    error: response?.ok === false ? String(response.error?.message ?? 'Tool call failed') : '',\n    response\n  }\n};"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Write Tool Audit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a3",
+      "name": "Return Tool Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate List Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate List Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read Lost Leads",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lost Leads": {
+      "main": [
+        [
+          {
+            "node": "Shape List Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape List Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001680",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "read"
+  },
+  "id": "phase16ListLostLeads",
+  "tags": []
+}

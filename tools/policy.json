@@ -100,6 +100,32 @@
       "workflowId": "phase13GetSeoArticle"
     },
     {
+      "id": "list_lost_leads",
+      "risk": "read",
+      "available": true,
+      "modelCallable": true,
+      "mode": "automatic",
+      "workflowId": "phase16ListLostLeads"
+    },
+    {
+      "id": "log_lost_lead",
+      "risk": "write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "confirmation_required",
+      "proposalWorkflowId": "phase16ProposeLogLostLead",
+      "executionWorkflowId": "phase16WriteLostLead"
+    },
+    {
+      "id": "record_lead_feedback",
+      "risk": "write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "confirmation_required",
+      "proposalWorkflowId": "phase16ProposeLeadFeedback",
+      "executionWorkflowId": "phase16UpdateLostLead"
+    },
+    {
       "id": "delete_task",
       "risk": "destructive",
       "available": false,

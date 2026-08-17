@@ -127,12 +127,12 @@ export async function compileSkills(skillsDirectory = defaultSkillsDirectory) {
 
     const instructions = (await readFile(join(skillDirectory, "SKILL.md"), "utf8"))
       .trim();
-    // 12,000 rather than the template's 8,000: this fork's own skills (for
-    // example money-pages) legitimately run a little longer, and the combined
+    // 24,000 rather than the template's 8,000: this fork's own skills (for
+    // example money-pages) legitimately run longer, and the combined
     // bundle stays far below maxCombinedInstructions either way.
-    if (instructions.length === 0 || instructions.length > 12_000) {
+    if (instructions.length === 0 || instructions.length > 24_000) {
       throw new Error(
-        `${join(skillDirectory, "SKILL.md")}: instructions must contain 1-12,000 characters`,
+        `${join(skillDirectory, "SKILL.md")}: instructions must contain 1-24,000 characters`,
       );
     }
 

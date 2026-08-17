@@ -20,6 +20,7 @@ Run `diagnose.command` on macOS or `diagnose-windows.cmd` on Windows first. It d
 | Claude returns a credit/rate error | API billing or workspace limit | Check the Anthropic Console balance and limits |
 | Plain `yes` does not create a task | Expected safety behaviour | Send the exact, current `CONFIRM XXXXXXXX` phrase |
 | A skill edit has no effect | Bundle was not synced or conversation memory is old | Run the skill-sync helper and start a new conversation |
+| A lost-lead tool says its data is not ready | The lost_leads table was never created | Run `13 - SETUP - Lost Lead Data` in n8n once, then retry |
 | Data vanished after reset | Reset removed the local data folder | Restore the latest complete private backup |
 | `.command` is blocked on macOS | Gatekeeper has not approved that local script | Control-click it, choose **Open**, then confirm |
 | A `.cmd` window closes or reports an execution error | A download, managed-device, or project script failure | Rerun it and read the first red or `[!!]` line |

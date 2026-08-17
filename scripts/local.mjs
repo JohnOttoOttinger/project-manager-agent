@@ -84,6 +84,7 @@ const workflowIds = {
   checklist: "phase6LearnerChecklist",
   taskSetup: "phase4TaskSetup",
   skillSync: "phase5SyncEnabledSkills",
+  lostLeadSetup: "phase16LostLeadSetup",
   tools: [
     "phase4ListTasks",
     "phase4CreateTask",
@@ -108,6 +109,11 @@ const workflowIds = {
     "phase15StartEnrichment",
     "phase15RunEnrichment",
     "phase15GetEnrichment",
+    "phase16ListLostLeads",
+    "phase16ProposeLogLostLead",
+    "phase16ProposeLeadFeedback",
+    "phase16WriteLostLead",
+    "phase16UpdateLostLead",
   ],
 };
 
@@ -139,6 +145,12 @@ const exportedWorkflowFiles = [
   ["phase15StartEnrichment", "75-tool-start-enrichment.json"],
   ["phase15RunEnrichment", "76-internal-run-enrichment.json"],
   ["phase15GetEnrichment", "77-tool-get-enrichment.json"],
+  ["phase16LostLeadSetup", "13-setup-lost-lead-data.json"],
+  ["phase16ListLostLeads", "80-tool-list-lost-leads.json"],
+  ["phase16ProposeLogLostLead", "81-tool-propose-log-lost-lead.json"],
+  ["phase16ProposeLeadFeedback", "82-tool-propose-lead-feedback.json"],
+  ["phase16WriteLostLead", "83-internal-write-lost-lead.json"],
+  ["phase16UpdateLostLead", "84-internal-update-lost-lead.json"],
   ["phase3AgentHealth", "90-debug-agent-health.json"],
 ];
 
@@ -878,7 +890,7 @@ async function importReviewedWorkflows() {
   const published = [];
   let groupedIntoFolders = false;
   try {
-    for (const id of [workflowIds.taskSetup, workflowIds.skillSync]) {
+    for (const id of [workflowIds.taskSetup, workflowIds.skillSync, workflowIds.lostLeadSetup]) {
       n8nCliOrThrow(["publish:workflow", `--id=${id}`], `Publishing ${id}`);
       published.push(id);
     }
@@ -892,6 +904,13 @@ async function importReviewedWorkflows() {
     if (!setupResponse.body.includes('"ok":true')) {
       throw new Error(
         `Local task setup returned an unexpected response: ${setupResponse.body}`,
+      );
+    }
+
+    const lostLeadSetupResponse = await postWebhook("setup-lost-lead-data", "{}");
+    if (!lostLeadSetupResponse.body.includes('"ok":true')) {
+      throw new Error(
+        `Lost-lead setup returned an unexpected response: ${lostLeadSetupResponse.body}`,
       );
     }
 

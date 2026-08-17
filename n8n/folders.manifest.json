@@ -75,8 +75,20 @@
       "workflows": [
         "10-setup-local-task-data.json",
         "11-setup-sync-enabled-skills.json",
+        "13-setup-lost-lead-data.json",
         "12-setup-signal-data.json",
         "90-debug-agent-health.json"
+      ]
+    },
+    {
+      "id": "skill-business-development",
+      "name": "6. Business development",
+      "workflows": [
+        "80-tool-list-lost-leads.json",
+        "81-tool-propose-log-lost-lead.json",
+        "82-tool-propose-lead-feedback.json",
+        "83-internal-write-lost-lead.json",
+        "84-internal-update-lost-lead.json"
       ]
     }
   ]

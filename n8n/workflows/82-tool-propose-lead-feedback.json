@@ -1,0 +1,378 @@
+{
+  "name": "82 - TOOL - propose_lead_feedback",
+  "nodes": [
+    {
+      "id": "s0",
+      "name": "Explanation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -460,
+        -260
+      ],
+      "parameters": {
+        "content": "Proposal-only: records prospect feedback against an existing lost\nlead behind the exact-confirmation gate. Update-only; no delete exists.",
+        "width": 420,
+        "height": 130
+      }
+    },
+    {
+      "id": "t0",
+      "name": "Tool Input",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -420,
+        0
+      ],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "leadId",
+              "type": "string"
+            },
+            {
+              "name": "feedbackText",
+              "type": "string"
+            },
+            {
+              "name": "lossReasons",
+              "type": "string"
+            },
+            {
+              "name": "doorOpen",
+              "type": "string"
+            },
+            {
+              "name": "feedbackAskedAt",
+              "type": "string"
+            },
+            {
+              "name": "nextTouch",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "n1",
+      "name": "Validate Proposal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const text = (key) => typeof $json[key] === 'string' ? $json[key].trim() : '';\nconst lower = (key, fallback) => {\n  const value = text(key);\n  return value === '' ? fallback : value.toLowerCase();\n};\nconst sessionId = text('sessionId');\nconst leadId = text('leadId');\nconst feedbackText = text('feedbackText');\nconst lossReasonsRaw = lower('lossReasons', 'unknown');\nconst doorOpen = lower('doorOpen', 'unknown');\nconst feedbackAskedAt = text('feedbackAskedAt');\nconst nextTouch = text('nextTouch');\nconst uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nconst datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;\nconst reasonList = ['price', 'timing', 'location', 'scope', 'relationship', 'in-house', 'unknown'];\nconst yesNoUnknown = ['yes', 'no', 'unknown'];\nconst lossReasons = lossReasonsRaw.split(',').map((value) => value.trim()).filter(Boolean);\nconst validDate = (value) => datePattern.test(value) && !Number.isNaN(Date.parse(`${value}T00:00:00Z`));\nconst proposedInput = {\n  leadId, feedbackText, lossReasons: lossReasons.join(','),\n  doorOpen, feedbackAskedAt, nextTouch\n};\nlet error = null;\n\nif (!uuidPattern.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'The feedback proposal needs a valid conversation session.' };\n} else if (!/^LL-[0-9a-f]{6}$/.test(leadId)) {\n  error = { code: 'INVALID_LEAD_ID', message: 'The lead ID must look like LL-1a2b3c. List the lost leads to find it.' };\n} else if (feedbackText.length === 0 && feedbackAskedAt === '' && nextTouch === '') {\n  error = { code: 'EMPTY_UPDATE', message: 'Provide feedback text, a feedback-asked date, or a next-touch date.' };\n} else if (feedbackText.length > 1000) {\n  error = { code: 'FEEDBACK_TOO_LONG', message: 'Feedback text must be 1,000 characters or fewer.' };\n} else if (lossReasons.length === 0 || !lossReasons.every((reason) => reasonList.includes(reason))) {\n  error = { code: 'INVALID_REASONS', message: `Each loss reason must be one of: ${reasonList.join(', ')}.` };\n} else if (!yesNoUnknown.includes(doorOpen)) {\n  error = { code: 'INVALID_DOOR_OPEN', message: 'Door open must be yes, no, or unknown.' };\n} else if (feedbackAskedAt !== '' && !validDate(feedbackAskedAt)) {\n  error = { code: 'INVALID_ASKED_DATE', message: 'The feedback-asked date must use YYYY-MM-DD or be empty.' };\n} else if (nextTouch !== '' && !validDate(nextTouch)) {\n  error = { code: 'INVALID_NEXT_TOUCH', message: 'The next-touch date must use YYYY-MM-DD or be empty.' };\n}\n\nconst actionId = error ? '' : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => { const random = Math.floor(Math.random() * 16); const value = character === 'x' ? random : (random & 0x3) | 0x8; return value.toString(16); });\nconst confirmationText = error ? '' : `CONFIRM ${actionId.replaceAll('-', '').slice(-8).toUpperCase()}`;\nconst expiresAt = error ? '' : new Date(Date.now() + 5 * 60 * 1000).toISOString();\nreturn {\n  json: {\n    valid: error === null,\n    sessionId,\n    actionId,\n    actionType: 'update_lost_lead',\n    proposedInput,\n    confirmationText,\n    expiresAt,\n    ...(error ? { response: { ok: false, error } } : {})\n  }\n};"
+      }
+    },
+    {
+      "id": "n9",
+      "name": "Proposal Is Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        20,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "54000000-0000-4000-8000-0000000160n9",
+              "leftValue": "={{ $json.valid === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n2",
+      "name": "Supersede Older Proposals",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "sessionId",
+              "condition": "eq",
+              "keyValue": "={{ $('Validate Proposal').item.json.sessionId }}"
+            },
+            {
+              "keyName": "status",
+              "condition": "eq",
+              "keyValue": "pending"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "status": "superseded",
+            "consumedAt": "={{ $now.toISO() }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "n3",
+      "name": "Insert Pending Action",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        460,
+        -90
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pending_actions",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "actionId": "={{ $('Validate Proposal').item.json.actionId }}",
+            "sessionId": "={{ $('Validate Proposal').item.json.sessionId }}",
+            "actionType": "update_lost_lead",
+            "proposedInput": "={{ JSON.stringify($('Validate Proposal').item.json.proposedInput) }}",
+            "confirmationText": "={{ $('Validate Proposal').item.json.confirmationText }}",
+            "status": "pending",
+            "expiresAt": "={{ $('Validate Proposal').item.json.expiresAt }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "n4",
+      "name": "Shape Proposal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        -90
+      ],
+      "parameters": {
+        "jsCode": "const proposal = $('Validate Proposal').first().json;\nif (!Number.isInteger($json.id)) {\n  return {\n    json: {\n      ...proposal,\n      response: {\n        ok: false,\n        error: {\n          code: 'CONFIRMATION_DATA_UNAVAILABLE',\n          message: 'The proposal could not be saved. Rerun local setup, then try again.'\n        }\n      }\n    }\n  };\n}\nreturn {\n  json: {\n    ...proposal,\n    response: {\n      ok: true,\n      confirmationRequired: true,\n      action: { type: 'update_lost_lead', arguments: proposal.proposedInput },\n      confirmation: {\n        phrase: proposal.confirmationText,\n        expiresAt: proposal.expiresAt\n      },\n      message: `No record changed. Ask the user to reply with exactly \"${proposal.confirmationText}\" within five minutes.`\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "a1",
+      "name": "Prepare Audit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const response = $json.response;\nconst proposedInput = $json.proposedInput ?? {};\nreturn {\n  json: {\n    occurredAt: new Date().toISOString(),\n    sessionId: String($json.sessionId ?? ''),\n    requestId: String($json.actionId ?? $json.requestId ?? ''),\n    toolName: 'lead_feedback_proposal',\n    proposedInput: JSON.stringify(proposedInput),\n    result: JSON.stringify(response),\n    error: response?.ok === false ? String(response.error?.message ?? 'Tool call failed') : '',\n    response\n  }\n};"
+      }
+    },
+    {
+      "id": "a2",
+      "name": "Write Tool Audit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "a3",
+      "name": "Return Tool Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };"
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Proposal": {
+      "main": [
+        [
+          {
+            "node": "Proposal Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proposal Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Supersede Older Proposals",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supersede Older Proposals": {
+      "main": [
+        [
+          {
+            "node": "Insert Pending Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Pending Action": {
+      "main": [
+        [
+          {
+            "node": "Shape Proposal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Proposal": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 20,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  },
+  "versionId": "41000000-0000-4000-8000-000000001682",
+  "meta": {
+    "phase": 16,
+    "testedWithN8n": "2.30.5",
+    "toolRisk": "proposal"
+  },
+  "id": "phase16ProposeLeadFeedback",
+  "tags": []
+}
