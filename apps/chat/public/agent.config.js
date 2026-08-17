@@ -17,6 +17,10 @@ window.AGENT_CONFIG = Object.freeze({
    * to the main welcomeMessage above.
    */
   welcomeMessages: {
+    "business-development":
+      "Hello! I’m your Business Development agent. Tell me about a job you won or lost and I’ll log it, draft a feedback ask for you to send, and surface the patterns once there are enough of them to see.",
+    analytics:
+      "Hello! I’m your Analytics agent. Ask me what actually moved — rankings, clicks, enquiries, campaign results — and I’ll answer from the numbers rather than from opinion.",
     sales:
       "Hello! I’m your Sales agent. Bring me an enquiry, a quote that went quiet, or a call to prepare for, and I’ll help you move it toward a yes.",
     marketing:
@@ -67,6 +71,22 @@ window.AGENT_CONFIG = Object.freeze({
         "Help me answer 'what does projection mapping cost?' for a prospect",
         "Find Melbourne festivals and venues that commission installations, and draft a pitch to one",
         "Turn my latest project into a LinkedIn post in Oddtoe's voice — playful, not corporate",
+      ],
+    },
+    "business-development": {
+      datalabs: [
+        "We lost a workshop to a cheaper quote — log it and draft a feedback ask",
+        "Show me my lost leads and any patterns in why we lose",
+        "A lost lead replied with feedback — record what they said",
+        "Which objection comes up most often in the leads I've lost?",
+        "We won a job we expected to lose — log why, so I can repeat it",
+      ],
+      oddtoe: [
+        "An event organiser went with another studio — log the lost lead and draft a feedback ask",
+        "Show me my lost leads and any patterns in why we lose",
+        "A lost lead replied with feedback — record what they said",
+        "Are we losing on price, timeline, or scope? Show me the split",
+        "We won a commission — log what made the difference",
       ],
     },
     sales: {
