@@ -29,8 +29,17 @@ SNAPSHOT_DIR = SKILL_ROOT / "references" / "snapshots"
 WATCHLIST = SKILL_ROOT / "references" / "watchlist.json"
 
 # Alert thresholds — see SKILL.md for why these values.
-POSITION_MOVE = 5.0        # a watched term shifting this many places
-NEW_QUERY_IMPRESSIONS = 100  # a query appearing from nowhere at this scale
+#
+# The impression thresholds are expressed PER 28 DAYS and scaled to the actual
+# window. Oddtoe's biggest single query earns roughly 80 impressions in a month,
+# so a flat threshold borrowed from 16-month totals would never fire.
+POSITION_MOVE = 5.0            # a watched term shifting this many places
+NEW_QUERY_PER_28D = 25         # a query arriving from nowhere at this scale
+UNCONVERTED_PER_28D = 25       # impressions earning no clicks at all
+
+
+def scaled(per_28_days: int, days: int) -> int:
+    return max(5, round(per_28_days * days / 28))
 
 
 def _days_ago(n: int) -> str:
@@ -73,8 +82,17 @@ def gather(days: int = 28) -> dict:
     }
 
 
-def latest_snapshot() -> dict | None:
+def latest_snapshot(exclude_today: bool = True) -> dict | None:
+    """Most recent snapshot, skipping one captured today.
+
+    A digest run right after a snapshot would otherwise compare today against
+    itself and report no movement, which reads as 'nothing changed' when it
+    actually means 'nothing to compare with yet'.
+    """
     files = sorted(SNAPSHOT_DIR.glob("*.json"))
+    if exclude_today:
+        today = f"{date.today().isoformat()}.json"
+        files = [f for f in files if f.name != today]
     return json.loads(files[-1].read_text()) if files else None
 
 
@@ -95,11 +113,16 @@ def cmd_digest(args) -> dict:
     by_query = {row["query"]: row for row in now["queries"]}
     prev_queries = {row["query"]: row for row in (previous or {}).get("queries", [])}
 
+    new_floor = scaled(NEW_QUERY_PER_28D, args.days)
+    unconverted_floor = scaled(UNCONVERTED_PER_28D, args.days)
+
     movers, new_queries = [], []
     for term, row in by_query.items():
         before = prev_queries.get(term)
         if before is None:
-            if row["impressions"] >= NEW_QUERY_IMPRESSIONS:
+            # With no baseline every term is trivially "new" — reporting that
+            # would be noise dressed up as a finding.
+            if previous and row["impressions"] >= new_floor:
                 new_queries.append(row)
         else:
             delta = before["position"] - row["position"]  # positive = improved
@@ -108,13 +131,16 @@ def cmd_digest(args) -> dict:
 
     watched = [by_query[t] for t in watch.get("queries", []) if t in by_query]
     opportunities = sorted(
-        [r for r in now["queries"] if r["clicks"] == 0 and r["impressions"] >= 200],
+        [r for r in now["queries"] if r["clicks"] == 0 and r["impressions"] >= unconverted_floor],
         key=lambda r: -r["impressions"],
     )[:8]
 
     return {
         "window": f"last {args.days} days",
         "compared_to": (previous or {}).get("captured", "no earlier snapshot"),
+        "thresholds": {"new_query_impressions": new_floor,
+                       "unconverted_impressions": unconverted_floor,
+                       "position_move": POSITION_MOVE},
         "totals": now["totals"],
         "enquiries": now["enquiries"],
         "watched_queries": watched,
@@ -258,29 +284,34 @@ def render(name: str, data: dict) -> str:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
+    # --json is accepted both before and after the subcommand; putting it only
+    # on the top-level parser makes `report.py queries --json` fail, which is
+    # the order everyone reaches for first.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--json", action="store_true", help="machine-readable output")
+
+    parser = argparse.ArgumentParser(parents=[common], description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--json", action="store_true", help="machine-readable output")
     sub = parser.add_subparsers(dest="command", required=True)
 
     for name in ("digest", "watch", "snapshot"):
-        p = sub.add_parser(name)
+        p = sub.add_parser(name, parents=[common])
         p.add_argument("--days", type=int, default=28)
 
-    p = sub.add_parser("verify")
+    p = sub.add_parser("verify", parents=[common])
     p.add_argument("url")
     p.add_argument("--days", type=int, default=28)
 
-    p = sub.add_parser("queries")
+    p = sub.add_parser("queries", parents=[common])
     p.add_argument("--contains")
     p.add_argument("--days", type=int, default=90)
     p.add_argument("--limit", type=int, default=25)
 
-    p = sub.add_parser("pages")
+    p = sub.add_parser("pages", parents=[common])
     p.add_argument("--days", type=int, default=28)
     p.add_argument("--limit", type=int, default=15)
 
-    p = sub.add_parser("enquiries")
+    p = sub.add_parser("enquiries", parents=[common])
     p.add_argument("--days", type=int, default=28)
 
     args = parser.parse_args()

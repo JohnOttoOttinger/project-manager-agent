@@ -71,6 +71,14 @@
    ]
   },
   {
+   "id": "strategy",
+   "name": "Strategy",
+   "description": "Themes that cut across the other agents — an objective, its budget, its metrics, and the tactical tasks under it.",
+   "status": "coming-soon",
+   "workflowPath": "",
+   "examplePrompts": []
+  },
+  {
    "id": "bookkeeping",
    "name": "Bookkeeping",
    "description": "Bookkeeping preparation, review, and reconciliation support.",
