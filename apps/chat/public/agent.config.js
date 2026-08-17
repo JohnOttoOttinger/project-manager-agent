@@ -73,6 +73,22 @@ window.AGENT_CONFIG = Object.freeze({
         "Turn my latest project into a LinkedIn post in Oddtoe's voice — playful, not corporate",
       ],
     },
+    analytics: {
+      datalabs: [
+        "Give me this week's digest",
+        "What search terms are getting impressions but no clicks?",
+        "How is the workshop pricing page performing?",
+        "Did anything drop out of the index this week?",
+      ],
+      oddtoe: [
+        "Give me this week's digest",
+        "Did the Babbling with Baobabs page get indexed?",
+        "Show me everything ranking for prop maker",
+        "What search terms are getting impressions but no clicks?",
+        "How many enquiries came in this month, and from which pages?",
+        "Which pages lost ground since the last snapshot?",
+      ],
+    },
     "business-development": {
       datalabs: [
         "We lost a workshop to a cheaper quote — log it and draft a feedback ask",

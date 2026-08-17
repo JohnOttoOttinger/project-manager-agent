@@ -50,10 +50,14 @@
   {
    "id": "analytics",
    "name": "Analytics",
-   "description": "Data analysis over what marketing and sales feed \u2014 interrogate the numbers behind the work.",
-   "status": "coming-soon",
-   "workflowPath": "",
-   "examplePrompts": []
+   "description": "Reads Oddtoe's GA4 and Search Console directly \u2014 what moved, what got indexed, what earned enquiries.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Give me this week's digest",
+    "Did the Babbling with Baobabs page get indexed?",
+    "What search terms are getting impressions but no clicks?"
+   ]
   },
   {
    "id": "investment",

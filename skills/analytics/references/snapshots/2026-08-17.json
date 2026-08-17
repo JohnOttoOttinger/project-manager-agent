@@ -1,0 +1,951 @@
+{
+  "captured": "2026-08-17",
+  "window_days": 28,
+  "totals": {
+    "activeUsers": 654,
+    "sessions": 743,
+    "screenPageViews": 934
+  },
+  "enquiries": 0,
+  "pages": [
+    {
+      "pagePath": "/",
+      "screenPageViews": 263
+    },
+    {
+      "pagePath": "/animation-agents/",
+      "screenPageViews": 187
+    },
+    {
+      "pagePath": "/animation-conferences-2026-2027/",
+      "screenPageViews": 104
+    },
+    {
+      "pagePath": "/contact-oddtoe/",
+      "screenPageViews": 45
+    },
+    {
+      "pagePath": "/artist-designer/prop-designer-maker/",
+      "screenPageViews": 43
+    },
+    {
+      "pagePath": "/studio/generative-ai-animator/",
+      "screenPageViews": 30
+    },
+    {
+      "pagePath": "/portfolio-aggregate/",
+      "screenPageViews": 26
+    },
+    {
+      "pagePath": "/studio/documentary-animator/",
+      "screenPageViews": 21
+    },
+    {
+      "pagePath": "/about-oddtoe/",
+      "screenPageViews": 18
+    },
+    {
+      "pagePath": "/artist-designer/comedy-writer/",
+      "screenPageViews": 14
+    },
+    {
+      "pagePath": "/artist-designer/",
+      "screenPageViews": 11
+    },
+    {
+      "pagePath": "/studio/generative-ai-artist/",
+      "screenPageViews": 11
+    },
+    {
+      "pagePath": "/artist-designer/character-designer/",
+      "screenPageViews": 9
+    },
+    {
+      "pagePath": "/artist-designer/kinetic-sculptor/",
+      "screenPageViews": 9
+    },
+    {
+      "pagePath": "/about-oddtoe/los-angeles/",
+      "screenPageViews": 7
+    }
+  ],
+  "queries": [
+    {
+      "query": "animation conference",
+      "clicks": 7,
+      "impressions": 28,
+      "ctr": 25.0,
+      "position": 3.1
+    },
+    {
+      "query": "animation conferences",
+      "clicks": 7,
+      "impressions": 57,
+      "ctr": 12.28,
+      "position": 1.2
+    },
+    {
+      "query": "animation agents",
+      "clicks": 5,
+      "impressions": 37,
+      "ctr": 13.51,
+      "position": 1.8
+    },
+    {
+      "query": "animation conferences 2026",
+      "clicks": 3,
+      "impressions": 40,
+      "ctr": 7.5,
+      "position": 1.9
+    },
+    {
+      "query": "generative ai artist",
+      "clicks": 2,
+      "impressions": 28,
+      "ctr": 7.14,
+      "position": 6.9
+    },
+    {
+      "query": "motion design conferences 2026",
+      "clicks": 2,
+      "impressions": 7,
+      "ctr": 28.57,
+      "position": 8
+    },
+    {
+      "query": "animation agent",
+      "clicks": 1,
+      "impressions": 82,
+      "ctr": 1.22,
+      "position": 4.5
+    },
+    {
+      "query": "animator agency",
+      "clicks": 1,
+      "impressions": 3,
+      "ctr": 33.33,
+      "position": 6
+    },
+    {
+      "query": "julie kane ritsch",
+      "clicks": 1,
+      "impressions": 12,
+      "ctr": 8.33,
+      "position": 4.2
+    },
+    {
+      "query": "kinetic sculptor",
+      "clicks": 1,
+      "impressions": 10,
+      "ctr": 10.0,
+      "position": 6.9
+    },
+    {
+      "query": "natanya rose",
+      "clicks": 1,
+      "impressions": 20,
+      "ctr": 5.0,
+      "position": 1.6
+    },
+    {
+      "query": "prop makers australia",
+      "clicks": 1,
+      "impressions": 5,
+      "ctr": 20.0,
+      "position": 4.6
+    },
+    {
+      "query": "sculpture animated",
+      "clicks": 1,
+      "impressions": 1,
+      "ctr": 100,
+      "position": 1
+    },
+    {
+      "query": "top",
+      "clicks": 1,
+      "impressions": 1,
+      "ctr": 100,
+      "position": 2
+    },
+    {
+      "query": "\"180 million households\" \"licensing agent\" animation",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 3.3
+    },
+    {
+      "query": "\"ai artist\" -site:reddit.com -site:twitter.com -site:x.com -site:wykop.pl -site:tripadvisor.com -site:youtube.com -site:yelp.com -site:booking.com -site:facebook.com -site:instagram.com -site:tiktok.com",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 6.2
+    },
+    {
+      "query": "\"animate object of kinetic art\" \"things to come\"",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "query": "\"brand activation\" -site:reddit.com -site:twitter.com -site:x.com -site:wykop.pl -site:tripadvisor.com -site:youtube.com -site:yelp.com -site:booking.com -site:facebook.com -site:instagram.com -site:tiktok.com",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "query": "\"projection mapping\" -site:reddit.com -site:twitter.com -site:x.com -site:wykop.pl -site:tripadvisor.com -site:youtube.com -site:yelp.com -site:booking.com -site:facebook.com -site:instagram.com -site:tiktok.com",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 6.8
+    },
+    {
+      "query": "\"sparked my initial interest in kinetic art\"",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 10.5
+    },
+    {
+      "query": "\"sparked my initial interest in kinetic art\" isgro",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "query": "2d 3d character animation agency usa",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 71.3
+    },
+    {
+      "query": "2d animation outsourcing companies",
+      "clicks": 0,
+      "impressions": 10,
+      "ctr": 0,
+      "position": 86
+    },
+    {
+      "query": "2d animation outsourcing company",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 92.4
+    },
+    {
+      "query": "2d animation team for hire usa near me",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 55
+    },
+    {
+      "query": "2d character animation agency",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 80
+    },
+    {
+      "query": "2d character art design services",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 31.8
+    },
+    {
+      "query": "2d character design services",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 65.5
+    },
+    {
+      "query": "2d props artist for hire usa",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 55.7
+    },
+    {
+      "query": "3d animation competition",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 73.5
+    },
+    {
+      "query": "3d animation competition 2026",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "query": "3d animation melbourne",
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0,
+      "position": 45.6
+    },
+    {
+      "query": "3d animation studio melbourne",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 64.6
+    },
+    {
+      "query": "3d animation studios in los angeles",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 95
+    },
+    {
+      "query": "3d animation team for hire usa",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 89.8
+    },
+    {
+      "query": "3d artist sculpture",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 38
+    },
+    {
+      "query": "3d cartoon character design services",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 16.8
+    },
+    {
+      "query": "3d character design services",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 51
+    },
+    {
+      "query": "3d design incredible",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 3.2
+    },
+    {
+      "query": "3d documentary animation",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "3d documentary style",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "query": "3d game props studio",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 41
+    },
+    {
+      "query": "3d gardening",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 10
+    },
+    {
+      "query": "3d gardens",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "query": "3d landscape nursery",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "3d prop companies",
+      "clicks": 0,
+      "impressions": 36,
+      "ctr": 0,
+      "position": 17.1
+    },
+    {
+      "query": "3d prop design fort lauderdale",
+      "clicks": 0,
+      "impressions": 30,
+      "ctr": 0,
+      "position": 15.4
+    },
+    {
+      "query": "3d prop design miami",
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 18.5
+    },
+    {
+      "query": "3d prop makers",
+      "clicks": 0,
+      "impressions": 12,
+      "ctr": 0,
+      "position": 4.6
+    },
+    {
+      "query": "3d props artist for hire",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 59.5
+    },
+    {
+      "query": "3d props artist for hire near me",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 49
+    },
+    {
+      "query": "3d props design",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 15
+    },
+    {
+      "query": "3d props designer for hire",
+      "clicks": 0,
+      "impressions": 13,
+      "ctr": 0,
+      "position": 45.4
+    },
+    {
+      "query": "3d props designer for hire near me",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 51.6
+    },
+    {
+      "query": "3d props designer for hire online",
+      "clicks": 0,
+      "impressions": 8,
+      "ctr": 0,
+      "position": 57.9
+    },
+    {
+      "query": "3d props outsource",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 56.3
+    },
+    {
+      "query": "3d sculpture artist",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "query": "3d sculptures for commercial spaces",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 24
+    },
+    {
+      "query": "3d sculptures for marketing activations",
+      "clicks": 0,
+      "impressions": 26,
+      "ctr": 0,
+      "position": 19.4
+    },
+    {
+      "query": "493d 3d prop manufacturer china",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "a.i. animation studios",
+      "clicks": 0,
+      "impressions": 6,
+      "ctr": 0,
+      "position": 11
+    },
+    {
+      "query": "adobe max 2027",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "query": "adobe max 2027 location",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "query": "adult animation",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 4
+    },
+    {
+      "query": "advertising director cartoons",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 44
+    },
+    {
+      "query": "affordable custom 2d character design portfolio",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 30.7
+    },
+    {
+      "query": "agencia de animacion",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 42
+    },
+    {
+      "query": "agency animation",
+      "clicks": 0,
+      "impressions": 5,
+      "ctr": 0,
+      "position": 32.4
+    },
+    {
+      "query": "agency cartoon",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 13
+    },
+    {
+      "query": "agent animated",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "agent animatic",
+      "clicks": 0,
+      "impressions": 28,
+      "ctr": 0,
+      "position": 50.1
+    },
+    {
+      "query": "agent animation",
+      "clicks": 0,
+      "impressions": 7,
+      "ctr": 0,
+      "position": 3.9
+    },
+    {
+      "query": "agent animatique",
+      "clicks": 0,
+      "impressions": 21,
+      "ctr": 0,
+      "position": 83.1
+    },
+    {
+      "query": "agentur animation",
+      "clicks": 0,
+      "impressions": 35,
+      "ctr": 0,
+      "position": 93.0
+    },
+    {
+      "query": "agentur f\u00fcr animationsfilme",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 96.5
+    },
+    {
+      "query": "ai",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 17
+    },
+    {
+      "query": "ai animation agency",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "ai animation companies",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 3.3
+    },
+    {
+      "query": "ai animation company",
+      "clicks": 0,
+      "impressions": 45,
+      "ctr": 0,
+      "position": 7
+    },
+    {
+      "query": "ai animation studio",
+      "clicks": 0,
+      "impressions": 98,
+      "ctr": 0,
+      "position": 9.5
+    },
+    {
+      "query": "ai animation studio company",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 3.5
+    },
+    {
+      "query": "ai animation studios",
+      "clicks": 0,
+      "impressions": 28,
+      "ctr": 0,
+      "position": 13.3
+    },
+    {
+      "query": "ai artist",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9.5
+    },
+    {
+      "query": "ai cartoon studio",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "ai joke writer",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "ai toe",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 8
+    },
+    {
+      "query": "ai video animation company",
+      "clicks": 0,
+      "impressions": 11,
+      "ctr": 0,
+      "position": 29.9
+    },
+    {
+      "query": "aiaiartist",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 9
+    },
+    {
+      "query": "aianimationstudios",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 18
+    },
+    {
+      "query": "aianimator",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 30
+    },
+    {
+      "query": "aiartist",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 14
+    },
+    {
+      "query": "alexis wanneroy",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 69
+    },
+    {
+      "query": "alexs stadermann",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 88
+    },
+    {
+      "query": "aligotthatdopee",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 6
+    },
+    {
+      "query": "amberwood entertainment",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 60
+    },
+    {
+      "query": "andrew cannava",
+      "clicks": 0,
+      "impressions": 52,
+      "ctr": 0,
+      "position": 2.8
+    },
+    {
+      "query": "andrew cannava uta",
+      "clicks": 0,
+      "impressions": 2,
+      "ctr": 0,
+      "position": 1
+    },
+    {
+      "query": "anim 2026",
+      "clicks": 0,
+      "impressions": 3,
+      "ctr": 0,
+      "position": 45.7
+    },
+    {
+      "query": "anima agency",
+      "clicks": 0,
+      "impressions": 1,
+      "ctr": 0,
+      "position": 55
+    },
+    {
+      "query": "animae talents",
+      "clicks": 0,
+      "impressions": 4,
+      "ctr": 0,
+      "position": 60.8
+    }
+  ],
+  "landing_pages": [
+    {
+      "page": "https://www.oddtoe.com/animation-agents/",
+      "clicks": 90,
+      "impressions": 4634,
+      "ctr": 1.94,
+      "position": 27.0
+    },
+    {
+      "page": "https://www.oddtoe.com/animation-conferences-2026-2027/",
+      "clicks": 60,
+      "impressions": 2467,
+      "ctr": 2.43,
+      "position": 13.4
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/prop-designer-maker/",
+      "clicks": 26,
+      "impressions": 1980,
+      "ctr": 1.31,
+      "position": 17.7
+    },
+    {
+      "page": "https://www.oddtoe.com/",
+      "clicks": 9,
+      "impressions": 204,
+      "ctr": 4.41,
+      "position": 10.7
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/comedy-writer/",
+      "clicks": 9,
+      "impressions": 300,
+      "ctr": 3.0,
+      "position": 15.2
+    },
+    {
+      "page": "https://www.oddtoe.com/studio/documentary-animator/",
+      "clicks": 7,
+      "impressions": 264,
+      "ctr": 2.65,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/character-designer/",
+      "clicks": 4,
+      "impressions": 1423,
+      "ctr": 0.28,
+      "position": 21.1
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/kinetic-sculptor/",
+      "clicks": 4,
+      "impressions": 838,
+      "ctr": 0.48,
+      "position": 8.9
+    },
+    {
+      "page": "https://www.oddtoe.com/studio/generative-ai-animator/",
+      "clicks": 4,
+      "impressions": 807,
+      "ctr": 0.5,
+      "position": 10.4
+    },
+    {
+      "page": "https://www.oddtoe.com/studio/generative-ai-artist/",
+      "clicks": 4,
+      "impressions": 191,
+      "ctr": 2.09,
+      "position": 7.3
+    },
+    {
+      "page": "https://www.oddtoe.com/about-oddtoe/melbourne-australia/",
+      "clicks": 3,
+      "impressions": 156,
+      "ctr": 1.92,
+      "position": 28.5
+    },
+    {
+      "page": "https://www.oddtoe.com/my-product/gag-cartoonist-syndication/",
+      "clicks": 3,
+      "impressions": 152,
+      "ctr": 1.97,
+      "position": 7.6
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/sensory-garden-designer/",
+      "clicks": 2,
+      "impressions": 171,
+      "ctr": 1.17,
+      "position": 10.1
+    },
+    {
+      "page": "https://www.oddtoe.com/experiential-design-techniques-examples/",
+      "clicks": 2,
+      "impressions": 925,
+      "ctr": 0.22,
+      "position": 31.3
+    },
+    {
+      "page": "https://www.oddtoe.com/incredible-3d-gardens/",
+      "clicks": 2,
+      "impressions": 140,
+      "ctr": 1.43,
+      "position": 8.3
+    },
+    {
+      "page": "https://www.oddtoe.com/geometric-art/",
+      "clicks": 1,
+      "impressions": 41,
+      "ctr": 2.44,
+      "position": 6.7
+    },
+    {
+      "page": "https://www.oddtoe.com/my-product/topiary-design-garden-park-project/",
+      "clicks": 1,
+      "impressions": 40,
+      "ctr": 2.5,
+      "position": 12.5
+    },
+    {
+      "page": "https://www.oddtoe.com/about-oddtoe/",
+      "clicks": 0,
+      "impressions": 104,
+      "ctr": 0,
+      "position": 8.2
+    },
+    {
+      "page": "https://www.oddtoe.com/about-oddtoe/berlin/",
+      "clicks": 0,
+      "impressions": 22,
+      "ctr": 0,
+      "position": 11.0
+    },
+    {
+      "page": "https://www.oddtoe.com/about-oddtoe/investment/",
+      "clicks": 0,
+      "impressions": 21,
+      "ctr": 0,
+      "position": 7.4
+    },
+    {
+      "page": "https://www.oddtoe.com/about-oddtoe/los-angeles/",
+      "clicks": 0,
+      "impressions": 105,
+      "ctr": 0,
+      "position": 32.0
+    },
+    {
+      "page": "https://www.oddtoe.com/articles-ideas/",
+      "clicks": 0,
+      "impressions": 16,
+      "ctr": 0,
+      "position": 7.5
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/",
+      "clicks": 0,
+      "impressions": 28,
+      "ctr": 0,
+      "position": 8.7
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/installation-artist/",
+      "clicks": 0,
+      "impressions": 108,
+      "ctr": 0,
+      "position": 3.9
+    },
+    {
+      "page": "https://www.oddtoe.com/artist-designer/projection-artist/",
+      "clicks": 0,
+      "impressions": 31,
+      "ctr": 0,
+      "position": 12.8
+    }
+  ]
+}
