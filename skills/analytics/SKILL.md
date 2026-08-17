@@ -61,6 +61,17 @@ recent file in `references/snapshots/`. With no earlier snapshot it reports
 current numbers and says so. Run `snapshot` at the end of a digest to set the
 next baseline.
 
+## Ahrefs — assisted, but real
+
+Ahrefs answers three questions GA4 and Search Console structurally cannot: who
+else ranks here, what they rank for that Oddtoe doesn't, and whether a term
+Oddtoe has never ranked for is worth chasing.
+
+Otto's free tier has no API, so it is read from his browser — but **every read
+gets written to `references/ahrefs/YYYY-MM-DD-<report>.md`**, which turns glances
+into a comparable series. Working URLs, cadence, known 404s and the screenshot-only
+quirk are in `references/ahrefs-pulls.md`. Read it before asking Otto to open a tab.
+
 ## Alert thresholds
 
 Set in `scripts/report.py`, tuned to be quiet:
