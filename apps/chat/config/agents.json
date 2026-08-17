@@ -48,6 +48,14 @@
    ]
   },
   {
+   "id": "analytics",
+   "name": "Analytics",
+   "description": "Data analysis over what marketing and sales feed \u2014 interrogate the numbers behind the work.",
+   "status": "coming-soon",
+   "workflowPath": "",
+   "examplePrompts": []
+  },
+  {
    "id": "investment",
    "name": "Investment",
    "description": "Investment research, analysis, and decision preparation.",
