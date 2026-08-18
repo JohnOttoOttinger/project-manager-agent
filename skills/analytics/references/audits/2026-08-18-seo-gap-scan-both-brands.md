@@ -224,3 +224,55 @@ editor:
 The equivalent classic-editor approach (setting `#yoast_wpseo_metadesc` by
 script, then clicking Update) does **not** work; Yoast's store overwrites it on
 submit. That was the failure on the Oddtoe conferences page.
+
+## Datalabs editor fixed to match Oddtoe — 18 Aug 2026
+
+Otto: too many clicks to reach WPBakery on Datalabs. Cause found — the two sites
+differed by **one setting**, not by plugins. Classic Editor is active on both.
+
+| Setting | Oddtoe | Datalabs (was) | Datalabs (now) |
+|---|---|---|---|
+| Default editor for all users | Classic | Classic | Classic |
+| **Allow users to switch editors** | **No** | **Yes** | **No** |
+
+With switching allowed, Classic Editor keeps a **per-post** memory of the editor
+last used, so any page previously touched in Gutenberg reopens there regardless
+of the site default. That is why the pricing page kept loading the block editor.
+
+Set to **No** at Settings → Writing. Verified: page 52962 now opens in the
+classic editor with WPBakery's Backend / Frontend buttons immediately visible,
+same as Oddtoe.
+
+Reversible in one radio button if he ever wants the block editor back.
+
+## The money-page kit never transfers its Yoast values
+
+Switching to the classic editor made the page content visible, and it contains:
+
+    <!-- YOAST SEO TITLE: Data Visualisation Workshop Pricing 2026 — Datalabs Agency |
+         META DESCRIPTION: Datalabs Agency workshop pricing for 2026: remote half-days
+         $4,600, on-site full days $7,500 inc GST for up to 12 people. Compare
+         Australian training costs. -->
+
+**The composer wrote the intended title and description into the page as an HTML
+comment, and nobody ever copied them into the Yoast fields.** That is the root
+cause of the missing description — not an oversight on the day, a gap in the
+workflow.
+
+Checked the other kit-built pages: `brand-activation-ideas` and
+`what-is-generative-ai-animation` both **do** have descriptions, so this was
+missed on the Datalabs page specifically. Still, the comment convention means it
+can happen again on any page built this way.
+
+**Two follow-ups worth taking:**
+
+1. The intended **SEO title** — "Data Visualisation Workshop Pricing 2026 —
+   Datalabs Agency" — is still not set. The page uses the WordPress default,
+   which lacks the year.
+2. The composer's intended description is arguably better than the one now live:
+   it names both price points and ends on a comparison hook. Otto's call whether
+   to swap.
+
+**Fix for the workflow:** the money-pages skill should either set the Yoast
+fields as part of publishing, or the publish checklist should require pasting
+them from the comment. Leaving them in a comment guarantees they get missed.
