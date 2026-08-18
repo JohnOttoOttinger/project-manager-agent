@@ -1,86 +1,80 @@
 #!/usr/bin/env python3
 """What is due from the Oddtoe opportunity register, soonest first.
 
-    python3 due.py              next 90 days
+    python3 due.py                next 90 days
     python3 due.py --days 30
-    python3 due.py --all        everything, including unverified dates
+    python3 due.py --all
+    python3 due.py --unverified   only rows whose dates were never checked
 
-Reads references/opportunities.md. Rows whose deadline is still TO VERIFY are
-listed separately — they are the real risk, because an unverified date cannot
-warn you.
+Source of truth is references/opportunities.json — the same file that generates
+the public animation-conferences page. One dataset, two views.
+
+Rows with no verified date are listed separately and loudly. They are the real
+risk: an unverified deadline cannot warn you, and a confident wrong date is
+worse than a blank.
 """
-import argparse, re, sys
-from datetime import date, datetime
+import argparse, json, sys
+from datetime import date
 from pathlib import Path
 
-REG = Path(__file__).resolve().parents[1] / "references" / "opportunities.md"
-DATE_PATTERNS = ["%Y-%m-%d", "%d %b %Y", "%d %B %Y", "%b %Y", "%B %Y"]
+REG = Path(__file__).resolve().parents[1] / "references" / "opportunities.json"
 
 
-def parse_date(s):
-    s = s.strip()
-    for f in DATE_PATTERNS:
-        try:
-            d = datetime.strptime(s, f).date()
-            return d.replace(day=1) if f in ("%b %Y", "%B %Y") else d
-        except ValueError:
-            continue
-    return None
-
-
-def rows():
-    stream = None
-    for line in REG.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^##\s+(\w+)", line)
-        if m:
-            stream = m.group(1)
-            continue
-        if not line.startswith("|") or stream is None:
-            continue
-        cells = [c.strip() for c in line.strip("|").split("|")]
-        if len(cells) < 5 or cells[0].lower() in ("event", "market", "award", "opportunity", "body"):
-            continue
-        if set(cells[0]) <= set("-: "):
-            continue
-        if cells[0].startswith("*("):
-            continue
-        yield stream, cells
+def load():
+    return json.loads(REG.read_text(encoding="utf-8"))
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=90)
     ap.add_argument("--all", action="store_true")
+    ap.add_argument("--unverified", action="store_true")
     a = ap.parse_args()
 
+    d = load()
     today = date.today()
-    dated, unverified = [], []
-    for stream, c in rows():
-        name, deadline, status = c[0], c[-3], c[-2]
-        d = parse_date(deadline)
-        if d:
-            dated.append((d, stream, name, status))
+    ents = d["entries"]
+
+    print(f"Oddtoe opportunity register — {today.isoformat()}  (updated {d['updated']})\n")
+
+    if not a.unverified:
+        upcoming = []
+        for e in ents:
+            if not e.get("start"):
+                continue
+            start = date.fromisoformat(e["start"])
+            days = (start - today).days
+            if a.all or 0 <= days <= a.days:
+                upcoming.append((start, days, e))
+        upcoming.sort(key=lambda x: (x[0], x[2]['name']))
+        if upcoming:
+            print("EVENT" if a.all else f"Events starting within {a.days} days:")
+            for start, days, e in upcoming:
+                flag = "  <-- SOON" if days <= 45 else ""
+                pd = e.get("press_deadline") or "-"
+                print(f"   {start.isoformat()}  ({days:>4}d)  [{e['type']:<7}] "
+                      f"{e['name'][:40]:<42} press:{pd:<11}{flag}")
         else:
-            unverified.append((stream, name, c[1] if len(c) > 4 else "", status, c[-1]))
+            print(f"No events start within {a.days} days.")
 
-    dated.sort()
-    horizon = [x for x in dated if a.all or 0 <= (x[0] - today).days <= a.days]
-    print(f"Opportunity register — {today.isoformat()}\n")
-    if horizon:
-        print(f"DUE within {a.days} days:" if not a.all else "ALL dated rows:")
-        for d, stream, name, status in horizon:
-            n = (d - today).days
-            flag = "  <-- OVERDUE" if n < 0 else ("  <-- SOON" if n <= 30 else "")
-            print(f"   {d.isoformat()}  ({n:>4}d)  [{stream:<8}] {name[:44]:<46}{status}{flag}")
-    else:
-        print(f"Nothing dated falls within {a.days} days.")
+        past = [e for e in ents if e.get("end") and date.fromisoformat(e["end"]) < today]
+        if past:
+            print(f"\nPAST — {len(past)} entr{'y' if len(past)==1 else 'ies'} already finished. "
+                  "Roll forward or unpublish:")
+            for e in past:
+                print(f"   {e['end']}  {e['name'][:52]}")
 
-    if unverified:
-        print(f"\nNO VERIFIED DEADLINE — {len(unverified)} rows. These cannot warn you:")
-        for stream, name, when, status, source in unverified:
-            print(f"   [{stream:<8}] {name[:40]:<42}{when[:16]:<18}{status:<13}{source}")
-        print("\nRead each organiser's own press/submissions page and replace TO VERIFY")
-        print("with a real date. Press deadlines usually close 2-3 months before the event.")
+    unver = [e for e in ents if not e.get("verified")]
+    if unver:
+        print(f"\nNEVER VERIFIED — {len(unver)} rows. These cannot warn you:")
+        for e in unver:
+            print(f"   [{e['type']:<7}] {e['name'][:44]:<46}{e.get('label','')[:34]}")
+
+    todo = [e for e in ents if e.get("press_deadline") == "TO VERIFY"
+            or e.get("submission_deadline") == "TO VERIFY"]
+    if todo:
+        print(f"\nDEADLINE UNKNOWN — {len(todo)} rows need a read of the organiser's own page.")
+        print("Press deadlines usually close 2-3 months before the event.")
     return 0
 
 
