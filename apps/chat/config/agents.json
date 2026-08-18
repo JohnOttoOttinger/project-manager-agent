@@ -1,95 +1,95 @@
 {
-  "schemaVersion": 1,
-  "agents": [
-    {
-      "id": "project-manager",
-      "name": "Project Manager",
-      "description": "Plans projects, analyses meetings, and turns decisions into safe next actions.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Turn these meeting notes into decisions and action items",
-        "Build a practical project plan from this document",
-        "Show me the highest-priority work in my local project"
-      ]
-    },
-    {
-      "id": "business-development",
-      "name": "Business Development",
-      "description": "Tracks lost leads, gathers honest feedback, and keeps deadline-driven opportunities \u2014 festival press passes, pitch sessions, prizes and open calls \u2014 from slipping.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "We lost a job to another quote \u2014 log the lost lead and draft a short feedback ask",
-        "Show me my lost leads and any patterns in why we lose",
-        "A lost lead just replied with feedback \u2014 record what they said",
-        "What opportunity deadlines are coming up?",
-        "Draft a press accreditation pitch for Annecy using the media kit"
-      ]
-    },
-    {
-      "id": "sales",
-      "name": "Sales",
-      "description": "Sales research, preparation, and follow-up workflows.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Draft a follow-up email for an enquiry that went quiet",
-        "Prepare me for a discovery call with a new prospect"
-      ]
-    },
-    {
-      "id": "marketing",
-      "name": "Marketing",
-      "description": "Campaign planning, content, and marketing operations.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Turn our latest page into two LinkedIn posts",
-        "Draft a pitch to get us included in an industry listicle"
-      ]
-    },
-    {
-      "id": "analytics",
-      "name": "Analytics",
-      "description": "Reads Oddtoe's GA4 and Search Console directly \u2014 what moved, what got indexed, what earned enquiries.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Give me this week's digest",
-        "Did the Babbling with Baobabs page get indexed?",
-        "What search terms are getting impressions but no clicks?"
-      ]
-    },
-    {
-      "id": "investment",
-      "name": "Investment",
-      "description": "Investment research, analysis, and decision preparation.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Build a simple budget for next quarter's marketing spend",
-        "Summarise this quarter's revenue by product line from this export"
-      ]
-    },
-    {
-      "id": "strategy",
-      "name": "Strategy",
-      "description": "Themes that cut across the other agents \u2014 an objective, its budget, its metrics, and the tactical tasks under it.",
-      "status": "coming-soon",
-      "workflowPath": "",
-      "examplePrompts": []
-    },
-    {
-      "id": "bookkeeping",
-      "name": "Bookkeeping",
-      "description": "Bookkeeping preparation, review, and reconciliation support.",
-      "status": "active",
-      "workflowPath": "/webhook/chat",
-      "examplePrompts": [
-        "Categorise these expenses from this CSV export",
-        "Prepare a BAS-time checklist of documents I need"
-      ]
-    }
-  ]
+ "schemaVersion": 1,
+ "agents": [
+  {
+   "id": "project-manager",
+   "name": "Project Manager",
+   "description": "Plans projects, analyses meetings, and turns decisions into safe next actions.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Turn these meeting notes into decisions and action items",
+    "Build a practical project plan from this document",
+    "Show me the highest-priority work in my local project"
+   ]
+  },
+  {
+   "id": "business-development",
+   "name": "Business Development",
+   "description": "Tracks lost leads, gathers honest feedback, and keeps deadline-driven opportunities \u2014 festival press passes, pitch sessions, prizes and open calls \u2014 from slipping.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "We lost a job to another quote \u2014 log the lost lead and draft a short feedback ask",
+    "Show me my lost leads and any patterns in why we lose",
+    "A lost lead just replied with feedback \u2014 record what they said",
+    "What opportunity deadlines are coming up?",
+    "Draft a press accreditation pitch for Annecy using the media kit"
+   ]
+  },
+  {
+   "id": "sales",
+   "name": "Sales",
+   "description": "Sales research, preparation, and follow-up workflows.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Draft a follow-up email for an enquiry that went quiet",
+    "Prepare me for a discovery call with a new prospect"
+   ]
+  },
+  {
+   "id": "marketing",
+   "name": "Marketing",
+   "description": "Campaign planning, content, and marketing operations.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Turn our latest page into two LinkedIn posts",
+    "Draft a pitch to get us included in an industry listicle"
+   ]
+  },
+  {
+   "id": "analytics",
+   "name": "Analytics",
+   "description": "Reads Oddtoe's GA4 and Search Console directly \u2014 what moved, what got indexed, what earned enquiries.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Give me this week's digest",
+    "Did the Babbling with Baobabs page get indexed?",
+    "What search terms are getting impressions but no clicks?"
+   ]
+  },
+  {
+   "id": "investment",
+   "name": "Investment",
+   "description": "Investment research, analysis, and decision preparation.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Build a simple budget for next quarter's marketing spend",
+    "Summarise this quarter's revenue by product line from this export"
+   ]
+  },
+  {
+   "id": "strategy",
+   "name": "Strategy",
+   "description": "Themes that cut across the other agents — an objective, its budget, its metrics, and the tactical tasks under it.",
+   "status": "coming-soon",
+   "workflowPath": "",
+   "examplePrompts": []
+  },
+  {
+   "id": "bookkeeping",
+   "name": "Bookkeeping",
+   "description": "Bookkeeping preparation, review, and reconciliation support.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Categorise these expenses from this CSV export",
+    "Prepare a BAS-time checklist of documents I need"
+   ]
+  }
+ ]
 }
