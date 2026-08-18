@@ -304,3 +304,43 @@ The FAQ row's own top spacer is not the whole gap. Preceding rows carry their
 own trailing spacers, and they vary from 30px to 350px across these pages. Read
 the preceding spacer before choosing, or the total lands anywhere between 110px
 and 430px.
+
+## Second review pass — 18 Aug 2026
+
+| Change | Detail |
+|---|---|
+| character-designer links | plum `#26161f` → near-black `#0d0d0d` (Otto's call). **9.23** on the pink, wine `#5c2b3f` hover at 5.33 |
+| topiarist row | changing the colour was not enough — the row lacked `bg_check="row-background-dark"`, so the theme kept applying light-background text colours and the heading read dim grey. Flag added; text now white at **15.33** |
+| generative-ai-animator | "What is a generative cartoonist?" removed, schema rebuilt |
+| draft 16167 | moved to Trash (recoverable), returns 404 publicly |
+
+### The duplicate-question mistake
+
+The rollout put "What is a generative cartoonist?" on **two** pages that were
+already competing for the term:
+
+| Page | `generative cartoonist` | `what is a generative cartoonist` |
+|---|---|---|
+| /studio/generative-ai-artist/ | 214 impr @ 5.8 | 72 impr @ 6.9 |
+| /studio/generative-ai-animator/ | 79 impr @ 6.6 | 4 impr @ 1.0 |
+
+Duplicating a question across pages carries no penalty, but Google shows one page
+per query, so identical answers split the signal, and an AI assistant extracting
+an answer wastes its second slot on a near-copy.
+
+**Resolution:** generative-ai-artist keeps it — three times the impressions, and
+`generative cartoonist` is that page's own term. The animator page took a
+distinct question about factual and documentary work instead.
+
+**Rule for the next rollout:** before adding a question, grep the other pages'
+schema for it. Two pages answering the same question is a cannibalisation bug,
+not extra coverage.
+
+### Two theme lessons worth keeping
+
+1. A row's background colour and its **dark/light text mode are separate
+   settings** in WPBakery. Setting `background-color` alone leaves the theme
+   applying light-mode text. `bg_check="row-background-dark"` is what flips it.
+2. On light rows the Oddtoe accent palette mostly fails contrast. Measured on
+   `#c6acb6`: tan 1.17, sand 1.34, olive 1.60. Only near-black (9.23) and plum
+   (8.20) clear AA.
