@@ -41,6 +41,18 @@ festivals in 2026 want an AI panel and can book either hype or refusal.
 
 ---
 
+## media — podcasts, YouTube, journalists, PR agencies
+
+The media outreach stream lives in **`media-contacts.json`** (canonical) with
+`scripts/media.py` as the view — no rows are duplicated here, so nothing can
+drift. Pipeline design: `media-pipeline.md`. Pitches draw only on
+`positioning-source.md` and the approved `artist-bio-statement.md`.
+
+    python3 scripts/media.py          # pipeline state
+    python3 scripts/media.py --md     # markdown view of all rows
+
+---
+
 ## market — pitch sessions
 
 Where a creator pitches a series to commissioners. Otto **already has a pitch

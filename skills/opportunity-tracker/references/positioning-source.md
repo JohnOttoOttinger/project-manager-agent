@@ -63,7 +63,7 @@ implies more and cannot support it.
 
 | Item | State |
 |---|---|
-| Artist statement | `TO FILL` — needed by almost every open call and gallery |
+| Artist statement | **FILLED 18 Aug 2026** — approved canonical text in `artist-bio-statement.md` |
 | Artist CV | `TO FILL` — exhibition history, education, collections, press |
 | Awards / shortlistings | **None.** Rivals hold FRAME, Dezeen, LIT, Melbourne Design Awards, Japan Media Arts, MUSE, TEA Master |
 | Representation | None. An agent is a stated goal for both audiences |

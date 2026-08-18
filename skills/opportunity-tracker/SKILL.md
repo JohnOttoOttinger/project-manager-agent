@@ -27,6 +27,7 @@ nobody can check is a date nobody should act on.
 | `prize` | Awards and competitions — a shortlisting is a nameable credit |
 | `opencall` | Open calls, group shows, artist-run spaces |
 | `register` | Council and institutional public-art registers and EOI lists |
+| `media` | Podcasts, YouTube channels, journalists, PR agencies — canonical data in `references/media-contacts.json`, viewed with `scripts/media.py`, runbook in `references/media-pipeline.md` |
 
 Status runs `researching → drafted → submitted → outcome`. Record the outcome
 even when it is a rejection; the pattern matters more than any single result.
@@ -53,7 +54,8 @@ Run it at the start of any Business Development conversation. Anything inside
 
 Most open calls, prizes and accreditation forms want the same five things in
 different shapes: an artist statement, a CV, work samples, a project
-description, and a budget. Draft from `references/positioning-source.md` so the
+description, and a budget. Draft from `references/positioning-source.md` and the approved bio and
+statement in `references/artist-bio-statement.md` so the
 facts stay identical across submissions, then reshape to the form's word limit.
 
 Rules that matter more here than elsewhere:
