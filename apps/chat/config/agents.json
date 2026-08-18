@@ -16,13 +16,15 @@
   {
    "id": "business-development",
    "name": "Business Development",
-   "description": "Tracks lost leads, gathers honest feedback, and turns wins and losses into patterns.",
+   "description": "Tracks lost leads, gathers honest feedback, and keeps deadline-driven opportunities — festival press passes, pitch sessions, prizes and open calls — from slipping.",
    "status": "active",
    "workflowPath": "/webhook/chat",
    "examplePrompts": [
-    "We lost a job to another quote \u2014 log the lost lead and draft a short feedback ask",
+    "We lost a job to another quote — log the lost lead and draft a short feedback ask",
     "Show me my lost leads and any patterns in why we lose",
-    "A lost lead just replied with feedback \u2014 record what they said"
+    "A lost lead just replied with feedback — record what they said",
+    "What opportunity deadlines are coming up?",
+    "Draft a press accreditation pitch for Annecy using the media kit"
    ]
   },
   {
@@ -50,7 +52,7 @@
   {
    "id": "analytics",
    "name": "Analytics",
-   "description": "Reads Oddtoe's GA4 and Search Console directly \u2014 what moved, what got indexed, what earned enquiries.",
+   "description": "Reads Oddtoe's GA4 and Search Console directly — what moved, what got indexed, what earned enquiries.",
    "status": "active",
    "workflowPath": "/webhook/chat",
    "examplePrompts": [
@@ -77,6 +79,19 @@
    "status": "coming-soon",
    "workflowPath": "",
    "examplePrompts": []
+  },
+  {
+   "id": "sourcing",
+   "name": "Sourcing",
+   "description": "Builds Oddtoe's vetted China supply chain — art-toy, inflatable and soft-goods factories in the Pearl River Delta, tracked from candidate to vetted through the ham-bag gate.",
+   "status": "active",
+   "workflowPath": "/webhook/chat",
+   "examplePrompts": [
+    "Show me the supplier register and what each factory needs next",
+    "Draft first-contact emails asking RD Animation and Chinee for their certs",
+    "Plan the September sample-visit trip around the ham-bag pickup",
+    "We want to make a giant inflatable jackalope — who should quote it?"
+   ]
   },
   {
    "id": "bookkeeping",

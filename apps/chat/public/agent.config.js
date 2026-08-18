@@ -29,6 +29,8 @@ window.AGENT_CONFIG = Object.freeze({
       "Hello! I’m your Marketing agent. I draft the posts, pitches, and pages that get Datalabs and Oddtoe seen — you review everything and hit send yourself.",
     investment:
       "Hello! I’m your Investment agent. I prepare budgets and weigh spending decisions for both businesses — I organise the numbers, you make the calls.",
+    sourcing:
+      "Hello! I’m your Sourcing agent. I keep Oddtoe’s supplier register — who makes what in the Pearl River Delta, how far each factory is through vetting, and what to ask for next. Nothing gets ordered without certs sighted.",
     bookkeeping:
       "Hello! I’m your Bookkeeping agent. Invoices, expense categorisation, and BAS-time prep — bring me exports and I’ll get them organised.",
   },
@@ -146,6 +148,16 @@ window.AGENT_CONFIG = Object.freeze({
         "Estimate costs for a new installation build from this equipment list",
         "Compare festival application fees against likely commission value",
         "Rough out a budget for taking an installation to a Berlin venue",
+      ],
+    },
+    sourcing: {
+      oddtoe: [
+        "Show me the supplier register and what each factory needs next",
+        "Draft first-contact emails asking RD Animation and Chinee for their certs and an indicative quote",
+        "Plan the September sample-visit trip around the ham-bag pickup",
+        "We want to make a giant inflatable jackalope — who should quote it?",
+        "Compare the art-toy factories for a 300-piece resin run of one character",
+        "A supplier sent their BSCI cert — record it and move them along the pipeline",
       ],
     },
     bookkeeping: {

@@ -15,8 +15,22 @@ Use this skill when Otto asks for the next money page, a pricing page, a compari
    WordPress `wpautop` wraps a leading `<!-- ... -->` in a `<p>`, which renders as an empty ~22px block plus a
    ~17px margin — about **39px of dead space above the hero row**, visible as a band of the page background
    colour and killing any full-bleed hero. Found on Oddtoe 16136. Set the fields in wp-admin instead
-   (`yoast_wpseo_title` / `yoast_wpseo_metadesc` — REST does not expose them; the browser recipe is in
-   `references/links-ledger.md`, 16 Aug 2026 round 2).
+   (`yoast_wpseo_title` / `yoast_wpseo_metadesc` — REST does not expose them.)
+   **Working browser recipe (verified 18 Aug 2026, after two failed attempts):**
+   a. Open the page in wp-admin. In the **block editor**, open the Yoast sidebar from the toolbar and expand
+      **Search appearance**; in the **classic editor**, use the Yoast metabox snippet preview.
+   b. The fields are **Draft.js contenteditables** (`#yoast-google-preview-description-modal` /
+      `...-metabox`), not inputs. Setting `.value` or `.textContent` does nothing — they need real typed
+      keystrokes, and the element must be genuinely focused first (a stray `cmd+a` selects the page, not
+      the field).
+   c. **Clicking Save/Update does nothing** — the Yoast edit never marks the post dirty, so Gutenberg
+      treats it as a no-op (`isEditedPostDirty()` returns `false`). Force it:
+      `wp.data.dispatch('core/editor').savePost()`
+   d. **Verify via `yoast_head_json` in the REST response, not the front-end HTML** — the page serves a
+      stale copy for a minute or so after the save has already committed. Checking the HTML first produces
+      a false "it didn't save".
+   **Setting `#yoast_wpseo_metadesc` by script then clicking Update does NOT work** — Yoast's store
+   overwrites it on submit. That was the failure mode on the Oddtoe conferences page.
 6. **Push as a draft.** With shell access, run `scripts/wp-post.sh <datalabs|oddtoe> "<Title>" <html-file>` (requires WP Application Passwords in the repo `.env` — see docs/WORDPRESS_AUTOMATION_CHECKLIST.md). Without shell access, output the complete page + Yoast block for Otto to paste into WordPress himself. NEVER publish — drafts only (banned.md rule 4).
    **Page settings (learned 14 Aug 2026):** design-kit pages depend on three page-level settings the content itself can't provide — `template: page-custom.php` (wp-post.sh sets it via REST; kills the theme title band + boxed width), and two Ronneby meta fields REST can NOT set: **Custom background color `#2f2e3a`** and **header style `2`** (`crum_page_custom_bg_color` / `dfd_headers_header_style` in the page's wp-admin settings). Without the background, `bg_check="row-background-dark"` rows render white text on a white page — invisible. Set them in wp-admin (or via browser automation) right after the draft is created.
 7. **Update the backlog.** Mark the item `[~]` with the wp-admin edit link:

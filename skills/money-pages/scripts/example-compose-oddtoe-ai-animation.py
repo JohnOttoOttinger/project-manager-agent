@@ -153,8 +153,10 @@ page = re.sub(r'<!--(?! YOAST).*?-->\n?', '', page, flags=re.S).strip()
 page = re.sub(r'<a href="([^"]*)">([^<]*)</a>',
               r'<strong><a class="dfd-custom-link-decorated" href="\1">\2</a></strong>', page)
 yoast = '<!-- YOAST SEO TITLE: What Is Generative AI Animation? An Artist-Led Guide | Oddtoe | META DESCRIPTION: Generative AI animation explained by Melbourne studio Oddtoe: a hybrid of AI models, rigging and motion design — for brands, documentaries, events and series. -->\n'
-page = yoast + page
-
+# REMOVED 18 Aug 2026 — never prepend the Yoast comment to the body.
+# wpautop wraps it in a <p>, adding ~39px of dead space above the hero
+# (SKILL.md rule 5). Print it for the handover instead.
+print('\nSET THESE IN WP-ADMIN (Yoast):\n ' + yoast.strip())
 leftover = re.findall(r'\{\{[A-Z0-9_]+', page)
 assert not leftover, 'unfilled: ' + str(set(leftover))
 OUT.write_text(page)
