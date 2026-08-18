@@ -392,3 +392,30 @@ https://www.oddtoe.com/animation-agents/
 **Note on process:** this page was already published, so every edit in this audit
 went straight to the live site. There was no draft stage, unlike the conferences
 rebuild.
+
+---
+
+# Search Console — 18 Aug 2026
+
+Both refreshed pages submitted for re-crawl.
+
+| URL | Status before | Action |
+|---|---|---|
+| https://www.oddtoe.com/animation-conferences/ | **already indexed** | Indexing requested — priority crawl queue |
+| https://www.oddtoe.com/animation-agents/ | already indexed | Indexing requested — priority crawl queue |
+
+**The new conferences URL was already on Google within hours of publishing.** No
+waiting, no discovery problem — almost certainly because the 301 came from a URL
+Google already trusted. Worth remembering for the next migration: a redirect
+from an established URL is a faster path to indexing than a fresh sitemap entry.
+
+## GSC automation notes
+
+- The direct deep link `search-console/inspect?...&id=<encoded URL>` **404s**.
+  It only works with Google's internal opaque id.
+- Working route: open the property, click the inspection box **by coordinate**
+  (a `ref`-based click typed into the box but the value was discarded on Enter),
+  type the URL, verify the input's value by script, then press Return.
+- Verifying the field before submitting is what makes this reliable. The earlier
+  note that "GSC rejects long URLs via automation" was really this: the value
+  silently failed to stick.
