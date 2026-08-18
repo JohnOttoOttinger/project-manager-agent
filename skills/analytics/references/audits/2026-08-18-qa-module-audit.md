@@ -267,3 +267,40 @@ a headcount.
   (`weird art` 18.1, `roboticist` 12.5, `ai animation studios` 13.5, `prop makers` 19.5).
 - Judge the GEO half on AI answer presence, not clicks — question-shaped queries
   are only 516 impressions in 180 days.
+
+## Post-rollout fixes — 18 Aug 2026
+
+Otto reviewed the live pages and flagged four things.
+
+| Page | Problem | Fix |
+|---|---|---|
+| roboticist | 206px of dead space above the Q&A — the row above ends with its own 120px spacer, and the FAQ row added 80 more | FAQ row's top spacer 80 → 20 |
+| generative-ai-artist | same, 190px (preceding spacer 110) | 80 → 20 |
+| topiarist | Q&A row was `rgba(31,61,12,0.13)`, a translucent olive between two dark rows | → `#252525`, matching the two rows above |
+| character-designer | tan `#c39f76` links on the `#c6acb6` pink rows measured **1.17** contrast — effectively invisible | scoped CSS, plum `#26161f` at **8.20**, wine `#5c2b3f` hover at **5.33** |
+
+### The link CSS
+
+Scoped by `.page-id-13701 .vc_row:not(.dfd-background-dark)`, so it only touches
+the pink rows and leaves the dark rows on their existing tan. Injected as a
+`vc_raw_html` style block at the top of the page content.
+
+Measured against `#c6acb6`:
+
+| Colour | Ratio | WCAG AA body |
+|---|---|---|
+| tan `#c39f76` (was) | 1.17 | fail |
+| **plum `#26161f`** | **8.20** | pass |
+| **wine `#5c2b3f`** (hover) | **5.33** | pass |
+| olive `#8a8f6a` | 1.60 | fail |
+| sand `#ddccb1` | 1.34 | fail |
+
+Only plum and near-black clear AA on that pink. Sand and olive are both too
+light — worth knowing before any other light-background row gets links.
+
+### Spacer lesson for the next rollout
+
+The FAQ row's own top spacer is not the whole gap. Preceding rows carry their
+own trailing spacers, and they vary from 30px to 350px across these pages. Read
+the preceding spacer before choosing, or the total lands anywhere between 110px
+and 430px.
