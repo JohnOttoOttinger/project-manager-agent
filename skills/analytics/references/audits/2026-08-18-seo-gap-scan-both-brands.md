@@ -128,3 +128,58 @@ behind any of them.
 `/wp-content/uploads/` (theme chrome excluded), counted `<figure>` blocks without
 `<figcaption>`, and collected `@type` values from JSON-LD. Findings on the three
 highest-value pages were re-verified by direct fetch.
+
+---
+
+# Fixes applied — 18 Aug 2026
+
+## Alt text (item 2) — done, and the scan over-counted
+
+**Zero real content images now missing alt across the nine trafficked pages.**
+
+But the original figure was wrong, and the reason matters for the Datalabs
+numbers too. Of the 33 "missing alt" images the scan reported on Oddtoe, only
+**8 were real**. The rest were:
+
+- **`dummy.png`** — Slider Revolution's lazy-load placeholder for decorative
+  slide backgrounds. Empty alt is *correct* for those.
+- **Gravatar avatars** — base64 inline, not content images.
+
+**The real fixes were two different problems:**
+
+1. **Seven media items had no `alt_text`.** Written from actually looking at each
+   image, not from the filename — which mattered: `Topiary-Sculpture-Oddtoe-1`
+   turned out to be a marble cherub bust, not topiary.
+2. **Two images had `alt=""` hardcoded in page content**, which overrides the
+   media library. Setting the library value alone did nothing for those. Found on
+   `/about-oddtoe/investment/` only — a site-wide sweep of every published page
+   and post turned up no others.
+
+**Also caught my own mistake:** two near-identical logo files exist, `…temp-01.png`
+(id 11675) and `…temp-01-1.png` (id 11677). I set alt on 11677; the page uses
+11675. Both now set.
+
+### Rules for the next alt pass
+
+- Exclude `dummy.png` and avatars before counting, or the number is inflated
+  three-fold.
+- **Media library alt is not authoritative.** A hardcoded `alt=""` in content
+  wins. Check the page content too.
+- Open the image. Filenames on this site are frequently wrong.
+
+## Neucommerce Experiments — trashed and redirected
+
+Otto's call: remove it, no references.
+
+- Page **24001 moved to Trash** (recoverable; slug auto-renamed to
+  `neucommerce-experiments__trashed`).
+- **301 added in Redirection: `/neucommerce-experiments/` → `/shop/`.** The page
+  was a product-and-article showcase, so the shop is the closest match. No
+  internal links to it were found on the homepage, about or work pages.
+- At the time of writing the old URL still returns 200 from cache
+  (`x-cache: HIT`, `age: 395`) — cached before the trash. It will resolve to the
+  301 once that short TTL expires.
+
+**Redirection gotcha, again:** do not verify with a `?cachebuster` query string.
+Its default "exact match in any order" query handling means the rule will not
+match and the URL appears to 404.
