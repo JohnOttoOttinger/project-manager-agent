@@ -154,8 +154,10 @@ page = re.sub(r'<!--(?! YOAST).*?-->\n?', '', page, flags=re.S).strip()
 page = re.sub(r'<a href="([^"]*)">([^<]*)</a>',
               r'<strong><a class="dfd-custom-link-decorated" href="\1">\2</a></strong>', page)
 yoast = '<!-- YOAST SEO TITLE: Brand Activation Ideas — 10 Concepts That Stop People | Oddtoe | META DESCRIPTION: Ten brand activation ideas from Melbourne experiential studio Oddtoe: projection mapping, kinetic sculpture, AI animation, living topiary and props people stop for. -->\n'
-page = yoast + page
-
+# REMOVED 18 Aug 2026 — never prepend the Yoast comment to the body.
+# wpautop wraps it in a <p>, adding ~39px of dead space above the hero
+# (SKILL.md rule 5). Print it for the handover instead.
+print('\nSET THESE IN WP-ADMIN (Yoast):\n ' + yoast.strip())
 leftover = re.findall(r'\{\{[A-Z0-9_]+', page)
 assert not leftover, 'unfilled: ' + str(set(leftover))
 OUT.write_text(page)

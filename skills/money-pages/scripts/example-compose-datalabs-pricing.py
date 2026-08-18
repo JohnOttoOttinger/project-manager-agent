@@ -219,8 +219,10 @@ art2 = fill(blocks['article2'], {
 page = '\n'.join([hero, t_prices, sec_c, t_groups, sec_d, t_compare, sec_global, faq, art1, blocks['offers'], art2, blocks['fixed']])
 page = re.sub(r'<!--(?! YOAST).*?-->\n?', '', page, flags=re.S).strip()
 yoast = '<!-- YOAST SEO TITLE: Data Visualisation Workshop Pricing 2026 — Datalabs Agency | META DESCRIPTION: Datalabs Agency workshop pricing for 2026: remote half-days $4,600, on-site full days $7,500 inc GST for up to 12 people. Compare Australian training costs. -->\n'
-page = yoast + page
-
+# REMOVED 18 Aug 2026 — never prepend the Yoast comment to the body.
+# wpautop wraps it in a <p>, adding ~39px of dead space above the hero
+# (SKILL.md rule 5). Print it for the handover instead.
+print('\nSET THESE IN WP-ADMIN (Yoast):\n ' + yoast.strip())
 leftover = re.findall(r'\{\{[A-Z0-9_]+', page)
 assert not leftover, 'unfilled tokens: ' + str(set(leftover))
 OUT.write_text(page)
