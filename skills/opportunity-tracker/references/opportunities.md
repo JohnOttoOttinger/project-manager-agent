@@ -167,3 +167,72 @@ cost on a page that already ranks. They landed at 504 KB and 308 KB at the same
 **For the next city image:** convert to JPEG before uploading, name it
 `City-Event-Animation-Conference-Country.jpg`, and set alt text describing the
 illustration and the festival it belongs to.
+
+---
+
+# PUBLISHED — /animation-conferences/ — 18 Aug 2026
+
+Page 16169 live at https://www.oddtoe.com/animation-conferences/
+Old page 13839 set to **draft** (recoverable) so its URL frees up for the redirect.
+
+## Final fixes before publish
+
+| Issue | Cause | Fix |
+|---|---|---|
+| MIPJUNIOR image had square corners | its shortcode alone carried `link_object`/`enable_link`/`image_ext_link_url`; linking the image makes the theme skip the `dfd-single-image-module` wrapper, and the radius lives on that wrapper | link attributes removed |
+| Missing delimiter, Cartoon Forum → Pictoplasma | new insert had none | added |
+| Delimiter spacing 20px vs 40px elsewhere | house pattern is **1 spacer before, 2 after**; the insert had 1 after | second spacer added |
+| SIGGRAPH Asia had no image | no Kuala Lumpur illustration existed | Otto supplied one; uploaded as 16172 |
+| 3 dead outbound links | two `adobe.com/max/2025` pages gone, one Manchester 404 | Adobe ones unlinked (text kept), Manchester repointed to its homepage |
+
+## UTM tracking
+
+40 outbound links to festival domains now carry:
+
+    ?utm_source=oddtoe.com&utm_medium=referral&utm_campaign=animation-conferences-guide
+
+Applied only to the 14 festival/market domains — internal Oddtoe and Datalabs
+links are asserted clean. This is what makes the press-accreditation pitch
+provable: the festival can see the referrals in their own analytics.
+
+## Redirects — chain flattening still outstanding
+
+Otto already had a chain from previous cycles. Current state, all verified 301:
+
+| Source | Hops to /animation-conferences/ | Lifetime hits |
+|---|---|---|
+| /animation-conferences-2026-2027/ | 1 (direct) | new |
+| /animation-conferences-2024-2025/ | 2 | 861 |
+| /animation-conferences-2023-2024/ | 3 | 2,750 |
+
+**Worth flattening.** In Tools → Redirection, edit the two older rules to target
+`/animation-conferences/` directly. Google follows chains but equity decays, and
+the 2023-2024 URL still takes real traffic.
+
+**Redirection gotcha:** rules default to "Exact match in any order" on query
+parameters, so a URL with `?anything` does **not** match and returns 404. Test
+redirects without cache-buster query strings or you will misdiagnose them.
+
+Redirection's REST API rejects application-password auth (`rest_forbidden`) — it
+needs its own admin nonce. Redirect work has to go through the admin UI.
+
+## Yoast — needs Otto's hands
+
+Setting `#yoast_wpseo_title` / `#yoast_wpseo_metadesc` by script does not stick;
+Yoast's React store overwrites the hidden inputs on submit. Type into the Yoast
+panel directly at
+https://www.oddtoe.com/wp-admin/post.php?post=16169&action=edit
+
+    SEO title:  Animation Conferences 2026 & 2027 — The World's Best
+    Meta desc:  The best animation conferences and festivals worldwide, month by
+                month: dates, venues and what each is really for. Annecy, Ottawa,
+                Cartoon Forum and more.
+
+Until then the page has no meta description and Google writes its own snippet.
+
+## Indexing status
+
+- Sitemap: new URL present, retired URL gone. Canonical correct.
+- `llms.txt` serves 200, so AI crawlers have a path in.
+- Google has **not** seen it yet — published minutes ago. The 301 from the old
+  URL is the strongest signal and needs no action.
