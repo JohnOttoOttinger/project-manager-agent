@@ -144,3 +144,26 @@ The second recovers 4,931 impressions stranded on a stale page.
 **Trade-off to accept knowingly:** the old URL ranks 2.6 for "animation
 conferences 2026". An evergreen slug gives that up in exchange for a URL that
 compounds instead of resetting each cycle. Expect a few unsettled weeks.
+
+## City illustrations added — 18 Aug 2026
+
+Otto supplied Toulouse and Bordeaux illustrations, completing the city-image set.
+
+| File | ID | Used by |
+|---|---|---|
+| `Toulouse-Cartoon-Forum-Animation-Conference-France.jpg` | 16170 | Cartoon Forum |
+| `Bordeaux-Cartoon-Movie-Animation-Conference-France.jpg` | 16171 | Cartoon Movie |
+
+**Naming follows the library's existing pattern** (`Mipcom-Cannes-Animation`,
+`Tokyo-Anime-Conferences-Oddtoe-List`): city, then event, then category, then
+country. The filename is a ranking signal for image search, and "animation
+conference" is the term this page already ranks top-three for.
+
+Both carry alt text, title and caption. Converted from PNG to JPEG at quality 82
+before upload — the originals were 1.9 MB and 1.4 MB, which is a real page-speed
+cost on a page that already ranks. They landed at 504 KB and 308 KB at the same
+1024×1024, and WordPress serves the 300×300 crop the layout asks for.
+
+**For the next city image:** convert to JPEG before uploading, name it
+`City-Event-Animation-Conference-Country.jpg`, and set alt text describing the
+illustration and the festival it belongs to.
