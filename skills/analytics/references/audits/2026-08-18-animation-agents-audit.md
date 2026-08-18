@@ -419,3 +419,48 @@ from an established URL is a faster path to indexing than a fresh sitemap entry.
 - Verifying the field before submitting is what makes this reliable. The earlier
   note that "GSC rejects long URLs via automation" was really this: the value
   silently failed to stick.
+
+---
+
+# Best Agent — Jason Burns, UTA — 18 Aug 2026
+
+Otto asked for a pick. **Jason Burns.** The case, from verified sources:
+
+- **Partner at UTA and co-head of Motion Picture Literary** — the most senior
+  animation-carrying position at the agency with the only dedicated animation
+  division.
+- Clients: **Phil Lord and Chris Miller**, **Joaquim Dos Santos** (Spider-Man:
+  Across the Spider-Verse), **Jorge Gutiérrez** (Maya and the Three, Book of
+  Life), Matthew Fogel, Kyle Balda, Robert Persichetti.
+- Films by UTA animation clients have taken **more than $25 billion worldwide**.
+- **Currently active in public** — Variety interviewed him ahead of Annecy in
+  June 2026 arguing for original ideas and animation directors. That recency
+  matters: the previous holder of this slot had been out of the job for two
+  years.
+
+## What changed
+
+The featured slot at the top of the UTA section and the awards banner both
+belonged to Anna Berthold. Straight swap, nothing lost:
+
+| Slot | Was | Now |
+|---|---|---|
+| Awards banner "Best Agent" | Berthold, **image 14223** | Burns, **image 14233** |
+| UTA featured slot | Berthold + 14223 | **Jason Burns + 14233**, new write-up |
+| Inner block below | Burns + 14233 | **Anna Berthold + 14223**, corrected copy |
+
+**A bug I had introduced and have now fixed:** when I first moved the banner to
+Burns I changed only the name, so it showed **Berthold's photograph under Burns's
+name**. Both banner and featured slot now carry his own image.
+
+Berthold's entry also moved to past tense — she *represented* Joe Brumm and
+Pierre Perifel at UTA rather than representing them now.
+
+Verified live: UTA section reads Burns → Berthold → Cannava, one entry each, each
+with its own portrait.
+
+## Spotted for the SEO pass
+
+The Burns image filename is **`Jason-Burns-Unted-Talent-Agency-Representation`**
+— "Unted", not "United". A misspelling in an image filename is a wasted ranking
+signal on a page that ranks for the exact phrase.
