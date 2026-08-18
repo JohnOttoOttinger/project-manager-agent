@@ -326,3 +326,69 @@ Annette Van Duran · DPN
 - Individual agents at UTA, Verve, Van Duran and DPN are unverified. Agent moves
   are the fastest decay here; Paradigm alone had five changes in 2026.
 - Annette Van Duran has no findable website and stays unlinked.
+
+---
+
+# Agent-by-agent verification — 18 Aug 2026
+
+Every named agent checked against trade press, agency sites and LinkedIn.
+
+| Agent | Agency on page | Verdict |
+|---|---|---|
+| **Anna Berthold** | UTA | **STALE — left UTA May 2024.** Now EVP Animation and Kids & Family at Stampede Ventures |
+| Jason Burns | UTA | **Current.** Partner, co-head of Motion Picture Literary. Variety interviewed him ahead of Annecy, June 2026 |
+| Andrew Cannava | UTA | **Current.** Partner/Agent |
+| Bryan Besser | Verve | **Current.** Co-founding partner, 13 years |
+| David Boxerbaum | Verve | **Current.** Partner since 2017 (ex-Paradigm, ex-APA) |
+| Julie Kane-Ritsch | Gotham Group | **Current.** Head of animation |
+| Sandy Weinberg | Summit | **Current.** Owner since 2000 |
+| John Goldsmith | Metropolis | **Current.** President |
+| Donna Felten | Natural Talent | **Current.** CEO |
+| Zac Simmons | Paradigm | **Current.** Partner, Literary Content, since 2023 |
+| **Annette van Duren** | own agency | **Current** — but the page spelled it "Van Duran". Real spelling **van Duren** |
+| Natanya Rose | DPN | **Current.** Senior EVP, Animation/Interactive. Ex-ICM |
+
+**Eleven of twelve current.** One two-year-stale entry, and it was the headline
+one.
+
+## The Berthold problem
+
+She was not just listed — she was the page's **"Best Agent"** in the awards
+banner and her entry claimed she was "leading UTA's animation division". She
+founded that division in 2017 and left in May 2024.
+
+Fixed by telling the truth rather than deleting her. The entry now credits her
+for building UTA Animation and states she moved to Stampede Ventures, with the
+point that matters to a reader pitching animated family content: **she is now on
+the buying side**, which may be more useful than an agent.
+
+The "Best Agent" banner moved to **Jason Burns** — verified UTA Partner,
+co-head of MP Lit, and the agency's current animation voice in the trade press.
+That is an editorial call and is easy to revert.
+
+## Two more name errors, same class as Felten
+
+- **Annette Van Duran → Annette van Duren.** Her agency site
+  (`annettevandurenagency.net`, verified live) uses van Duren. Now corrected and
+  linked.
+- The page had already had **Felton → Felten** and **Kane-Ritch → Kane-Ritsch**.
+
+**Three misspelled names on one page.** Worth a proofread pass on any page that
+lists real people — a misspelled name is the fastest way to lose a reader who
+knows the industry, and these are the exact people Otto wants to approach.
+
+## Stale dates cleared
+
+- `"I'll look to update the 2024 animation agents' list throughout the year and
+  into 2025."` → `"I'll keep this list current through 2026 and into 2027."`
+- An internal link to the retired `/animation-conferences-2023-2024/` now points
+  at `/animation-conferences/`.
+
+## Final state
+
+Nine agencies, twelve agents, **seven UTM-tagged agency links**. Live at
+https://www.oddtoe.com/animation-agents/
+
+**Note on process:** this page was already published, so every edit in this audit
+went straight to the live site. There was no draft stage, unlike the conferences
+rebuild.
