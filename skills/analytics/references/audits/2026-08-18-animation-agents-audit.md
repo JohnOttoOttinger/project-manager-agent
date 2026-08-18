@@ -202,3 +202,66 @@ response only proves something answers, not that it is the right something.
 3. **Felton or Felten?** Sources disagree with the page.
 4. The other agents at UTA, Verve, Van Duran and DPN are still unverified
    individually. That is the slow pass.
+
+---
+
+# Re-enabled with new copy — 18 Aug 2026
+
+Otto's call: bring back Summit, Metropolis and Natural Talent. All three now
+render with bodies written from verified facts, replacing the 2024 conference
+copy that had been sitting under their headings.
+
+Live page is now **9 agencies, 13 agents**, and the intro count says so.
+
+| Agency | Agent | Site |
+|---|---|---|
+| Summit Talent & Literary | Sandy Weinberg, Owner | **none** — see below |
+| Metropolis Talent | John Goldsmith, President | **metropolistalent.info** |
+| Natural Talent | Donna Felton, Chief Executive | **none** |
+
+## Domain check — a second near-miss
+
+Having already linked an insurance company by trusting a 200, I resolved every
+candidate and read what it served. Just as well:
+
+| Domain | Reality |
+|---|---|
+| `summitalent.org` | **parked lander** — redirects to `/lander`. Not a site |
+| `summittalentagency.com` | dead |
+| `metropolistalent.com` | **parked lander** — same pattern |
+| `metropolistalent.info` | **the real site** — John Goldsmith, 9201 Wilshire Blvd Suite 104, matching the corporate record |
+| `metropolis-talent.com` | dead, despite being their email domain |
+| `naturaltalentinc.com` | dead |
+| `natural-talent.com` | a coaching and training company, unrelated |
+
+**This corrects the first pass**, which listed `summitalent.org` and
+`metropolistalent.com` as live. Both are parked. Only Metropolis got a link.
+
+**Rule: a 200 means something answered. Read the title and the body before
+linking, every time.**
+
+## What the new copy says, and what it is built on
+
+Only verified facts. Where an agency has no site, the copy says so plainly rather
+than leaving a reader hunting.
+
+- **Sandy Weinberg** — founded Summit in 2000 for cross-platform clients; roster
+  spans TV writers, screenwriters, animation artists, producers, authors and
+  directors across film, TV, web series and 4D theme-park work; Beverly Hills;
+  no working website.
+- **John Goldsmith** — President; animation is the whole business, not a
+  division; positions at the intersection of animation and technology; offers
+  career coaching and CGI/technology development alongside contract work; has
+  written on the agent's role for Animation World Network.
+- **Donna Felton** — Chief Executive; licensed agency that both places animation
+  artists and helps them pitch their own original concepts; long counted among
+  the LA animation specialists; no public website.
+
+## Still open
+
+- **Felton or Felten?** Two LinkedIn profiles spell it **Felten**; the page says
+  Felton. Left as-is — changing a person's name on a guess is worse than leaving
+  it. Otto to confirm.
+- **Does Ritter belong on this list?** Toronto actor and voice-over agency, not
+  an animation-talent agency. Accurate now, but the odd one out.
+- Individual agents at UTA, Verve, Van Duran and DPN remain unverified.
