@@ -276,3 +276,40 @@ can happen again on any page built this way.
 **Fix for the workflow:** the money-pages skill should either set the Yoast
 fields as part of publishing, or the publish checklist should require pasting
 them from the comment. Leaving them in a comment guarantees they get missed.
+
+## Re-baselined Datalabs alt count — 18 Aug 2026
+
+After the Oddtoe scan proved 4× inflated, I re-ran Datalabs excluding lazy
+placeholders and avatars. **It is not inflated. 716 is real.**
+
+| | Count |
+|---|---|
+| Content images | 7,590 |
+| Naive "missing alt" | 716 |
+| **Real missing alt** | **716** — inflation 1.0× |
+
+Oddtoe was inflated because its theme uses Slider Revolution's `dummy.png`
+lazy-load placeholder; Datalabs' are genuine `alt=""` on real `<img src>` tags.
+Spot-checked: client logos (Adidas, Roche, Intel) carrying empty alt.
+
+### But the work is far smaller than 716
+
+| | |
+|---|---|
+| Occurrences | 716 |
+| **Unique images** | **164** |
+| Appearing only once | 15 |
+
+One image, `Data-Agency-Training-10.jpeg`, accounts for **136 of the 716** on its
+own. The top dozen cover roughly a third.
+
+**So this is ~164 alt texts, not 716** — and the highest-value ones are client
+logos repeated across the site: Adidas, Roche, Intel, USPS, Macquarie Bank,
+Australia Post, gov. Those are credibility signals currently invisible to image
+search and to screen readers.
+
+**Caveat that decides the method:** these carry `alt=""` *in the markup*, which
+overrides the media library (the trap found on Oddtoe's investment page). Setting
+library alt alone will not fix them. They are likely emitted by a repeated
+template or widget, so the fix should be found at source rather than per-page —
+worth locating before doing 164 by hand.
