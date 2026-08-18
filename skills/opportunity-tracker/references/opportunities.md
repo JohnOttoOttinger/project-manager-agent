@@ -100,3 +100,47 @@ Phillip's urban artist directory.
    more useful than five blanks.
 3. **Nothing here is submitted by the agent.** Drafts are handed to Otto, who
    sends them.
+
+---
+
+# Evergreen conferences page — draft 16169 (18 Aug 2026)
+
+Draft at slug `animation-conferences`, built by surgery on live page 13839 so
+Otto's design and prose survive untouched.
+
+**Removed:** the whole "SEPTEMBER 2024" row — In Motion Rotterdam 2024, an old
+Ottawa Sept 25–29 2024 entry, and a duplicate Pictoplasma NYC block (7,467 chars).
+
+**Rolled to verified 2027 dates:** Stuttgart ITFS → 27 Apr–2 May 2027, Annecy →
+13–19 Jun 2027, Anima → 19–28 Feb 2027 (was "to be announced"), Pictoplasma
+Berlin → "2027 dates to be announced".
+
+**Added:** Cartoon Forum (14–17 Sep 2026, Toulouse) placed first in the September
+row, and Cartoon Movie (2–4 Mar 2027, Bordeaux) in a new March 2027 row cloned
+from February's.
+
+**Order is now chronological:** Sep 26 · Oct · Nov · Dec · Feb 27 · Mar · Apr ·
+Apr–May · Jun.
+
+**Verified in the browser:** 17 conferences, no stale strings, the FAQ module
+intact with 4 panels, all nine month headings white at 18.81 contrast.
+
+## Known gap on the draft
+
+Cartoon Forum and Cartoon Movie have **no city illustration**. Every other entry
+carries a 512×512 city image (Cardiff 13953, Torino 13951, Stuttgart 13939,
+Brussels 13944, Cannes 13950…). There is no Toulouse or Bordeaux image in the
+media library. The image column is in place and empty so one can be dropped in.
+
+## Redirection rows to add on publish
+
+| Source | Target | Type |
+|---|---|---|
+| `/animation-conferences-2026-2027/` | `/animation-conferences/` | 301 |
+| `/animation-conferences-2024-2025/` | `/animation-conferences/` | 301 |
+
+The second recovers 4,931 impressions stranded on a stale page.
+
+**Trade-off to accept knowingly:** the old URL ranks 2.6 for "animation
+conferences 2026". An evergreen slug gives that up in exchange for a URL that
+compounds instead of resetting each cycle. Expect a few unsettled weeks.
