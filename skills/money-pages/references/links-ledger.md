@@ -80,3 +80,47 @@ feeling rather than for search was the correct read of the data.
 
 Wording is Otto's own; the five-audience self-select block was left intact at his
 direction.
+
+## Oddtoe FAQ link pass — 18 Aug 2026 (9 links, all inside the new Q&A answers)
+
+Targets chosen from an internal link graph built by fetching all 34 pages and
+counting body-content links only — nav links score ~33 on every page and tell you
+nothing. Cross-referenced against Search Console position data so the links push
+where there is demand stuck below page one.
+
+| From | Anchor | To | Target's inbound before |
+|---|---|---|---|
+| /weird-art/ | illustration and character design | /artist-designer/character-designer/ | 9 |
+| /weird-art/ | geometric shapes | /geometric-art/ | 1 |
+| /artist-designer/character-designer/ | a bizarre way of looking at the world | /weird-art/ | 1 |
+| /artist-designer/character-designer/ | animated series | /studio/original-stories/ | 8 |
+| /studio/generative-ai-artist/ | since 2006 | /about-oddtoe/ | 1 |
+| /studio/generative-ai-artist/ | character work | /artist-designer/character-designer/ | 9 |
+| /artist-designer/prop-designer-maker/ | 3D-designed builds | /portfolio-aggregate/ | 5 |
+| /artist-designer/topiarist/ | 3D render | /portfolio-aggregate/ | 5 |
+| /artist-designer/roboticist/ | advertising agencies | /experiential-marketing/ | 2 |
+
+All verified live: correct href, `dfd-custom-link-decorated` class, and the
+FAQPage schema on each page still parses with no tags leaked into answer text.
+
+**Why these targets.** `character-designer` carries 4,753 impressions at position
+**26.9** — the largest block of real commercial demand on the site sitting too
+deep to earn clicks — and had only 9 body links. It gains two. `about-oddtoe`
+(5,002 impressions, 1,211 strike) and `weird-art` (`weird art` at 18.1) each had
+exactly one.
+
+**Two markup traps.** Two anchors sat inside existing `<strong>` tags, so the
+link has to nest *inside* the strong rather than wrap it. And "advertising
+agencies" also appears in an unrelated `dfd_info_box` on the roboticist page —
+matching on the bare phrase would have linked the wrong one. Both caught by the
+uniqueness assertion before anything was written.
+
+**Held back deliberately:**
+- `/about-oddtoe/investment/` — 0 inbound and 1,059 strike impressions, the best
+  target on the site on paper, but it is 389 words with no figures. Linking to it
+  wastes the click. It becomes the priority target the moment pricing exists.
+- The experiential-design post — being rebuilt as a Page, so its links belong in
+  the rebuild rather than being migrated.
+
+Script: `skills/money-pages/scripts/faq-link-pass-oddtoe.py` (dry-run by default,
+`--apply` to write).
