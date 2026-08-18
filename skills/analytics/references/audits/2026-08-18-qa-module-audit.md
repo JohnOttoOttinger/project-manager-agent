@@ -193,3 +193,77 @@ Question headings were detected as any `h1`–`h6` whose text ends in a question
 mark, and schema as the presence of `FAQPage` in the page source. A page could
 carry questions in body copy that this misses. Counts here are the machine-visible
 ones, which is the point.
+
+---
+
+# Rollout — applied 18 Aug 2026
+
+Nine pages shipped. Otto approved the pattern from a draft preview
+(page 16167, a copy of 12203) before anything touched a live page.
+
+| Page | Mode | Qs in schema | Bytes added |
+|---|---|---|---|
+| /studio/generative-ai-animator/ | new row + 2 copy edits | 6 | +10,354 |
+| /artist-designer/prop-designer-maker/ | appended to existing accordion | 7 (4 old + 3 new) | +6,999 |
+| /weird-art/ | new row | 4 | +6,671 |
+| /artist-designer/roboticist/ | new row | 4 | +6,579 |
+| /studio/generative-ai-artist/ | new row | 4 | +6,738 |
+| /artist-designer/topiarist/ | appended | 7 (4 + 3) | +5,231 |
+| /animation-conferences-2026-2027/ | new row | 4 | +6,567 |
+| /artist-designer/character-designer/ | appended (style-4) | 6 (3 + 3) | +5,806 |
+| /experiential-design-techniques-examples/ | post: native h3 + JSON-LD | 3 | +2,322 |
+
+**Deferred:** `/about-oddtoe/investment/` — needs Otto's pricing figures first.
+
+All nine verified live: accordion (or headings) render, `FAQPage` JSON-LD parses,
+every entity carries an answer.
+
+## Decisions taken during the rollout
+
+**Existing questions were all kept.** Otto's instruction was add-below, never
+replace — so the Edward Scissorhands and Michael Jordan questions on the topiarist
+page stayed, and the schema now covers old and new together.
+
+**The blog post got HTML, not an accordion.** `experiential-design-techniques-examples`
+is a post with no shortcodes and a light background; a dark accordion would have
+looked imported. It uses the post's own `<h2><strong>` Bebas pattern plus the same
+JSON-LD. Flagged to Otto — easy to switch to an accordion if he prefers.
+
+**No new internal links.** The link question was raised and never signed off, so
+answers are plain text apart from the one link on 12203 that Otto saw in the preview.
+
+**Row backgrounds are taken from each page, not the kit.** The kit's FAQ row
+inherits the page background, which renders white-on-white on pages that set their
+colour per row. The script now reads the nearest preceding row's colour.
+
+## Two bugs caught before they shipped
+
+**CRLF destruction.** Reading page content through Python in text mode silently
+converts `\r\n` to `\n`. On page 12203 that was 38 line endings — the content would
+have looked identical and rewritten every one. All reads and writes now use
+`newline=''`, and the script asserts the CR count is unchanged.
+
+**Copy drift.** Every page asserts that content outside the inserted or extended
+block is byte-identical to what was fetched. On 12203, where two approved copy
+edits were also applied, the diff was checked by hand: exactly five changed
+regions, all inside the two approved spots.
+
+## Copy changed outside the FAQ modules
+
+Only on `/studio/generative-ai-animator/`, both approved by Otto:
+
+- H3: `One animator. The full pipeline.` → `The full animation pipeline, but art
+  directed by a human.`
+- Body: `A single animator … a studio of fifty` → `A small studio … fifty people`
+
+Reason: on the commissioning pages a solo framing reads as delivery risk. A scan
+of all 34 pages found this language **only** on this one page, so the exposure was
+contained. See the competitor register — every rival shows a team, and none states
+a headcount.
+
+## Next
+
+- Re-run `verify` and `queries` at ~30 days to see whether the page-two terms moved
+  (`weird art` 18.1, `roboticist` 12.5, `ai animation studios` 13.5, `prop makers` 19.5).
+- Judge the GEO half on AI answer presence, not clicks — question-shaped queries
+  are only 516 impressions in 180 days.
