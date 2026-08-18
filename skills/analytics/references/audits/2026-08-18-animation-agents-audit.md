@@ -265,3 +265,64 @@ than leaving a reader hunting.
 - **Does Ritter belong on this list?** Toronto actor and voice-over agency, not
   an animation-talent agency. Accurate now, but the odd one out.
 - Individual agents at UTA, Verve, Van Duran and DPN remain unverified.
+
+---
+
+# Final pass — 18 Aug 2026
+
+Otto's calls: Felten spelling confirmed, Ritter dropped.
+
+| Change | |
+|---|---|
+| `Donna Felton` → `Donna Felten` | Otto confirmed; two LinkedIn profiles agreed |
+| Ritter Talent Agency row | **removed** — Toronto actor/voice agency, not animation-talent |
+| Count | now `twelve agents from nine separate agencies` |
+| `Julie Kane-Ritch` → `Kane-Ritsch` | misspelling inside the Gotham body |
+| Gotham Group | **linked** — gotham-group.com verified as "Home \| The Gotham Group" |
+| Link palette | scoped CSS, near-black on the peach background |
+
+## Correction 4 — Gotham Group is a roster entry
+
+I twice treated Gotham Group as editorial because my heading regex expected
+`<h2>` and Gotham's title sits as bare text inside a `[dfd_heading]` shortcode
+with no `<h2>` wrapper and no trailing newline. It is a full roster entry with
+its own agent, **Julie Kane-Ritsch, Talent Manager and Head of Animation**.
+
+That is why the count went 6 → 8 → 9 agencies across three passes.
+
+**Lesson: on this theme a heading can live as bare text inside `[dfd_heading]`.
+Count from the rendered page, not from an HTML-tag regex over the raw content.**
+
+## Link palette on `#edb39f`
+
+Every row on the page uses one background, `#edb39f`. Measured:
+
+| Colour | Ratio | AA |
+|---|---|---|
+| tan `#c39f76` (theme default) | **1.35** | fail |
+| **near-black `#0d0d0d`** | **10.69** | pass |
+| plum `#26161f` | 9.49 | pass |
+| **wine `#5c2b3f`** (hover) | **6.17** | pass |
+| olive `#8a8f6a` | 1.86 | fail |
+| sand `#ddccb1` | 1.16 | fail |
+
+Applied as `.page-id-14208 .vc_row:not(.dfd-background-dark)` covering body text,
+`h2` and `h3` links. Verified live: **16 links on the peach background, 0 failing
+AA**, all at 10.69.
+
+This is the second Oddtoe page where the theme's tan accent fails on a light
+background. The pattern is now established: **on any light-background Oddtoe row,
+tan/sand/olive all fail — use near-black with a wine hover.**
+
+## Final state of the page
+
+Nine agencies, twelve named agents, six UTM-tagged agency links.
+
+UTA · Verve · Gotham Group · Summit · Metropolis · Natural Talent · Paradigm ·
+Annette Van Duran · DPN
+
+## Still open
+
+- Individual agents at UTA, Verve, Van Duran and DPN are unverified. Agent moves
+  are the fastest decay here; Paradigm alone had five changes in 2026.
+- Annette Van Duran has no findable website and stays unlinked.
