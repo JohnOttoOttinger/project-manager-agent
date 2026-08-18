@@ -464,3 +464,33 @@ with its own portrait.
 The Burns image filename is **`Jason-Burns-Unted-Talent-Agency-Representation`**
 — "Unted", not "United". A misspelling in an image filename is a wasted ranking
 signal on a page that ranks for the exact phrase.
+
+## Intro bolding — 18 Aug 2026
+
+The "Who are the Best Animation Agents & Talent Firms" intro had **zero bold
+across all six paragraphs**, while every agent entry below it was heavily
+bolded. The page's own opening was the only part not following Oddtoe style.
+
+**19 keyphrases bolded**, at the design-kit density of 2–5 per paragraph:
+
+| Paragraph | Bold | Words |
+|---|---|---|
+| "Looking for representation…" | 4 | 41 |
+| "Not surprisingly… Los Angeles" | 5 | 70 |
+| "Boasting the 'only dedicated animation' division" | 2 | 16 |
+| "UTA agents… major studios" | 3 | 43 |
+| "Not really an animator?" | 2 | 49 |
+| "So get your animated showreel ready" | 3 | 24 |
+
+Bolded what a reader scans for: what they want (**representation**, **advocate
+for an animated work**, **become an animation agent**), where it happens
+(**Los Angeles, California**), who matters (**United Talent Agency**, **UTA**,
+**Disney, Warner Bros. and Sony Pictures**), and what to bring (**animated
+showreel**, **pitch bibles**). Existing links preserved.
+
+**Also found a duplicated word** in the closing line: "my picks for the
+animation animation agents". Fixed.
+
+That is the **fourth** text error found on this page today, after Felten,
+Kane-Ritsch and van Duren. This page badly needs a proofread pass whenever it is
+next edited.
