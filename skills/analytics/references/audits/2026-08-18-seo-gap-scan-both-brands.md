@@ -183,3 +183,44 @@ Otto's call: remove it, no references.
 **Redirection gotcha, again:** do not verify with a `?cachebuster` query string.
 Its default "exact match in any order" query handling means the rule will not
 match and the URL appears to 404.
+
+## Item 1 — Datalabs pricing page meta description — done
+
+Live on https://www.datalabsagency.com/data-visualisation-workshop-pricing/
+
+    Private data visualisation workshops in Australia cost $4,600-$7,500 inc GST,
+    for up to 12 attendees. Full 2026 pricing, inclusions and formats.
+
+144 characters. Leads with the price because that is what the searcher wants and
+it pre-qualifies the click. Figures are the page's own: $4,600 remote half-day
+through $7,500 inc GST full day on site, up to 12 attendees included.
+
+**A second problem fixed by the same edit.** Yoast had been auto-generating
+`og:description` from the raw page content, so anything sharing this page to
+LinkedIn or Slack was previewing a string of `[vc_row full_height="yes"
+bg_check="row-background-dark"...` shortcodes. It now carries the real
+description.
+
+### Writing Yoast fields by automation — the working recipe
+
+Two earlier attempts failed. What actually works, on a WPBakery page in the block
+editor:
+
+1. Open the Yoast sidebar (toolbar button), expand **Search appearance**.
+2. The meta description is a **Draft.js contenteditable**
+   (`#yoast-google-preview-description-modal`), not an input. Setting `.value`
+   or `textContent` does nothing — it needs real typed keystrokes.
+3. **Clicking Save does nothing.** Yoast's sidebar edit never marks the post
+   dirty, so Gutenberg treats Save as a no-op and `isEditedPostDirty()` returns
+   false.
+4. Force the save instead:
+
+       wp.data.dispatch('core/editor').savePost()
+
+5. **Verify via `yoast_head_json` in the REST response, not the front-end HTML.**
+   The page kept serving a stale copy for a minute after the save was already
+   committed — checking the HTML first produced a false "it didn't save".
+
+The equivalent classic-editor approach (setting `#yoast_wpseo_metadesc` by
+script, then clicking Update) does **not** work; Yoast's store overwrites it on
+submit. That was the failure on the Oddtoe conferences page.
