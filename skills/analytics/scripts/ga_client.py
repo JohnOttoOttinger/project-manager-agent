@@ -207,8 +207,13 @@ def gsc_query(
     contains: str | None = None,
     page_equals: str | None = None,
     limit: int = 50,
+    site: str | None = None,
 ) -> list[dict]:
-    """Query Search Console analytics and return rows as flat dicts."""
+    """Query Search Console analytics and return rows as flat dicts.
+
+    site defaults to config()["site_url"] (Oddtoe). Pass a full property URL
+    to read the other brand, e.g. "https://www.datalabsagency.com/".
+    """
     body: dict = {
         "startDate": start,
         "endDate": end,
@@ -223,7 +228,7 @@ def gsc_query(
     if filters:
         body["dimensionFilterGroups"] = [{"filters": filters}]
 
-    site = urllib.parse.quote(config()["site_url"], safe="")
+    site = urllib.parse.quote(site or config()["site_url"], safe="")
     url = f"https://searchconsole.googleapis.com/webmasters/v3/sites/{site}/searchAnalytics/query"
     response = _call(url, body)
 
@@ -238,10 +243,11 @@ def gsc_query(
     return rows
 
 
-def gsc_inspect(page_url: str) -> dict:
+def gsc_inspect(page_url: str, site: str | None = None) -> dict:
     """Ask Search Console how it currently sees one URL."""
     url = "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect"
-    response = _call(url, {"inspectionUrl": page_url, "siteUrl": config()["site_url"]})
+    response = _call(url, {"inspectionUrl": page_url,
+                           "siteUrl": site or config()["site_url"]})
     result = response.get("inspectionResult", {}).get("indexStatusResult", {})
     return {
         "url": page_url,
