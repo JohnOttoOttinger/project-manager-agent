@@ -1,0 +1,27 @@
+{
+  "approved": true,
+  "target_id": 16173,
+  "target_url": "https://www.oddtoe.com/experiential-marketing-agencies/",
+  "brand": "oddtoe",
+  "note": "Approved by Otto 19 Aug 2026 (multi-select Q&A, all 3). APPLY ONLY AFTER page 16173 is PUBLISHED.",
+  "edits": [
+    {
+      "source_id": 15922,
+      "type": "pages",
+      "search": "for <strong>agencies</strong> and <strong>brands</strong> with something genuinely new to say",
+      "replace": "for <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-marketing-agencies/\">agencies</a></strong> and <strong>brands</strong> with something genuinely new to say"
+    },
+    {
+      "source_id": 16124,
+      "type": "pages",
+      "search": "our clients are <strong>advertising, marketing, and activation agencies.</strong>",
+      "replace": "our clients are <strong>advertising, marketing, and <a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-marketing-agencies/\">activation agencies</a>.</strong>"
+    },
+    {
+      "source_id": 16133,
+      "type": "pages",
+      "search": "activations for agencies and brand teams, across Australia and internationally",
+      "replace": "activations for <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-marketing-agencies/\">agencies</a></strong> and brand teams, across Australia and internationally"
+    }
+  ]
+}

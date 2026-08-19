@@ -29,6 +29,18 @@ nobody can check is a date nobody should act on.
 | `register` | Council and institutional public-art registers and EOI lists |
 | `media` | Podcasts, YouTube channels, journalists, PR agencies — canonical data in `references/media-contacts.json`, viewed with `scripts/media.py`, runbook in `references/media-pipeline.md` |
 
+## Festival database
+
+`references/festivals.json` — one entry per festival Oddtoe watches: what it
+is, when it runs, why it matters, and the next action. Festivals are venues
+and targets, not deadlines; the moment one publishes a concrete deadline
+(open call, press accreditation, EOI) that deadline graduates into
+`opportunities.json` so `due.py` can watch it. Entries carry the same
+verification rule as everything else: a null `verified` means TO VERIFY —
+never act on an unverified date. Seeded 18 Aug 2026 with Now or Never
+(attended program in Otto's Google Calendar) plus six Australian
+candidates.
+
 Status runs `researching → drafted → submitted → outcome`. Record the outcome
 even when it is a rejection; the pattern matters more than any single result.
 

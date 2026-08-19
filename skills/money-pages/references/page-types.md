@@ -18,6 +18,19 @@ Every page: question-shaped H2/H3s, 40–60 word answer-first openers, self-cont
 - Sections: who the client is, the problem, what was built/delivered, the outcome with ONE quotable stat (real, Otto-confirmed), what it means for similar buyers
 - Client named only with confirmed permission; otherwise "a global logistics company" style
 
+## Events guide (kit: `design-kit-oddtoe-events.html`)
+- H1: "[Topic] — 2–3 words" hero (e.g. "Animation Conferences"); heading band asks the page's core question
+- A chronological list of events: month bands, each event = linked name, dates, place, mode (onsite/virtual), 60–150 word first-person "why attend"
+- Top-picks strip ("Best All-Around" etc.), outro inviting corrections, FAQ block
+- Every date/venue verified against the official source before composing — this page type decays
+- Refresh model: it's ONE evergreen page updated per season, not a new dated page per year
+
+## Directory guide (kit: `design-kit-oddtoe-directory.html`)
+- A ranked list of people and companies: featured entry first, then standard entries per organisation
+- Each entry: linked org heading, person name + role + location, 60–150 word first-person "why they made the list"
+- Top-picks strip ("Best Agency" / "Best Agent"), outro inviting additions
+- People and orgs verified current (site live, still at that agency, name spelled right) — see the 18 Aug 2026 agents audit for the failure modes
+
 ## Credits page (Oddtoe)
 - H1: "Oddtoe — Selected Credits"
 - A crawlable text list, one line per project: **Project — medium, venue/event, city, year.**

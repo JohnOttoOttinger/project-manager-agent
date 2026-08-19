@@ -5,8 +5,9 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 ## Datalabs Agency
 
 **Canonical sentence (use verbatim, everywhere):**
-> Datalabs Agency is a Melbourne-based data visualization consultancy founded in 2012 that delivers corporate training workshops (Power BI, Tableau, data storytelling), dashboard design, and BI style guides for clients including Mercedes-Benz, Adidas, and UPS.
+> The Datalabs Agency is a Melbourne-based data visualization consultancy founded in 2012 that delivers corporate training workshops (Power BI, Tableau, data storytelling), dashboard design, and BI style guides for clients including Mercedes-Benz, Adidas, and UPS.
 
+- **Naming rule on Datalabs surfaces (Otto's instruction, 19 Aug 2026): the name is "The Datalabs Agency", not "Datalabs Agency" — and the brand name is ALWAYS bold in page copy** (`The <strong>Datalabs Agency</strong>`). Casual "**Datalabs**" (also bold) is allowed sparingly when the full name has already appeared several times.
 - Website: https://www.datalabsagency.com
 - Founded: 2012, Melbourne, Australia (serves clients globally — US, Europe, Middle East)
 - International workshop delivery (confirmed by Otto, 14 Aug 2026): on-site workshops delivered in the United States, Germany (several cities), Saudi Arabia, Hong Kong, and Singapore, plus across Australia (incl. Sydney, Canberra). Travel quoted up front; remote full days can split over two mornings for time zones.
