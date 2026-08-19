@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { readFile, stat } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
+import { stat } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
@@ -11,11 +10,17 @@ import {
 } from "node:http";
 import { basename, extname, resolve, sep } from "node:path";
 import Busboy from "busboy";
+import type { AccessGate } from "./access.js";
 import {
   DEFAULT_AGENTS,
   publicAgentDefinitions,
   type AgentDefinition,
 } from "./agents.js";
+import {
+  AgentSettingsStore,
+  AgentSettingsValidationError,
+} from "./agent-settings.js";
+import { buildAgentCardDefinitions } from "./skills.js";
 import {
   DocumentStore,
   DocumentStoreError,
@@ -25,15 +30,9 @@ import {
 } from "./documents.js";
 import {
   ChatStore,
-  PROSPECT_CONFIDENCES,
-  PROSPECT_STATUSES,
   type BusinessMemoryInput,
-  type EnrichmentJobStatus,
-  type ProspectConfidence,
   type HistoryMessage,
   type PaidComponentStatus,
-  type ProspectRowInput,
-  type ProspectStatus,
   type SeoArticleJobInput,
   type SeoArticleJobStatus,
   type SeoArticleVersionInput,
@@ -58,14 +57,14 @@ import { fetchPublicDomainPage, fetchPublicWebPages } from "./public-web.js";
 import { validateSeoArticleResult } from "./seo-article.js";
 
 const MAX_MESSAGE_LENGTH = 8_000;
-// Saved business research arrives as one JSON payload, so this endpoint alone
-// needs more room than the 64 KB used by every other request.
+// A saved picture is base64 inside the JSON body, so this endpoint alone needs
+// more room than the 64 KB used by every other request.
+const MAX_PROFILE_REQUEST_BYTES = 512 * 1_024;
 const MAX_BUSINESS_MEMORY_REQUEST_BYTES = 256 * 1_024;
 const MAX_PAID_RESEARCH_REQUEST_BYTES = 1_024 * 1_024;
 const MAX_SEO_ARTICLE_REQUEST_BYTES = 1_024 * 1_024;
 const MAX_REQUEST_BYTES = 65_536;
 const MAX_UPSTREAM_BYTES = 65_536;
-const MAX_PROFILE_REQUEST_BYTES = 512 * 1_024;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -76,7 +75,6 @@ const MIME_TYPES: Readonly<Record<string, string>> = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
-  ".woff2": "font/woff2",
 };
 
 const SECURITY_HEADERS: Readonly<Record<string, string>> = {
@@ -99,9 +97,7 @@ type ErrorCode =
   | "DOCUMENT_SERVICE_UNAVAILABLE"
   | "DOCUMENT_TEXT_TOO_LARGE"
   | "FILE_TOO_LARGE"
-  | "IMPORT_TOO_LARGE"
   | "INVALID_REQUEST"
-  | "PROSPECT_STORE_ERROR"
   | "MESSAGE_TOO_LONG"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
@@ -155,6 +151,15 @@ export interface ChatGatewayOptions {
   documentStore?: DocumentStore;
   chatStore?: ChatStore;
   profileStore?: ProfileStore;
+  agentSettingsStore?: AgentSettingsStore;
+  skillsDirectory?: string;
+  profileDirectory?: string;
+  /**
+   * Guards every route except /health. Omitted on a learner's own computer,
+   * where the gateway is only reachable from that computer; required before
+   * the gateway is given a public address.
+   */
+  accessGate?: AccessGate | undefined;
 }
 
 class PublicError extends Error {
@@ -165,112 +170,6 @@ class PublicError extends Error {
   ) {
     super(publicMessage);
   }
-}
-
-// --- Content pipeline (GEO skills) ---------------------------------------
-// Reads the Markdown state files the GEO content skills maintain. Until those
-// skills exist, the endpoint serves labelled sample data so the sidebar card
-// can be previewed and approved.
-
-const SKILLS_DIRECTORY = fileURLToPath(
-  new URL("../../../skills", import.meta.url),
-);
-
-interface PipelineItem {
-  title: string;
-  brand: string;
-  url?: string | undefined;
-}
-
-interface PipelinePayload {
-  sample: boolean;
-  nextPages: PipelineItem[];
-  awaitingReview: PipelineItem[];
-  outreach: PipelineItem[];
-}
-
-const SAMPLE_PIPELINE: PipelinePayload = {
-  sample: true,
-  nextPages: [
-    { title: "Workshop pricing page", brand: "datalabs" },
-    { title: "Credits page", brand: "oddtoe" },
-    { title: "Power BI vs Tableau training", brand: "datalabs" },
-  ],
-  awaitingReview: [
-    { title: "How much does dashboard design cost?", brand: "datalabs" },
-  ],
-  outreach: [
-    { title: "LinkedIn post — workshop pricing", brand: "datalabs" },
-    { title: "Pitch — best data agencies listicle", brand: "datalabs" },
-  ],
-};
-
-function pipelineBrand(line: string): string {
-  if (/\(datalabs\)/i.test(line)) {
-    return "datalabs";
-  }
-  if (/\(oddtoe\)/i.test(line)) {
-    return "oddtoe";
-  }
-  return "general";
-}
-
-function pipelineTitle(line: string): string {
-  return line
-    .replace(/^\s*-\s*\[[ x~]\]\s*/i, "")
-    .replace(/\((?:datalabs|oddtoe)\)/i, "")
-    .replace(/—?\s*\[[^\]]*\]\([^)]*\)/g, "")
-    .trim();
-}
-
-function pipelineUrl(line: string): string | undefined {
-  const match = /\]\((https?:\/\/[^)]+)\)/.exec(line);
-  return match ? match[1] : undefined;
-}
-
-async function loadPipeline(): Promise<PipelinePayload> {
-  let backlog: string | null = null;
-  let outreachLog: string | null = null;
-  try {
-    backlog = await readFile(
-      `${SKILLS_DIRECTORY}/money-pages/references/backlog.md`,
-      "utf8",
-    );
-  } catch {
-    // Skill not built yet.
-  }
-  try {
-    outreachLog = await readFile(
-      `${SKILLS_DIRECTORY}/offsite-consensus/references/outreach-log.md`,
-      "utf8",
-    );
-  } catch {
-    // Skill not built yet.
-  }
-  if (backlog === null && outreachLog === null) {
-    return SAMPLE_PIPELINE;
-  }
-
-  const nextPages: PipelineItem[] = [];
-  const awaitingReview: PipelineItem[] = [];
-  for (const line of (backlog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && nextPages.length < 3) {
-      nextPages.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
-    } else if (/^\s*-\s*\[~\]/.test(line) && awaitingReview.length < 5) {
-      awaitingReview.push({
-        title: pipelineTitle(line),
-        brand: pipelineBrand(line),
-        url: pipelineUrl(line),
-      });
-    }
-  }
-  const outreach: PipelineItem[] = [];
-  for (const line of (outreachLog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && outreach.length < 5) {
-      outreach.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
-    }
-  }
-  return { sample: false, nextPages, awaitingReview, outreach };
 }
 
 function sendJson(
@@ -478,128 +377,6 @@ function businessMemoryObject(
     );
   }
   return value as Record<string, unknown>;
-}
-
-const BRAND_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const MAX_PROSPECT_IMPORT_ROWS = 200;
-
-function validateBrandSlug(value: unknown): string {
-  if (
-    typeof value !== "string" ||
-    value.length > 40 ||
-    !BRAND_SLUG_PATTERN.test(value)
-  ) {
-    throw new PublicError(
-      400,
-      "INVALID_REQUEST",
-      "Choose which brand these prospects belong to.",
-    );
-  }
-  return value;
-}
-
-function prospectText(
-  value: unknown,
-  maximumLength: number,
-): string {
-  if (value === undefined || value === null) {
-    return "";
-  }
-  if (typeof value !== "string") {
-    throw new PublicError(
-      400,
-      "INVALID_REQUEST",
-      "The prospect rows contain an invalid field.",
-    );
-  }
-  const trimmed = value.trim();
-  return trimmed.length > maximumLength
-    ? trimmed.slice(0, maximumLength)
-    : trimmed;
-}
-
-function validateProspectStatus(value: unknown): ProspectStatus | undefined {
-  if (value === undefined || value === null || value === "") {
-    return undefined;
-  }
-  if (
-    typeof value !== "string" ||
-    !PROSPECT_STATUSES.includes(value as ProspectStatus)
-  ) {
-    throw new PublicError(
-      400,
-      "INVALID_REQUEST",
-      `Prospect status must be one of: ${PROSPECT_STATUSES.join(", ")}.`,
-    );
-  }
-  return value as ProspectStatus;
-}
-
-function validateProspectRows(value: unknown): ProspectRowInput[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new PublicError(
-      400,
-      "INVALID_REQUEST",
-      "The import needs at least one prospect row.",
-    );
-  }
-  if (value.length > MAX_PROSPECT_IMPORT_ROWS) {
-    throw new PublicError(
-      413,
-      "IMPORT_TOO_LARGE",
-      `Import no more than ${MAX_PROSPECT_IMPORT_ROWS} prospects at a time.`,
-    );
-  }
-  return value.map((candidate) => {
-    if (
-      typeof candidate !== "object" ||
-      candidate === null ||
-      Array.isArray(candidate)
-    ) {
-      throw new PublicError(
-        400,
-        "INVALID_REQUEST",
-        "The prospect rows contain an invalid entry.",
-      );
-    }
-    const row = candidate as Record<string, unknown>;
-    const company = prospectText(row.company, 120);
-    if (company.length === 0) {
-      throw new PublicError(
-        400,
-        "INVALID_REQUEST",
-        "Every prospect row needs a company name.",
-      );
-    }
-    const rowNumber = row.rowNumber === undefined || row.rowNumber === null
-      ? undefined
-      : Number(row.rowNumber);
-    if (rowNumber !== undefined && !Number.isInteger(rowNumber)) {
-      throw new PublicError(
-        400,
-        "INVALID_REQUEST",
-        "Prospect row numbers must be whole numbers.",
-      );
-    }
-    return {
-      rowNumber,
-      company,
-      region: prospectText(row.region, 120),
-      tier: prospectText(row.tier, 40),
-      source: prospectText(row.source, 120),
-      website: prospectText(row.website, 300),
-      linkedinCompanyUrl: prospectText(row.linkedinCompanyUrl, 300),
-      contactName: prospectText(row.contactName, 120),
-      contactEmail: prospectText(row.contactEmail, 254),
-      linkedinUrl: prospectText(row.linkedinUrl, 300),
-      pdfSent: prospectText(row.pdfSent, 40),
-      sentDate: prospectText(row.sentDate, 40),
-      opened: prospectText(row.opened, 40),
-      followUpSent: prospectText(row.followUpSent, 40),
-      status: validateProspectStatus(row.status),
-      notes: prospectText(row.notes, 1000),
-    };
-  });
 }
 
 function businessMemoryObjectArray(
@@ -1540,6 +1317,16 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
         return;
       }
 
+      // Deliberately below /health, so the platform's health check keeps
+      // working while nobody is signed in, and above everything else, so no
+      // route can be added later that forgets to check.
+      if (
+        options.accessGate !== undefined &&
+        (await options.accessGate.handle(request, response, url))
+      ) {
+        return;
+      }
+
       if (url.pathname === "/api/agents") {
         if (request.method !== "GET") {
           sendJson(
@@ -1555,34 +1342,21 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
           );
           return;
         }
-        sendJson(response, 200, {
-          schemaVersion: 1,
-          agents: publicAgentDefinitions(agents),
-        });
-        return;
-      }
-
-      if (url.pathname === "/api/pipeline") {
-        if (request.method !== "GET") {
-          sendJson(
-            response,
-            405,
-            {
-              error: {
-                code: "INVALID_REQUEST",
-                message: "That method is not supported.",
-              },
-            },
-            { Allow: "GET" },
-          );
-          return;
-        }
-        try {
-          sendJson(response, 200, await loadPipeline());
-        } catch (error) {
-          options.logError?.("Pipeline state could not be read.", error);
-          sendJson(response, 200, { ...SAMPLE_PIPELINE });
-        }
+        const publicAgents =
+          options.skillsDirectory !== undefined &&
+          options.profileDirectory !== undefined
+            ? await buildAgentCardDefinitions(
+                agents,
+                options.skillsDirectory,
+                options.profileDirectory,
+                (message) => options.logError?.(message),
+              )
+            : publicAgentDefinitions(agents).map((agent) => ({
+                ...agent,
+                skills: [],
+                syncRequired: true,
+              }));
+        sendJson(response, 200, { schemaVersion: 2, agents: publicAgents });
         return;
       }
 
@@ -1655,6 +1429,82 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 "Your agent details could not be saved.",
               ),
             );
+          }
+        }
+        return;
+      }
+
+      if (url.pathname === "/api/agent-settings") {
+        if (options.agentSettingsStore === undefined) {
+          sendJson(response, 503, {
+            error: {
+              code: "AGENT_UNAVAILABLE",
+              message: "Agent settings are not available.",
+            },
+          });
+          return;
+        }
+        try {
+          if (request.method === "GET") {
+            const saved = await options.agentSettingsStore.readAll();
+            sendJson(response, 200, { schemaVersion: 1, ...saved });
+            return;
+          }
+          if (request.method === "PUT") {
+            const body = await readRequestBody(request, MAX_REQUEST_BYTES);
+            if (
+              typeof body !== "object" ||
+              body === null ||
+              Array.isArray(body)
+            ) {
+              throw new AgentSettingsValidationError(
+                "Agent settings must be an object.",
+              );
+            }
+            const candidate = body as Record<string, unknown>;
+            if (typeof candidate.agentId !== "string") {
+              throw new AgentSettingsValidationError(
+                "Choose an agent before saving settings.",
+              );
+            }
+            const saved = await options.agentSettingsStore.write(
+              candidate.agentId,
+              candidate.values,
+            );
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              ...saved,
+              syncRequired: true,
+            });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, PUT" },
+          );
+        } catch (error) {
+          if (error instanceof AgentSettingsValidationError) {
+            sendJson(response, 400, {
+              error: {
+                code: "INVALID_REQUEST",
+                message: error.message,
+              },
+            });
+          } else {
+            options.logError?.("Could not manage agent settings", error);
+            sendJson(response, 500, {
+              error: {
+                code: "AGENT_UNAVAILABLE",
+                message: "Agent settings could not be saved.",
+              },
+            });
           }
         }
         return;
@@ -2285,482 +2135,6 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "BUSINESS_MEMORY_ERROR",
                 "Paid domain research is not available right now.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/prospects/enrichment-jobs") {
-        try {
-          if (request.method === "GET") {
-            const sessionId = validateSessionId(url.searchParams.get("sessionId"));
-            const jobId = businessMemoryText(
-              url.searchParams.get("jobId"),
-              "job ID",
-              160,
-            );
-            const job = jobId
-              ? chatStore.getEnrichmentJob(sessionId, jobId)
-              : undefined;
-            if (job === undefined) {
-              throw new PublicError(
-                404,
-                "RESEARCH_JOB_NOT_FOUND",
-                "That enrichment job is not registered to this conversation.",
-              );
-            }
-            sendJson(response, 200, { schemaVersion: 1, job });
-            return;
-          }
-          if (request.method === "POST") {
-            const body = businessMemoryObject(
-              await readRequestBody(request),
-              "enrichment job payload",
-            );
-            const registered = chatStore.registerEnrichmentJob({
-              sessionId: validateSessionId(body.sessionId),
-              requestId: businessMemoryText(body.requestId, "request ID", 160),
-              brand: validateBrandSlug(body.brand),
-              listName: prospectText(body.listName, 120),
-              targetCount: Number.isInteger(Number(body.targetCount))
-                ? Number(body.targetCount)
-                : 0,
-            });
-            sendJson(response, 200, { schemaVersion: 1, ...registered });
-            return;
-          }
-          if (request.method === "PATCH") {
-            const body = businessMemoryObject(
-              await readRequestBody(request),
-              "enrichment job update",
-            );
-            const jobId = businessMemoryText(body.jobId, "job ID", 160);
-            const job = chatStore.updateEnrichmentJob(jobId, {
-              status: typeof body.status === "string"
-                ? (body.status as EnrichmentJobStatus)
-                : undefined,
-              stage: typeof body.stage === "string"
-                ? body.stage.slice(0, 120)
-                : undefined,
-              enrichedCount: Number.isInteger(Number(body.enrichedCount)) && body.enrichedCount !== undefined
-                ? Number(body.enrichedCount)
-                : undefined,
-              flaggedCount: Number.isInteger(Number(body.flaggedCount)) && body.flaggedCount !== undefined
-                ? Number(body.flaggedCount)
-                : undefined,
-              skipped: Array.isArray(body.skipped)
-                ? body.skipped.filter(
-                    (item): item is string => typeof item === "string",
-                  )
-                : undefined,
-              providerCostUsd: typeof body.providerCostUsd === "number" &&
-                Number.isFinite(body.providerCostUsd)
-                ? body.providerCostUsd
-                : undefined,
-              errorCode: typeof body.errorCode === "string"
-                ? body.errorCode.slice(0, 80)
-                : undefined,
-              errorMessage: typeof body.errorMessage === "string"
-                ? body.errorMessage.slice(0, 500)
-                : undefined,
-            });
-            if (job === undefined) {
-              throw new PublicError(
-                404,
-                "RESEARCH_JOB_NOT_FOUND",
-                "That enrichment job does not exist.",
-              );
-            }
-            sendJson(response, 200, { schemaVersion: 1, job });
-            return;
-          }
-          sendJson(
-            response,
-            405,
-            {
-              error: {
-                code: "INVALID_REQUEST",
-                message: "That method is not supported.",
-              },
-            },
-            { Allow: "GET, POST, PATCH" },
-          );
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not access enrichment jobs", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The enrichment job store is not available right now.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/prospects/enrichment-results") {
-        try {
-          if (request.method !== "POST") {
-            sendJson(
-              response,
-              405,
-              {
-                error: {
-                  code: "INVALID_REQUEST",
-                  message: "That method is not supported.",
-                },
-              },
-              { Allow: "POST" },
-            );
-            return;
-          }
-          const body = businessMemoryObject(
-            await readRequestBody(request, MAX_REQUEST_BYTES),
-            "enrichment results payload",
-          );
-          const jobId = businessMemoryText(body.jobId, "job ID", 160);
-          const rawResults = businessMemoryObjectArray(
-            body.results,
-            "enrichment results",
-            200,
-          );
-          const results = rawResults.map((candidate) => {
-            const prospectId = businessMemoryText(
-              candidate.prospectId,
-              "prospect ID",
-              64,
-            );
-            const confidence = typeof candidate.confidence === "string" &&
-              PROSPECT_CONFIDENCES.includes(
-                candidate.confidence as ProspectConfidence,
-              )
-              ? (candidate.confidence as ProspectConfidence)
-              : "low";
-            return {
-              prospectId,
-              contactName: prospectText(candidate.contactName, 120),
-              contactEmail: prospectText(candidate.contactEmail, 254),
-              linkedinUrl: prospectText(candidate.linkedinUrl, 300),
-              jobTitle: prospectText(candidate.jobTitle, 160),
-              confidence,
-              flagReason: prospectText(candidate.flagReason, 300),
-            };
-          });
-          const applied = chatStore.applyEnrichmentResults(jobId, results);
-          sendJson(response, 200, { schemaVersion: 1, applied });
-          return;
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not apply enrichment results", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The enrichment results could not be saved.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/prospects/updates") {
-        try {
-          if (request.method !== "POST") {
-            sendJson(
-              response,
-              405,
-              {
-                error: {
-                  code: "INVALID_REQUEST",
-                  message: "That method is not supported.",
-                },
-              },
-              { Allow: "POST" },
-            );
-            return;
-          }
-          const body = businessMemoryObject(
-            await readRequestBody(request),
-            "prospect update payload",
-          );
-          const brand = validateBrandSlug(body.brand);
-          const rawUpdates = businessMemoryObjectArray(
-            body.updates,
-            "prospect updates",
-            100,
-          );
-          const updates = rawUpdates.map((candidate) => {
-            const company = prospectText(candidate.company, 120);
-            if (company.length === 0) {
-              throw new PublicError(
-                400,
-                "INVALID_REQUEST",
-                "Every prospect update needs a company name.",
-              );
-            }
-            const fields = businessMemoryObject(
-              candidate.fields,
-              "prospect update fields",
-            );
-            const linkedinCompanyUrl = prospectText(
-              fields.linkedinCompanyUrl,
-              300,
-            );
-            if (
-              linkedinCompanyUrl !== "" &&
-              !/^https:\/\/(www\.)?linkedin\.com\/company\//i.test(
-                linkedinCompanyUrl,
-              )
-            ) {
-              throw new PublicError(
-                400,
-                "INVALID_REQUEST",
-                "LinkedIn company URLs must start with https://www.linkedin.com/company/",
-              );
-            }
-            return {
-              company,
-              listName: prospectText(candidate.listName, 120) || undefined,
-              fields: {
-                linkedinCompanyUrl: linkedinCompanyUrl || undefined,
-                contactName: prospectText(fields.contactName, 120) || undefined,
-                contactEmail: prospectText(fields.contactEmail, 254) || undefined,
-                linkedinUrl: prospectText(fields.linkedinUrl, 300) || undefined,
-                website: prospectText(fields.website, 300) || undefined,
-                region: prospectText(fields.region, 120) || undefined,
-                tier: prospectText(fields.tier, 40) || undefined,
-                status: validateProspectStatus(fields.status),
-                notes: prospectText(fields.notes, 1000) || undefined,
-              },
-            };
-          });
-          const outcomes = chatStore.updateProspectFields(brand, updates);
-          sendJson(response, 200, {
-            schemaVersion: 1,
-            outcomes,
-            summary: chatStore.prospectPipelineSummary(brand),
-          });
-          return;
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not update prospects", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The prospect updates could not be saved.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/prospects/enrichable") {
-        try {
-          if (request.method !== "GET") {
-            sendJson(
-              response,
-              405,
-              {
-                error: {
-                  code: "INVALID_REQUEST",
-                  message: "That method is not supported.",
-                },
-              },
-              { Allow: "GET" },
-            );
-            return;
-          }
-          const brand = validateBrandSlug(url.searchParams.get("brand"));
-          const requestedList = url.searchParams.get("list");
-          const listName = requestedList === null
-            ? undefined
-            : prospectText(requestedList, 120) || undefined;
-          const requestedLimit = url.searchParams.get("limit");
-          const limit = requestedLimit === null ? 200 : Number(requestedLimit);
-          if (!Number.isInteger(limit)) {
-            throw new PublicError(
-              400,
-              "INVALID_REQUEST",
-              "The prospect limit must be a whole number.",
-            );
-          }
-          const { eligible, missingUrl } = chatStore.listEnrichableProspects(
-            brand,
-            listName,
-            limit,
-          );
-          sendJson(response, 200, {
-            schemaVersion: 1,
-            eligible: eligible.map((row) => ({
-              prospectId: row.prospectId,
-              company: row.company,
-              listName: row.listName,
-              linkedinCompanyUrl: row.linkedinCompanyUrl,
-              region: row.region,
-              tier: row.tier,
-            })),
-            missingUrl,
-          });
-          return;
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not list enrichable prospects", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The prospect list is not available right now.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/prospects") {
-        try {
-          if (request.method === "GET") {
-            const requestedBrand = url.searchParams.get("brand");
-            const requestedStatus = url.searchParams.get("status");
-            const requestedList = url.searchParams.get("list");
-            const requestedLimit = url.searchParams.get("limit");
-            const brand = requestedBrand === null
-              ? undefined
-              : validateBrandSlug(requestedBrand);
-            const status = requestedStatus === null
-              ? undefined
-              : validateProspectStatus(requestedStatus);
-            const listName = requestedList === null
-              ? undefined
-              : prospectText(requestedList, 120) || undefined;
-            const limit = requestedLimit === null
-              ? undefined
-              : Number(requestedLimit);
-            if (limit !== undefined && !Number.isInteger(limit)) {
-              throw new PublicError(
-                400,
-                "INVALID_REQUEST",
-                "The prospect limit must be a whole number.",
-              );
-            }
-            sendJson(response, 200, {
-              schemaVersion: 1,
-              summary: chatStore.prospectPipelineSummary(brand),
-              prospects: chatStore.listProspects({
-                brand,
-                status,
-                listName,
-                limit,
-              }),
-            });
-            return;
-          }
-          if (request.method === "POST") {
-            const body = businessMemoryObject(
-              await readRequestBody(request),
-              "prospect import payload",
-            );
-            const brand = validateBrandSlug(body.brand);
-            const listName = prospectText(body.listName, 120);
-            if (listName.length === 0) {
-              throw new PublicError(
-                400,
-                "INVALID_REQUEST",
-                "The import needs a list name.",
-              );
-            }
-            const rows = validateProspectRows(body.rows);
-            const result = chatStore.importProspects(brand, listName, rows);
-            sendJson(response, 200, {
-              schemaVersion: 1,
-              result,
-              summary: chatStore.prospectPipelineSummary(brand),
-            });
-            return;
-          }
-          sendJson(
-            response,
-            405,
-            {
-              error: {
-                code: "INVALID_REQUEST",
-                message: "That method is not supported.",
-              },
-            },
-            { Allow: "GET, POST" },
-          );
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not access prospects", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The prospect list is not available right now.",
-              ),
-            );
-          }
-        }
-        return;
-      }
-
-      if (url.pathname === "/api/campaigns") {
-        try {
-          if (request.method !== "GET") {
-            sendJson(
-              response,
-              405,
-              {
-                error: {
-                  code: "INVALID_REQUEST",
-                  message: "That method is not supported.",
-                },
-              },
-              { Allow: "GET" },
-            );
-            return;
-          }
-          const requestedBrand = url.searchParams.get("brand");
-          const brand = requestedBrand === null
-            ? undefined
-            : validateBrandSlug(requestedBrand);
-          sendJson(response, 200, {
-            schemaVersion: 1,
-            campaigns: chatStore.listCampaigns(brand),
-          });
-        } catch (error) {
-          if (error instanceof PublicError) {
-            sendError(response, error);
-          } else {
-            options.logError?.("Could not access campaigns", error);
-            sendError(
-              response,
-              new PublicError(
-                500,
-                "PROSPECT_STORE_ERROR",
-                "The campaign list is not available right now.",
               ),
             );
           }
