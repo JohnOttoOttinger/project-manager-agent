@@ -1,6 +1,6 @@
 # Money Pages
 
-Use this skill when Otto asks for the next money page, a pricing page, a comparison, a case study, or the credits page — or clicks the "Next money page" quick action. These pages answer buying questions AI assistants get asked ("who can train my team", "what does X cost"), which is where a recommendation becomes a lead.
+Use this skill when Otto asks for the next money page, a pricing page, a comparison, a case study, the credits page, an events-guide page, or a directory/list page of people or companies — or clicks the "Next money page" quick action. The full template suite is `references/template-catalog.md`. These pages answer buying questions AI assistants get asked ("who can train my team", "what does X cost"), which is where a recommendation becomes a lead.
 
 ## Workflow
 
@@ -8,7 +8,7 @@ Use this skill when Otto asks for the next money page, a pricing page, a compari
 2. **Pick the page.** Take the top unchecked item for that brand from `references/backlog.md`, unless Otto names one.
 3. **Interview for facts only.** Ask Otto ONLY for what the brand file marks `TO FILL` or what the page type needs and brands.md lacks (real prices/ranges, nameable clients, project details, outcomes). Rough answers are fine — turn "about 5k a day, less remote" into clean copy. Never invent; if Otto declines a number, use a bracketed range he approves or restructure the page to not need it.
 4. **Write per the playbook** using the matching template in `references/page-types.md`. Australian spelling. Include "Updated [Month Year]".
-   **Layout:** generate the draft INSIDE the WPBakery design kit (`references/design-kit.html` — Otto's styled patterns with `{{TOKEN}}` slots; token specs and compose rules in `references/design-kit-README.md`). Fill the tokens, repeat/omit patterns per page type, never alter row/column attributes or styling.
+   **Layout:** pick the kit from `references/template-catalog.md` (the template suite: money-page kits per brand, plus the events-guide and directory-guide kits) and generate the draft INSIDE it — Otto's styled patterns with `{{TOKEN}}` slots; token specs and compose rules in `references/design-kit-README.md` (money kits) / `references/guide-kits-README.md` (guide kits). Fill the tokens, repeat/omit patterns per page type, never alter row/column attributes or styling.
 5. **Yoast fields go in the HANDOFF MESSAGE, never in the page body.** Print them alongside the draft:
    `YOAST SEO TITLE: ... (max ~60 chars) | META DESCRIPTION: ... (max ~155 chars)`
    **⛔ Do NOT put an HTML comment at the top of the body** (this was the old instruction, reversed 16 Aug 2026):

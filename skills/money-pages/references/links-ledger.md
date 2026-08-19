@@ -5,6 +5,7 @@ written by `scripts/link-pass.py apply`. If Otto removes a link on the site,
 note it here with "(removed by Otto)" and never re-add it.
 
 Format: `- YYYY-MM-DD · brand · source <id> (<url>) → target <id-or-url>`
+- 2026-08-19 · **EXPERIENTIAL AGENCIES PAGE PUBLISHED + link pass applied (3/3).** Page 16173 /experiential-marketing-agencies/ published by the agent on Otto's explicit Q&A authorisation, then plan link-plans/2026-08-19-experiential-agencies.json applied: (1) **homepage 15922** "produces animation and installations for **agencies**" → tan decorated link; (2) **experiential-marketing 16124** "advertising, marketing, and **activation agencies**" → link inside existing strong; (3) **brand-activation-ideas 16133** "activations for **agencies** and brand teams" → strong+link. All three verified rendering live same day. Yoast meta description set via the browser recipe (typed into the Draft.js field, classic-editor Update, verified via yoast_head_json). GSC indexing requested for the new page + all 3 sources (all four confirmed "added to priority crawl queue"). GSC AUTOMATION NOTE: the inspection search box only reliably takes focus via find→ref click or double_click — single coordinate clicks silently drop the typed text and Enter re-triggers the previous URL's live test (harmless duplicates but wasted minutes); always screenshot-verify the box contains the URL before pressing Enter.
 - 2026-08-14 · datalabs · source 661 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/) → target https://www.datalabsagency.com/data-visualisation-workshop-pricing/
 - 2026-08-14 · datalabs · source 52168 (https://www.datalabsagency.com/2026/01/27/data-storytelling-workshop-providers-what-to-look-for-when-hiring/) → target https://www.datalabsagency.com/data-visualisation-workshop-pricing/
 - 2026-08-14 · datalabs · source 167 (https://www.datalabsagency.com/) → target https://www.datalabsagency.com/data-visualisation-workshop-pricing/
@@ -124,3 +125,6 @@ uniqueness assertion before anything was written.
 
 Script: `skills/money-pages/scripts/faq-link-pass-oddtoe.py` (dry-run by default,
 `--apply` to write).
+- 2026-08-19 · oddtoe · source 15922 (https://www.oddtoe.com/) → target None
+- 2026-08-19 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target None
+- 2026-08-19 · oddtoe · source 16133 (https://www.oddtoe.com/brand-activation-ideas/) → target None
