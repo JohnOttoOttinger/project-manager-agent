@@ -1,4 +1,5 @@
 id: money-pages
+agent: marketing
 name: Money Pages
 version: 1.0.0
 description: Write AI-citable commercial pages (pricing, comparisons, case studies, credits) for Datalabs or Oddtoe and push them to the right WordPress site as drafts for Otto's review.

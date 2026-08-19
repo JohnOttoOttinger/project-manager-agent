@@ -1,4 +1,5 @@
 id: sourcing
+agent: sourcing
 name: Sourcing
 version: 1.0.0
 description: Build and run Oddtoe's China supply chain — vet Pearl River Delta factories against the ham-bag gate, track each supplier from candidate to vetted, and plan sample-visit trips.

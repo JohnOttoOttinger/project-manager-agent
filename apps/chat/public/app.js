@@ -26,30 +26,46 @@
     {
       id: "sales",
       name: "Sales",
-      description: "Sales research, preparation, and follow-up workflows.",
-      status: "coming-soon",
-      examplePrompts: [],
+      description: "Researches prospects, drafts replies, and turns calls into proposals.",
+      status: "active",
+      examplePrompts: [
+        "Draft a reply to this enquiry that just came in",
+        "Turn these call notes into a recap and a proposal",
+        "Write a cold email to this person",
+      ],
     },
     {
       id: "marketing",
       name: "Marketing",
-      description: "Campaign planning, content, and marketing operations.",
-      status: "coming-soon",
-      examplePrompts: [],
+      description: "Plans campaigns and creates grounded content from supplied or researched evidence.",
+      status: "active",
+      examplePrompts: [
+        "Turn these customer notes into three grounded content themes",
+        "Build a practical campaign plan from this brief",
+        "Review this draft and identify unsupported claims",
+      ],
     },
     {
       id: "investment",
       name: "Investment",
-      description: "Investment research, analysis, and decision preparation.",
-      status: "coming-soon",
-      examplePrompts: [],
+      description: "Reviews grants, funding evidence, and business updates without making financial decisions.",
+      status: "active",
+      examplePrompts: [
+        "Compare these two funding opportunities from the supplied documents",
+        "Turn this grant brief into eligibility questions and deadlines",
+        "Draft a factual investor update from these notes",
+      ],
     },
     {
       id: "bookkeeping",
       name: "Bookkeeping",
-      description: "Bookkeeping preparation, review, and reconciliation support.",
-      status: "coming-soon",
-      examplePrompts: [],
+      description: "Prepares coding-review suggestions and questions for the user to complete in their accounting system.",
+      status: "active",
+      examplePrompts: [
+        "Review these transactions and suggest coding categories with confidence",
+        "List the questions I should take to my bookkeeper from this statement",
+        "Summarise the unpaid invoices in this document",
+      ],
     },
   ];
   const STORAGE_KEY = "ai-solopreneur-chat-session";
@@ -132,6 +148,8 @@
   let activeAgentId = "project-manager";
   let uploadedDocuments = [];
   let sessionDocuments = [];
+  let profile = null;
+  let pendingAvatarDataUrl = "";
   let conversations = [];
   let nextConversationCursor = null;
   let currentMessages = [];
@@ -242,6 +260,12 @@
   }
 
   function displayAgentName() {
+    // A name saved through the settings form wins over both the registry and
+    // agent.config.js, so renaming the agent needs no file editing.
+    const saved = profile?.agentName ?? "";
+    if (saved.length > 0) {
+      return saved;
+    }
     return activeAgentId === "project-manager"
       ? config.name
       : activeAgent()?.name ?? config.name;
@@ -311,12 +335,30 @@
     elements.conversationAgentName.textContent = name;
     elements.conversationTitleText.textContent = activeConversationTitle;
     elements.input.setAttribute("aria-label", `Message ${name}`);
-    const article = name === "Project Manager" ? "the " : "";
-    elements.input.placeholder = `What should ${article}${name} do?`;
+    // "the Project Manager" reads well; "the Coombe Studio" does not, so drop
+    // the article once the learner has named the agent themselves.
+    elements.input.placeholder =
+      (profile?.agentName ?? "").length > 0
+        ? `What should ${name} do?`
+        : `What should the ${name} do?`;
 
     const initials = getInitials(name);
     elements.agentInitials.textContent = initials;
     elements.mobileAgentInitials.textContent = initials;
+    applySavedAvatar();
+  }
+
+  function applySavedAvatar() {
+    const avatar = profile?.avatarDataUrl ?? "";
+    for (const mark of [elements.agentInitials, elements.mobileAgentInitials]) {
+      if (avatar.length > 0) {
+        mark.style.backgroundImage = `url("${avatar}")`;
+        mark.classList.add("brand__mark--photo");
+      } else {
+        mark.style.removeProperty("background-image");
+        mark.classList.remove("brand__mark--photo");
+      }
+    }
   }
 
   function scrollConversation() {
@@ -1214,7 +1256,36 @@
           void createConversation(agent.id);
         });
       }
-      elements.agentList.append(button);
+
+      // A cog cannot live inside the chip button, so the chip becomes a row
+      // holding the selector button and its own settings control.
+      const row = document.createElement("div");
+      row.className = "agent-row";
+      row.append(button);
+
+      if (agent.status === "active") {
+        const settings = document.createElement("button");
+        settings.className = "agent-settings";
+        settings.type = "button";
+        settings.disabled = requestInProgress || documentRequestInProgress;
+        settings.title = `Edit what ${agent.name} knows about you`;
+        settings.innerHTML =
+          '<svg viewBox="0 0 24 24" aria-hidden="true">' +
+          '<circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7" />' +
+          '<path d="M12 2.6v2.2M12 19.2v2.2M21.4 12h-2.2M4.8 12H2.6m14.7-6.6-1.6 1.6M8.1 15.9l-1.6 1.6m10.8 0-1.6-1.6M8.1 8.1 6.5 6.5" ' +
+          'fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7" />' +
+          "</svg>";
+        const label = document.createElement("span");
+        label.className = "visually-hidden";
+        label.textContent = `Edit what ${agent.name} knows about you`;
+        settings.append(label);
+        settings.addEventListener("click", () => {
+          void openProfileDialog();
+        });
+        row.append(settings);
+      }
+
+      elements.agentList.append(row);
     }
   }
 
@@ -2093,6 +2164,7 @@
   async function initialise() {
     syncHistoryPanelAccess();
     await loadAgents();
+    await loadProfile();
     applyAgentIdentity();
     renderAgentList();
     renderSuggestions();

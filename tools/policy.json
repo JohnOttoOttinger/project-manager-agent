@@ -28,6 +28,30 @@
       "executionWorkflowId": "phase4UpdateTaskStatus"
     },
     {
+      "id": "start_funding_scan",
+      "risk": "bounded_external_read_and_local_write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "explicit_request_required",
+      "workflowId": "phase15StartFundingScan"
+    },
+    {
+      "id": "get_funding_report",
+      "risk": "read",
+      "available": true,
+      "modelCallable": true,
+      "mode": "automatic",
+      "workflowId": "phase15GetFundingReport"
+    },
+    {
+      "id": "set_funding_profile",
+      "risk": "bounded_local_write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "explicit_request_required",
+      "workflowId": "phase15SetFundingProfile"
+    },
+    {
       "id": "start_domain_research",
       "risk": "bounded_local_write",
       "available": true,
@@ -74,6 +98,51 @@
       "modelCallable": true,
       "mode": "automatic",
       "workflowId": "phase11GetPaidDomainResearch"
+    },
+    {
+      "id": "create_schedule",
+      "risk": "bounded_local_write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "explicit_request_required",
+      "workflowId": "phase18CreateSchedule"
+    },
+    {
+      "id": "list_schedules",
+      "risk": "read",
+      "available": true,
+      "modelCallable": true,
+      "mode": "automatic",
+      "workflowId": "phase18ListSchedules"
+    },
+    {
+      "id": "update_schedule",
+      "risk": "bounded_local_write",
+      "available": true,
+      "modelCallable": true,
+      "mode": "explicit_request_required",
+      "workflowId": "phase18UpdateSchedule"
+    },
+    {
+      "id": "delete_task",
+      "risk": "destructive",
+      "available": false,
+      "modelCallable": false,
+      "mode": "unavailable"
+    },
+    {
+      "id": "archive_task",
+      "risk": "destructive",
+      "available": false,
+      "modelCallable": false,
+      "mode": "unavailable"
+    },
+    {
+      "id": "bulk_change_tasks",
+      "risk": "destructive",
+      "available": false,
+      "modelCallable": false,
+      "mode": "unavailable"
     },
     {
       "id": "start_seo_article",
@@ -124,27 +193,6 @@
       "mode": "confirmation_required",
       "proposalWorkflowId": "phase16ProposeLeadFeedback",
       "executionWorkflowId": "phase16UpdateLostLead"
-    },
-    {
-      "id": "delete_task",
-      "risk": "destructive",
-      "available": false,
-      "modelCallable": false,
-      "mode": "unavailable"
-    },
-    {
-      "id": "archive_task",
-      "risk": "destructive",
-      "available": false,
-      "modelCallable": false,
-      "mode": "unavailable"
-    },
-    {
-      "id": "bulk_change_tasks",
-      "risk": "destructive",
-      "available": false,
-      "modelCallable": false,
-      "mode": "unavailable"
     }
   ]
 }

@@ -1,4 +1,5 @@
 id: lost-lead-review
+agent: business-development
 name: Lost-Lead Review
 version: 1.0.0
 description: Record lost leads, draft a feedback ask, save the answer behind exact confirmation, and report honest loss patterns.

@@ -103,9 +103,11 @@ textarea:focus-visible,
     var(--panel);
 }
 
-/* Keep each sidebar section at its natural height and let the whole panel
-   scroll, instead of letting flexbox compress a section below its content
-   (which made the agent cards spill over the Chats panel). */
+/* The panel is the scroll container, so its sections must keep their content
+   height. Flex items shrink by default, and these sections set min-height: 0,
+   so once there are enough agents or saved chats they get squeezed far below
+   their content. Their overflow stays visible, so the agent list and the chat
+   list then paint on top of each other instead of scrolling. */
 .agent-panel > * {
   flex-shrink: 0;
 }
@@ -334,6 +336,52 @@ textarea:focus-visible,
   display: grid;
   gap: 0.55rem;
   margin-top: 0.7rem;
+}
+
+.agent-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* .agent-button sets width:100%, which inside a flex row would size it to the
+   whole row and push the cog outside the panel. */
+.agent-row > .agent-button {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.agent-settings {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  border: 1px solid rgb(83 62 135 / 10%);
+  border-radius: 50%;
+  background: rgb(255 255 255 / 54%);
+  color: #6c6480;
+  cursor: pointer;
+}
+
+.agent-settings:hover:not(:disabled),
+.agent-settings:focus-visible {
+  border-color: color-mix(in srgb, var(--brand-primary) 34%, transparent);
+  background: white;
+  color: var(--brand-primary);
+}
+
+.agent-settings:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.agent-settings svg {
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .agent-button {

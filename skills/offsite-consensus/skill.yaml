@@ -1,4 +1,5 @@
 id: offsite-consensus
+agent: marketing
 name: Offsite Consensus
 version: 1.0.0
 description: Draft the promotion batch that gets Datalabs and Oddtoe mentioned on other people's sites — LinkedIn posts, listicle pitches, review requests, YouTube descriptions, forum answers. Drafts only; Otto sends everything himself.

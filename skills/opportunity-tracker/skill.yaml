@@ -1,4 +1,5 @@
 id: opportunity-tracker
+agent: business-development
 name: Opportunity Tracker
 version: 1.0.0
 description: Track deadline-driven opportunities for Oddtoe — festival press accreditation, market pitch sessions, open calls, prizes and gallery submissions — and draft the submission from a single source of truth.

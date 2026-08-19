@@ -1,4 +1,5 @@
 id: analytics
+agent: analytics
 name: Analytics
 version: 1.0.0
 description: Read Oddtoe's GA4 and Search Console data directly and answer what actually moved — weekly digest, threshold alerts, post-publish verification, and ad-hoc questions.
