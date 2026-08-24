@@ -20,13 +20,29 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "analytics" / "scripts"))
 import ga_client  # noqa: E402  (auth + config already solved there)
 
-SITE = "https://www.oddtoe.com/"
-
-# Queries we never want to propose a page for.
-BRAND = re.compile(r"\boddtoe|otto ottinger|ottinger\b", re.I)
-# Named people / navigational — someone looking for a person, not a service.
-PEOPLE = re.compile(r"\b(uta|jason burns|andrew cannava|natanya rose|julie kane|zac simmons|"
-                    r"anna berthold|sandy weinberg|john goldsmith|donna felten)\b", re.I)
+BRANDS = {
+    "oddtoe": {
+        "name": "Oddtoe",
+        "site": "https://www.oddtoe.com",
+        "gsc_env": "GSC_ODDTOE_SITE_URL",           # optional override of the GSC property
+        # Queries we never want to propose a page for.
+        "brand": r"\boddtoe|otto ottinger|ottinger\b",
+        # Named people / navigational — someone looking for a person, not a service.
+        "people": r"\b(uta|jason burns|andrew cannava|natanya rose|julie kane|zac simmons|"
+                  r"anna berthold|sandy weinberg|john goldsmith|donna felten)\b",
+    },
+    "datalabs": {
+        "name": "The Datalabs Agency",
+        "site": "https://www.datalabsagency.com",
+        "gsc_env": "GSC_DATALABS_SITE_URL",
+        "brand": r"\bdatalabs|data labs|otto ottinger|ottinger\b",
+        "people": r"\botto ottinger\b",
+    },
+}
+CFG = BRANDS["oddtoe"]                              # set from --brand in main()
+SITE = CFG["site"] + "/"
+BRAND = re.compile(CFG["brand"], re.I)
+PEOPLE = re.compile(CFG["people"], re.I)
 # Commercial intent lifts a query's value: these are buyers, not researchers.
 COMMERCIAL = re.compile(r"\b(cost|costs|price|pricing|hire|hiring|quote|agency|agencies|"
                         r"company|companies|service|services|studio|studios|near me|best|"
@@ -48,8 +64,9 @@ def fetch(days: int) -> list[dict]:
     import datetime
     end = datetime.date.today() - datetime.timedelta(days=3)
     start = end - datetime.timedelta(days=days)
-    tok = ga_client.get_token()
-    site = urllib.parse.quote(SITE, safe="")
+    tok = ga_client.get_token()                     # also loads .env
+    gsc_property = os.environ.get(CFG["gsc_env"], SITE)
+    site = urllib.parse.quote(gsc_property, safe="")
     body = {"startDate": str(start), "endDate": str(end),
             "dimensions": ["query", "page"], "rowLimit": 25000}
     req = urllib.request.Request(
@@ -64,7 +81,13 @@ def main() -> None:
     ap.add_argument("--days", type=int, default=180)
     ap.add_argument("--limit", type=int, default=10)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--brand", choices=sorted(BRANDS), default="oddtoe")
     a = ap.parse_args()
+    global CFG, SITE, BRAND, PEOPLE
+    CFG = BRANDS[a.brand]
+    SITE = CFG["site"] + "/"
+    BRAND = re.compile(CFG["brand"], re.I)
+    PEOPLE = re.compile(CFG["people"], re.I)
 
     rows = fetch(a.days)
 
@@ -145,7 +168,7 @@ def main() -> None:
             "cluster_size": len(c["queries"]),
             "impressions": c["impr"], "clicks": c["clicks"],
             "ctr_pct": round(ctr * 100, 2), "avg_position": round(wpos, 1),
-            "served_by": top_page.replace("https://www.oddtoe.com", "") or "/",
+            "served_by": top_page.replace(CFG["site"], "") or "/",
             "wrong_page": mismatch,
             "wasted_demand": bool(waste),
             "commercial_intent": bool(commercial),
@@ -166,7 +189,7 @@ def main() -> None:
     newp = [o for o in scored if o["kind"] == "new-page"][:a.limit]
     fixes = [o for o in scored if o["kind"] == "title-meta-fix"][:5]
 
-    print(f"\nNEXT BEST PAGE — Oddtoe, last {a.days} days\n" + "=" * 78)
+    print(f"\nNEXT BEST PAGE — {CFG['name']}, last {a.days} days\n" + "=" * 78)
     for i, o in enumerate(newp, 1):
         flags = " ".join(f for f, on in
                          [("WRONG-PAGE", o["wrong_page"]), ("WASTED-DEMAND", o["wasted_demand"]),
@@ -179,7 +202,7 @@ def main() -> None:
         if o["do_not_target"]:
             print("   DO NOT BID FOR (already ranking elsewhere):")
             for g in o["do_not_target"][:4]:
-                print(f"     · \"{g['query']}\" pos {g['position']} on {g['page'].replace('https://www.oddtoe.com','')}")
+                print(f"     · \"{g['query']}\" pos {g['position']} on {g['page'].replace(CFG['site'],'')}")
     if fixes:
         print("\n" + "-" * 78)
         print("NOT pages — these already rank top-10 and earn no clicks. Fix the title/meta.")

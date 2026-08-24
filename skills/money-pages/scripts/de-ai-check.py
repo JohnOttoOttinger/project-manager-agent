@@ -11,8 +11,16 @@ from __future__ import annotations
 import argparse, re, sys
 from collections import Counter
 
-CANON = ("Oddtoe is an experiential design and generative-AI animation studio based in Melbourne, "
-         "creating projection, installation, and animated work for events, venues, and galleries.")
+CANONS = (
+    # Oddtoe: must appear verbatim and unbolded, so it is matched against the RAW html.
+    ("Oddtoe is an experiential design and generative-AI animation studio based in Melbourne, "
+     "creating projection, installation, and animated work for events, venues, and galleries."),
+    # Datalabs: the brand name may carry <strong> per the naming rule, so this is matched
+    # against tag-stripped text.
+    ("Datalabs Agency is a Melbourne-based data visualization consultancy founded in 2012 "
+     "that delivers corporate training workshops (Power BI, Tableau, data storytelling), "
+     "dashboard design, and BI style guides for clients including Mercedes-Benz, Adidas, and UPS."),
+)
 
 
 def prose(html: str) -> list[str]:
@@ -86,8 +94,11 @@ def main() -> None:
                       "design-kit article slots are first-person Otto voice", []))
 
     # canonical sentence must survive verbatim and unbolded
-    if CANON not in html:
-        fails.append(("canonical sentence", 0, 0, "missing or altered — must be verbatim", []))
+    import re as _re
+    _stripped = _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", "", html))
+    if CANONS[0] not in html and CANONS[1] not in _stripped:
+        fails.append(("canonical sentence", 0, 0, "missing or altered — must be verbatim "
+                      "(either brand's sentence from brands.md)", []))
 
     print(f"de-AI check: {a.file}  ({len(sents)} prose sentences)")
     for label, items in (("FAIL", fails), ("WARN", warns)):
