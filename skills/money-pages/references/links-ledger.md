@@ -262,3 +262,22 @@ GSC: indexing requested for the new URL. Sources not resubmitted (sitemap lastmo
 **Checker note:** `de-ai-check.py` gained two guide-kit-aware rules this session — the kit's bold
 entry KICKER (18px Arvo `<strong>` full sentence) is exempt from the blanket-bold FAIL, and the
 first-person check now accepts Datalabs' "we/our" as well as Oddtoe's "I".
+
+## 24 Aug 2026 — Datalabs homepage promo slots repaired (page 167)
+
+Otto spotted the "Thinking From a Data Visualization Consultant" row showing ONE card instead of three.
+Cause: the row promotes posts by hard-coded ID, and two of the three had been retired by our own revamp
+pattern — 26131 (drafted 19 Aug when the conferences page replaced it) and 2315 (drafted 24 Aug when the
+types-of-data-visualization page replaced it). Drafted posts render nothing.
+
+Tested first on a throwaway draft: `dfd_blog` renders POSTS ONLY — page IDs (53763, 53654) render nothing,
+so the new guide pages cannot be featured in this row.
+
+| Slot | Was | Now | Why |
+|---|---|---|---|
+| 1 | 26131 (drafted) | **6017** Case-study: Victoria University Dashboards & Infographic Reports | dashboard design + client proof, 2026 |
+| 2 | 2315 (drafted) | **3044** 9 Incredible Examples of Interactive Data Visualization | interactive viz; the page ranks ~5.7 |
+| 3 | 52168 | 52168 (unchanged) | data storytelling + hiring intent |
+
+Three cards verified rendering live. Backup: datalabs-homepage-167-pre-blogslot-fix-2026-08-24.json.
+Guardrail written into money-pages/SKILL.md so the publish checklist catches this next time.

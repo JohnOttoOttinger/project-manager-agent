@@ -124,3 +124,21 @@ An orphan page gets crawled (Yoast sitemap) but not weighted; internal links do 
 ## Guardrails
 
 Everything in geo-playbook `banned.md` applies. One page = one brand. After the site publishes, remind Otto the Cloudflare cache holds HTML ~4 hours — verify with a cache-buster URL, or purge.
+
+## Retiring a post? Check the homepage promo slots (added 24 Aug 2026)
+
+The Datalabs homepage (page 167) promotes three articles by hard-coded ID in its
+"Thinking From a Data Visualization Consultant" row:
+
+    [dfd_blog blog_posts_styles="single_post" single_custom_post_item="<POST_ID>" ...]
+
+`dfd_blog` renders **posts only** — a page ID renders NOTHING (verified 24 Aug 2026 on a
+throwaway draft), and a drafted post renders nothing either. So every time the revamp pattern
+retires an old post (301 + set to draft), any homepage slot pointing at it silently goes blank.
+
+That is exactly what happened twice: post 26131 went blank when the conferences page replaced it
+(19 Aug), and post 2315 when the types-of-data-visualization page replaced it (24 Aug) — leaving
+one card and two holes until Otto spotted it.
+
+**Rule: the publish checklist's "draft the old post" step now includes — grep page 167 for the
+retired post ID and, if present, swap in a live published POST.** Never a page ID.
