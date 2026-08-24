@@ -142,3 +142,28 @@ one card and two holes until Otto spotted it.
 
 **Rule: the publish checklist's "draft the old post" step now includes — grep page 167 for the
 retired post ID and, if present, swap in a live published POST.** Never a page ID.
+
+## Prefer improving an existing page over building a rival (Otto, 24 Aug 2026)
+
+Otto's rule: **go where the data says for genuinely new pages, but where an existing page can be
+added to, recommend that instead.** He has many pages that never had the GEO treatment.
+
+This was not a preference — it was a bug. `next-best-page.py` classified a cluster using the
+*cluster-average* position, which averages the money queries against the same cluster's page-5
+stragglers. That hid the case that matters most: the page Google already serves is on page 1 and
+simply earns no clicks. Two builds were queued on that mistake and cancelled:
+
+| Cluster | What the old scorer said | What was actually true |
+|---|---|---|
+| `australian prop making companies theatre film` (oddtoe) | "build a new page", cluster pos 11.3 | serving page at **pos 6.6**; the prop cluster has **31,642 page-1 impressions earning 3 clicks** |
+| `data visualisation agency` (datalabs) | "build a new page", cluster pos 36.4 | homepage already at **pos 4.5–6.6** for the money queries, 0 clicks |
+
+**Fix (in the script):** classification now uses the SERVING page's own weighted position and its
+page-1 impressions, and adds `kind: "fix-existing"` — "IMPROVE the existing page; this is a
+click-through / positioning problem, not a missing page." A rival page would have split the signal
+of a page already ranking top-10.
+
+**Companion tool:** `skills/analytics/scripts/geo-coverage.py --brand <brand>` ranks live pages by
+(traffic already earned) x (GEO treatment missing), scoring each 0–6 on the detectable playbook
+rules — canonical sentence, FAQ schema, 2+ question headings, comparison table, visible date, meta
+description. Use it to pick the next *improvement*; use `next-best-page.py` only for genuine gaps.

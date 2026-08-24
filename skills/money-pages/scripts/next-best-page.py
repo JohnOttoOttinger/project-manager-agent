@@ -122,11 +122,13 @@ def main() -> None:
         if not key:
             continue
         c = clusters.setdefault(key, {"queries": [], "impr": 0, "clicks": 0,
-                                      "pages": defaultdict(int), "pos": []})
+                                      "pages": defaultdict(int), "pos": [],
+                                      "page_pos": defaultdict(list)})
         c["queries"].append((q, r["impressions"], r["clicks"], r["position"], page))
         c["impr"] += r["impressions"]; c["clicks"] += r["clicks"]
         c["pages"][page] += r["impressions"]
         c["pos"].append((r["position"], r["impressions"]))
+        c["page_pos"][page].append((r["position"], r["impressions"]))
 
     scored = []
     for key, c in clusters.items():
@@ -139,18 +141,38 @@ def main() -> None:
 
         # A page ranking top-10 is the RIGHT page — if it earns no clicks that is a
         # title/meta problem, not a missing page. Never propose building a page over it.
+        # --- how is the page Google ALREADY serves actually doing? ---------------
+        # The cluster-average position hides the case that matters most: the serving
+        # page is already on page 1 for the money queries and simply earns no clicks.
+        # Averaging that against the same cluster's page-5 stragglers used to drag the
+        # mean past 10 and mislabel a CTR problem as a missing page. (Otto, 24 Aug 2026 —
+        # Oddtoe props: 31,642 page-1 impressions, 3 clicks, proposed as a "new page".)
+        tp_rows = c["page_pos"].get(top_page, [])
+        tp_impr = sum(i for _, i in tp_rows)
+        tp_wpos = sum(p * i for p, i in tp_rows) / max(1, tp_impr)
+        page1_impr = sum(i for p, i in tp_rows if p <= 10)
+        page1_share = page1_impr / max(1, c["impr"])
+        already_ranking = tp_wpos <= 10 or page1_impr >= 150
+
         ranks_well = wpos <= 10
         overlap = len(terms(head) & slug_terms(top_page)) / max(1, len(terms(head)))
-        mismatch = (overlap < 0.5) and not ranks_well
+        mismatch = (overlap < 0.5) and not already_ranking
 
         volume = math.log10(c["impr"])
         band = 1.0 if 11 <= wpos <= 40 else 0.15          # page 2-4 is the winnable band
-        waste = 1.0 if (ctr < 0.01 and c["impr"] >= 300 and not ranks_well) else 0.0
+        waste = 1.0 if (ctr < 0.01 and c["impr"] >= 300 and not already_ranking) else 0.0
         commercial = 0.7 if COMMERCIAL.search(head) else 0.0
         score = volume * band + 1.6 * mismatch + 1.3 * waste + commercial
-        kind = "title-meta-fix" if (ranks_well and ctr < 0.01 and c["impr"] >= 300) else "new-page"
-        if kind == "title-meta-fix":
-            score = volume * 0.5 + commercial          # ranked separately, never competes for #1
+
+        if already_ranking and ctr < 0.01:
+            # Cheapest possible win: the rankings already exist. Do NOT build a rival page.
+            kind = "fix-existing"
+            score = math.log10(max(10, page1_impr)) * 1.3 + commercial
+        elif ranks_well and ctr < 0.01 and c["impr"] >= 300:
+            kind = "title-meta-fix"
+            score = volume * 0.5 + commercial
+        else:
+            kind = "new-page"
 
         # --- guardrails: strong rankings on OTHER pages that share terms with this cluster ---
         guards = []
@@ -169,6 +191,15 @@ def main() -> None:
             "impressions": c["impr"], "clicks": c["clicks"],
             "ctr_pct": round(ctr * 100, 2), "avg_position": round(wpos, 1),
             "served_by": top_page.replace(CFG["site"], "") or "/",
+            "serving_page_avg_position": round(tp_wpos, 1),
+            "serving_page_page1_impressions": page1_impr,
+            "serving_page_page1_share_pct": round(page1_share * 100),
+            "recommended_action": ("IMPROVE the existing page (it already ranks page 1; this is a "
+                                   "click-through / positioning problem, not a missing page)"
+                                   if kind == "fix-existing" else
+                                   "Rewrite the title + meta on the existing page"
+                                   if kind == "title-meta-fix" else
+                                   "Build a new page"),
             "wrong_page": mismatch,
             "wasted_demand": bool(waste),
             "commercial_intent": bool(commercial),
