@@ -67,8 +67,12 @@ def main() -> None:
         if len(hits) > limit:
             (fails if limit == 0 else warns).append((name, len(hits), limit, why, hits[:3]))
 
-    # blanket bold: a <strong> wrapping a whole clause rather than a keyphrase
-    long_bold = [h for h in re.findall(r"<strong>((?:(?!</strong>).)+)</strong>", html)
+    # blanket bold: a <strong> wrapping a whole clause rather than a keyphrase.
+    # The guide kits' entry KICKER is a deliberately bold full sentence (v2 design) —
+    # strip those paragraphs (18px Arvo wrapper) before counting.
+    html_nk = re.sub(r'<p style="margin-bottom: 10px;"><span style="font-family: arvo, serif; '
+                     r'font-size: 18px;"><strong>.*?</strong></span></p>', " ", html, flags=re.S)
+    long_bold = [h for h in re.findall(r"<strong>((?:(?!</strong>).)+)</strong>", html_nk)
                  if len(h) > 60 and "<a " not in h and "Bebas" not in h]
     if len(long_bold) > 1:
         fails.append(("blanket bold", len(long_bold), 1,
@@ -88,8 +92,8 @@ def main() -> None:
         warns.append(("paragraph with no emphasis", len(bare), 0,
                       "design kit wants 2-5 keyphrase bolds per paragraph", []))
 
-    # article slots must be first person
-    if body and not re.search(r"\bI \b", body):
+    # article slots must be first person (Oddtoe: "I"; Datalabs voice: "we/our")
+    if body and not re.search(r"\bI \b|\b[Ww]e \b|\b[Oo]ur \b", body):
         warns.append(("no first person", 0, 0,
                       "design-kit article slots are first-person Otto voice", []))
 
