@@ -231,3 +231,34 @@ oddtoe-*-pre-cds-linkpass-2026-08-24.json):
 
 16207's other "character design" links keep pointing at the portfolio (13701) on purpose — one page per
 intent: portfolio = identity queries, 16208 = hire queries.
+
+## 24 Aug 2026 — Types of Data Visualization (datalabs 53763) publish + link pass
+
+REVAMP of blog post 2315 onto the Datalabs guide kit (events/directory v2 design), PUBLISHED at
+https://www.datalabsagency.com/types-of-data-visualization/ — the scout's #1 Datalabs pick
+("types of data visualization", 842 impr / 1 click / pos 22.0, mis-served by the homepage).
+Otto set the page settings himself (#2f2e3a + repeat + header style 2); agent set the Yoast fields
+via the classic form. Entry images lifted 27px (page-scoped style block inside the page content) —
+the chart PNGs carry ~20px of internal dark padding, so equal-top columns *looked* misaligned.
+
+Retirement of the old post (conferences precedent):
+
+| Action | Detail |
+|---|---|
+| 301 | `/2024/06/24/15-most-common-types-of-data-visualization/` → `/types-of-data-visualization/` (Redirection, 301, verified live after WP Engine's 10-min SHORT cache expired) |
+| Old post 2315 | set to DRAFT (original body backed up: `datalabs-post-2315-original-pre-draft-2026-08-24.json`) |
+| Legacy URL | `/articles/15-most-common-types-of-data-visualisation/` already 301'd to the old post; it now chains through to the new page (2 hops — optional tidy-up: repoint that rule directly) |
+
+Inbound links added (backups `datalabs-*-pre-dataviztypes-linkpass-2026-08-24.json`):
+
+| Source | Sentence | Anchor |
+|---|---|---|
+| 167 Homepage | appended to the training-formats paragraph: "Not sure which chart earns its place? Our guide to the … walks through the fifteen we reach for most…" — the homepage is the page that was mis-serving the query, so this is the intent-split link | types of data visualization |
+| 3694 "8 More Common Types" (2015) | its opening sentence already linked the old list via the stale `/articles/` URL; **repointed straight at the new page**, killing a redirect chain and passing the topical link | 15 types of data visualization, which you can find here |
+| 4895 "Data Visualization Websites — 101" | new line before the list: "If you are still deciding what to build rather than where to read, start with our guide to the …, then come back for the tools." | types of data visualization |
+
+GSC: indexing requested for the new URL. Sources not resubmitted (sitemap lastmod covers them).
+
+**Checker note:** `de-ai-check.py` gained two guide-kit-aware rules this session — the kit's bold
+entry KICKER (18px Arvo `<strong>` full sentence) is exempt from the blanket-bold FAIL, and the
+first-person check now accepts Datalabs' "we/our" as well as Oddtoe's "I".
