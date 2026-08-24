@@ -304,3 +304,37 @@ image-side alternation chain (L/R/L/R…) stays intact end to end — verified b
 Images: Tokyo 51994, San Francisco 37032, Melbourne 26153 are correct cities; **Adobe MAX uses the
 generic USA asset 37062** because no Miami image exists — deliberately not an Orlando/other-Florida
 stand-in, since wrong-city images are a logged defect class on these pages.
+
+## 24 Aug 2026 — /dashboard-design/ → German post: diagnosed, NOT a broken redirect
+
+Otto asked me to fix `/dashboard-design/` 301-ing to `/de/2024/09/15/dashboard-design-pro-tipps/`.
+It is **not a Redirection rule** — no such rule existed. Control tests proved it:
+
+| URL | Result |
+|---|---|
+| `/dashboard-design/` | 301 → German post |
+| `/dashboard-desig/` (typo, cannot have a rule) | 301 → **same German post** |
+| `/dashboard-design-pro/` | 301 → **same German post** |
+| `/zzz-nonexistent-page/` | clean 404 |
+| `/power-bi-templ/` | 301 → `/product/power-bi-templates/` (correct) |
+
+Response header says `x-redirect-by: **WordPress**`. This is core's 404 permalink guessing
+(`redirect_guess_404_permalink` / `redirect_canonical`): nothing exists at the slug, so WP guesses
+the nearest post, and with WPML the German translation `dashboard-design-pro-tipps` wins over the
+English `dashboard-design-pro-tips`.
+
+**A Redirection rule cannot fix it.** I added one (`/dashboard-design/` → the English post, now the
+top row of the plugin list, item count 279→280). It is **INERT** — WP's guess fires first and still
+wins after 10 minutes of polling with cache bypassed. It is also **harmless** as things stand,
+because tonight's build targets `/dashboard-design-services/`, not this slug.
+
+**The real fix: put an actual page at `/dashboard-design/`.** A real page stops the guess entirely,
+and it is the exact-match slug for the money term (390/mo AU, LOW competition) — strictly better than
+`/dashboard-design-services/`. Two things must happen together, in this order:
+
+1. **DELETE the inert `/dashboard-design/` rule from Redirection** — a redirect beats page content,
+   so if it survives it would redirect users away from the new page.
+2. Change the Datalabs builder override slug from `dashboard-design-services` to `dashboard-design`.
+
+Not done tonight: the browser went unresponsive mid-task (laptop closing), so step 1 could not be
+completed. Both steps left for Otto's morning. Current state is safe and unchanged for tonight's run.
