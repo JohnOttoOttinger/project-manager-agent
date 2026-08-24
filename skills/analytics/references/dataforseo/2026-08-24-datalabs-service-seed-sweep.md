@@ -16,6 +16,10 @@ Location: **Australia** (2036) · Language: English · Function: `keyword_sugges
 | infographic report | infographic report | 40 | — | LOW | 42 |
 | data visualization style guide | (seed itself) | 10 | — | — | 5 |
 | data visualisation training | (seed itself) | 10 | $12.62 | MEDIUM | 1 |
+| tableau training | training on tableau / tableau training | **70** | $4.23 | **LOW** | 294 |
+| data analytics training | online training data analytics | **480** | $14.25 | MEDIUM | 104 |
+| data analytics training | data analytics training online | **390** | $12.27 | MEDIUM | |
+| data analytics training | free data analytics training | 320 | $4.36 | MEDIUM | |
 
 ## What this says
 
@@ -44,3 +48,21 @@ Oddtoe/Datalabs effectively does not rank for it at all. The demand was invisibl
 Method note: `keyword_suggestions` returns long-tail terms *containing* the seed and is the right
 discovery call. `related_keywords` only reads Google's "searches related to" box and returned a
 single term — do not use it for discovery.
+
+
+## The validated top 5 (all slugs confirmed 404 / open, 24 Aug 2026)
+
+| # | Page | Volume/mo (AU) | CPC | Competition | Slug |
+|---|---|---|---|---|---|
+| 1 | **Power BI training** | 720 (+880 variant) | $8.59 | MEDIUM | `/power-bi-training/` |
+| 2 | **Data analytics training** | 480 / 390 online variants | $12.27–14.25 | MEDIUM | `/data-analytics-training/` |
+| 3 | **Dashboard design** | 390 | $5.04 | **LOW** | `/dashboard-design-services/` (bare `/dashboard-design/` is taken by a broken German redirect) |
+| 4 | **Tableau training** | 70 | $4.23–6.36 | **LOW** | `/tableau-training/` |
+| 5 | **Data analytics course** | shares the 480/390 cluster; "free data analytics training" 320 | $4.36–12.27 | MEDIUM | `/data-analytics-course/` |
+
+Ranked by volume x commercial intent. #3 carries the lowest competition of the set and the cheapest
+click, so it is arguably the best effort-to-return even though its volume sits below #1 and #2.
+#5 overlaps #2 — build one of the two, not both, or split them clearly (corporate training vs
+self-paced course) to avoid the near-duplicate problem.
+
+Total sweep cost across 7 calls: **$0.14**.
