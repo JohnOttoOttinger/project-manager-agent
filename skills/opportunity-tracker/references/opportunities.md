@@ -27,7 +27,21 @@ acting; do not trust this table as a date source.
 | In Motion London | Sep 2026 | TO VERIFY | researching | — find URL |
 | Ottawa International Animation Festival | Sep 2026 | TO VERIFY | researching | animationfestival.ca |
 | MIPJUNIOR | Oct 2026 | TO VERIFY | researching | mipjunior.com |
-| MIPCOM Cannes | Oct 2026 | TO VERIFY | researching | mipcom.com |
+| MIPCOM Cannes | 12–15 Oct 2026 (confirmed, Palais des Festivals) | n/a — inbound sales contact | **drafted** | mipcom.com |
+
+**MIPCOM — inbound contact (21 Aug 2026).** Mariel Penilla, Sales Executive, RX
+Global — mariel.penilla@rxglobal.com — cold-emailed Otto's Datalabs profile
+selling the Visitor Pass (Early Bird EUR 1,550 + VAT until 25 Aug; Premium/
+Prestige tiers above). Confirmed details from her email: 12–15 Oct 2026, Palais
+des Festivals, Cannes; 2026 programme areas: MIP BrandWorks, MIP Creative Hub,
+MIP AI Exchange, MIP Innovation Lab, matchmaking programme. Flip strategy: the
+Oddtoe guide already gives MIPCOM its "Best Dealmaking" featured card plus
+MIPJUNIOR and MIP AI Exchange links — reply proposes a media/listing partnership
+(refreshed dates + 2026 programme coverage) in exchange for a pass, and asks to
+be routed to the press/partnerships team if she cannot comp. Draft:
+`drafts/2026-08-21-mipcom-reply.md`. She is SALES — her incentive is a sale, so
+the draft leaves the door open to a discounted pass as the fallback outcome.
+
 | View Conference Turin | Oct 2026 | TO VERIFY | researching | viewconference.it |
 | Manchester Animation Festival | Nov 2026 | TO VERIFY | researching | manchesteranimationfestival.co.uk |
 | SIGGRAPH Asia | Dec 2026 | TO VERIFY | researching | siggraph.org |

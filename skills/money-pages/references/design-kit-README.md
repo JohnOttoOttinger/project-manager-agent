@@ -27,6 +27,43 @@ When Otto restyles the dummy, re-snapshot per SKILL.md and re-apply the tokens.
 - The FAQ topic line is a real `<h2>` (inline-styled span keeps its look). Body copy is NOT wrapped in
   blanket `<strong>` — bold is reserved for keyphrases and numbers per the geo-playbook.
 
+## The ellipsis rule — Qwigley lead-ins only (Otto, 24 Aug 2026)
+
+A Qwigley lead-in either **stands on its own** or it **doesn't**. The ellipsis marks the ones that don't.
+
+**Use `&hellip;` when something below finishes the thought.** Two shapes qualify:
+
+1. **It runs into the Bebas headline.** The lead-in is a grammatical fragment the title completes.
+   `So you want an&hellip;` → **ANIMATION AGENCY** · `Interested in seeing more&hellip;` → **INSTALLATION WORK?**
+2. **It hands over to the content.** The lead-in names a thing the section is about to deliver.
+   `What to send&hellip;` · `More from the Oddtoe studio&hellip;` · `Two workshops that Otto facilitates&hellip;`
+
+**No ellipsis when the lead-in is already complete** — it closes its own thought and nothing is pending:
+
+| Lead-in | Why no ellipsis |
+|---|---|
+| `Which one is your brief?` | a question; the `?` already closes it |
+| `Why one team beats twelve` | a claim, complete as written |
+| `Two words, two different jobs` | a label, complete as written |
+| `The short version` | a label for what follows, not a promise of it |
+
+The test: read the lead-in aloud and stop. If it sounds finished, no ellipsis. If it sounds like you were
+interrupted, that is the ellipsis.
+
+**Constraints**
+- **Two per page maximum, counting only lead-ins you write.** It is a spice; if every lead-in trails,
+  none of them read as trailing. The kit's two fixed trailing lead-ins — the cross-promo delimiter
+  (`More from the Oddtoe studio&hellip;`) and the enquiry-form subtitle (`Tell us what you are
+  imagining&hellip;`) — are furniture that ships on every money page and sit outside the count — it is far down the page
+  and separated from the heading stack, so it does not compete with a hero or article lead-in.
+- **Never on a Bebas headline or an H1** — titles do not trail, only lead-ins do.
+- **Never alongside a question mark.** Pick one.
+- **Character: `&hellip;`, never three full stops.** Three dots can break across a line and render with
+  uneven spacing; the entity is one glyph with correct kerning. (Legacy pages still carry `...` — convert
+  on next edit, do not sweep the site for it.)
+- No space before; one space after only if text continues on the same line.
+- Sentence case as always — the ellipsis does not change the casing rule.
+
 ## Token replacement
 
 Tokens look like `{{NAME}}` or `{{NAME: inline spec}}`. Replace with regex `\{\{NAME(:[^}]*)?\}\}`.
@@ -66,6 +103,68 @@ Never alter row/column/styling attributes; content goes only where tokens are.
 - **Footnote**: small italic dimmed line inside the table block, right under the table (GST, travel, minimums).
 - **Compact variant** (8+ rows): padding `8px 14px`, `font-size: 15px`, same palette.
 - **Prices**: `$4,500 AUD` on first mention then `$4,500`; ranges use an en dash (`$3,000–$5,000`); `From $X` only where a floor is honest.
+
+## Lessons from the Animation Agency build (24 Aug 2026) — read before composing
+
+Six things that cost a review round each. All were caught by Otto, none by the QA script at the time.
+
+**1. The table row is a `1/3` column. Four columns overflow it.**
+`pat-table` puts its content in the middle of a `1/3 + 1/3 + 1/3` inner row. The kit's own exemplars are
+three columns wide and fit. A four-column comparison table does NOT — Ronneby's `overflow-x` wrapper does
+its job and you get a horizontal scrollbar on desktop.
+**Rule: 3 columns → leave the row alone. 4+ columns → widen that inner row to `1/6 + 2/3 + 1/6`** (the split
+the Installation Artist page uses). Scope the change to the table row only; other rows keep their `1/3`s.
+*(Not changed in the master — the `1/3` is Otto's art direction and is right for 3 columns. Ask before
+making `2/3` the default.)*
+
+**2. Oddtoe pages must DELETE the pricing exemplar.** `brands.md` has Oddtoe pricing as `TO FILL`, so no
+Oddtoe page may quote a number. The kit ships two tables; drop the first, keep the comparison, and replace
+the price footnote with a "quoted per project" line. Datalabs pages keep both.
+
+**3. Bolding the FAQ leaks markup into the FAQPage JSON-LD.** The accordion and the schema are filled from
+the SAME token. House style requires keyphrase bolding in answers; schema requires plain text. **Strip tags
+on the way into the JSON-LD** — a `plain()` helper on the token value, applied only in the `vc_raw_html`
+re-encode. Verify by decoding the payload and asserting no `<` in any `acceptedAnswer.text`.
+
+**4. Article slots are FIRST PERSON and nothing enforces it.** The token table says "first-person Otto
+voice" and it is easy to miss — the first Animation Agency draft was entirely third person ("Oddtoe takes a
+brief... the client gets one contact") and read as brochure copy. Write "I take a brief... you get one
+contact". Brand statements stay "Oddtoe"; judgement statements are "I".
+
+**5. Nothing checks bold density.** The first pass had 17 of 27 paragraphs with zero emphasis, and 11 of the
+13 `<strong>` spans were links (which are `<strong>`-wrapped by convention and inflate the count without
+doing any scanning work). **Count keyphrase bolds separately from link bolds**, and target 2–5 per paragraph.
+
+**6. Read every link sentence aloud before applying.** An exact-match keyword anchor placed straight after a
+verb reads as a caption, not prose: *"Hiring rather than pitching? See animation agency."* is not a sentence.
+Give the link a noun to attach to — "the animation agency **page**", "works as an **animation agency**" — or
+rebuild the clause. Exact-match, render-verified and live-verified all passed on that sentence; only reading
+it caught it.
+
+## Lessons from the Character Design Services build (24 Aug 2026, page 16208)
+
+Four more, all caught by Otto in draft review.
+
+**7. `width=` alone does NOT widen a column that carries an `offset=` attr.** The hero and section inner
+columns ship with `offset="vc_col-lg-4 vc_col-md-…"` — the lg class **overrides** `width` at desktop sizes,
+so changing `width="1/3"`→`"1/2"` renders no change. **Change the `vc_col-lg-N` in `offset` to match**
+(1/2→lg-6, 2/3→lg-8, 1/4→lg-3, 1/6→lg-2). The kit's table row has no offset attr, which is why lesson 1's
+width-only fix worked there.
+
+**8. Long heading tokens wrap 4–5 lines in `1/3` columns.** "What does a character design service actually
+do?" is far longer than the animation-agency equivalents. When the page's head noun is long (3+ words),
+widen the hero and section inner rows from `1/3+1/3+1/3` to `1/4+1/2+1/4` (offsets too, per lesson 7).
+
+**9. A 3-column table can still overflow — check, don't count columns.** Lesson 1's "3 columns → leave
+alone" failed here: three columns with sentence-length cells scrollbarred anyway. Widen to `1/6+2/3+1/6`
+whenever the rendered table overflows, regardless of column count.
+
+**10. Long article bodies get Otto's TWO-COLUMN treatment, and the "More from…" delimiter needs its
+Qwigley attrs.** (a) An article body in the `4/6` slot renders as one ~800px-wide block — too wide to read.
+Otto's rule: past ~4 paragraphs, split the body at a `</p>` boundary into `[vc_row_inner]` with two `1/2`
+columns of `vc_column_text`. (b) Compose the "More from the Oddtoe studio&hellip;" delimiter EXACTLY as the
+kit ships it — `custom_fonts="font_family:Qwigley…" use_google_fonts="show" title_font_options=…` and
+`&hellip;` not `...` — and keep the spacer under it at 20px (not 50) so the cards sit close.
 
 ## Composing a page (repeat/omit patterns per page-types.md)
 

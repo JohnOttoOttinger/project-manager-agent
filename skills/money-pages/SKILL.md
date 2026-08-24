@@ -2,6 +2,39 @@
 
 Use this skill when Otto asks for the next money page, a pricing page, a comparison, a case study, the credits page, an events-guide page, or a directory/list page of people or companies — or clicks the "Next money page" quick action. The full template suite is `references/template-catalog.md`. These pages answer buying questions AI assistants get asked ("who can train my team", "what does X cost"), which is where a recommendation becomes a lead.
 
+## The 6am draft pipeline (24 Aug 2026)
+
+A scheduled task, `oddtoe-next-best-page`, composes the next money page as a WordPress **draft** every
+morning at 05:00. Otto reviews, verifies any statistic, sets the two wp-admin page settings, and publishes.
+Two scripts back it, both usable by hand:
+
+    python3 scripts/next-best-page.py            # what to build next, and why
+    python3 scripts/de-ai-check.py <file.html>   # fail a draft that reads like a machine wrote it
+
+**`next-best-page.py`** ranks opportunities from live Search Console data. It looks for the pattern that
+produced /animation-agency/: real demand, the site already appearing for it, ranking badly, converting at
+nothing, because Google is serving the WRONG page. Signals: impression volume, whether the position sits in
+the winnable 11-40 band, whether the serving page's slug reflects the query at all, wasted demand
+(<1% CTR on 300+ impressions), and commercial intent. It clusters query variants by their two most
+site-frequent terms so "X services / X studio / X company" propose ONE page, not three. For every candidate
+it computes a `do_not_target` list — queries other Oddtoe pages already rank top-10 for — which is the
+cannibalisation guardrail the composer must honour.
+
+It also separates a second class: **title/meta fixes**. A query ranking top-10 with no clicks does not need
+a new page, it needs a better title, and proposing a page over it would be self-cannibalisation. The first
+run surfaced `prop making companies australia` — 15,015 impressions, position 6.4, 0.01% CTR.
+
+**`de-ai-check.py`** enforces the tells in geo-playbook plus the ones found in review: balanced antithesis,
+aphoristic closers, coined compounds, self-praise, "rather than" as a tic, blanket bold, repeated sentence
+openings, paragraphs with no emphasis, missing first person, and the canonical sentence surviving verbatim.
+FAIL blocks a push; WARN is a judgement call. It cannot catch a link sentence that does not parse —
+read those aloud.
+
+**Known limits.** A scheduled run cannot ask a question, so anything ambiguous becomes an `[Otto: ...]`
+marker rather than a guess. It cannot reach Otto either — the draft, the backlog line and the run summary
+are the notification. And the clustering is good, not perfect: near-duplicate topics can still appear twice
+in a ranking, so read the top three before picking.
+
 ## Workflow
 
 1. **Load the contract.** Read the `geo-playbook` skill: the six rules, `references/brands.md`, `references/banned.md`. The active brand comes from Otto's brand toggle or his message; if ambiguous, ask which brand.

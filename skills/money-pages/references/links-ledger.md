@@ -128,3 +128,106 @@ Script: `skills/money-pages/scripts/faq-link-pass-oddtoe.py` (dry-run by default
 - 2026-08-19 · oddtoe · source 15922 (https://www.oddtoe.com/) → target None
 - 2026-08-19 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target None
 - 2026-08-19 · oddtoe · source 16133 (https://www.oddtoe.com/brand-activation-ideas/) → target None
+
+## 2026-08-21 — Inflatable Artist (oddtoe, page 16190)
+
+Target: https://www.oddtoe.com/artist-designer/inflatable-artist/
+Plan approved by Otto 21 Aug 2026 ("Do all four links"). Every anchor verified to RENDER on the live
+page before editing (not just present in raw). Exact-match only; markup is
+`<strong><a class="dfd-custom-link-decorated">` with no inline colour.
+
+| Source | Anchor edited | Link text |
+|---|---|---|
+| 16133 Brand Activation Ideas | "...publish the evidence for you." | inflatable artist |
+| 11178 Installation Artist | practices bullet list, after "Sensory garden design" | Giant inflatables and walk-in structures |
+| 11172 Public Art Sculptor | "...and they suit different briefs." | inflatable sculpture |
+| 13203 About Oddtoe | "...I design in 3d with organic shapes in mind." | giant inflatables |
+
+Substitution note: the 4th source was originally proposed as 16173 (Experiential Marketing Agencies)
+but SWAPPED to 13203 About Oddtoe — 16173 is a directory of *other* agencies and its only Oddtoe
+sentences are the canonical one (which must stay verbatim), so there was no natural anchor.
+
+Also (not a link-pass edit): hub page 13226 gained an "Inflatable Artist" card in the previously empty
+1/3 slot of inner row 4, image 16198, matching the Character Designer card markup.
+Backup: site-backups/oddtoe-artist-designer-hub-13226-pre-inflatable-card-2026-08-21.json
+
+GSC: indexing requested for the new page and for the hub (13226). Hub was REJECTED on first attempt
+("Server error (5xx)" during live test) but succeeded on retry — all 7 site URLs verified HTTP 200
+anonymously and under a Googlebot UA, so the 5xx was a transient throttle, not a site fault.
+Remaining to request: 16133, 11178, 11172, 13203.
+
+## 2026-08-24 — GSC indexing requests completed
+
+All four outstanding from the 21 Aug inflatables round, plus the new money page. Every one returned
+"Indexing requested — URL was added to a priority crawl queue".
+
+| URL | Index status before |
+|---|---|
+| /animation-agency/ | URL is not on Google (published same day) |
+| /brand-activation-ideas/ | already indexed |
+| /artist-designer/installation-artist/ | already indexed |
+| /artist-designer/kinetic-sculptor/ | already indexed |
+| /about-oddtoe/ | already indexed |
+
+Earlier in the round: /artist-designer/inflatable-artist/ and /artist-designer/ (hub) — the hub needed a
+retry after a transient "Server error (5xx)" during live testing; all site URLs verified HTTP 200
+anonymously and under a Googlebot UA, so that was throttling, not a fault.
+
+**GSC automation notes (add to the ones from 18 Aug):**
+- The toast that appears after a successful request OVERLAYS the inspection search box. Typing a new URL
+  silently goes nowhere until you click **Dismiss** first. Symptom: the inspected URL at the top of the
+  page does not change and `find` still reports the previous URL.
+- The viewport can change between sessions — the search box was at y=36 in one and y=34 in another, and a
+  click a few pixels out fails silently the same way. Screenshot before the first click of a session.
+- Clicking "Request indexing" by `ref` is unreliable when two inspection results are in the DOM; clicking
+  the visible REQUEST INDEXING by coordinate is what worked consistently.
+
+## 2026-08-24 — Animation Agency (oddtoe, page 16207) link pass
+
+Target: https://www.oddtoe.com/animation-agency/
+Plan approved by Otto ("Go ahead. I trust you."). Every anchor verified to RENDER on the live page before
+editing, and each matched exactly once in the raw. Markup: `<strong><a class="dfd-custom-link-decorated">`,
+no inline colour. All four verified rendering after the push.
+
+| Source | Anchor | Link text |
+|---|---|---|
+| 14208 Animation Agents | "...guide to the top animation agents in the world." | animation agency |
+
+**Correction, same day (Otto spotted it):** the 14208 sentence first read *"Hiring rather than pitching? See animation agency."* — not a sentence. "See" needs a noun for the link to attach to. Now *"See how Oddtoe works as an animation agency."* The other three were already fine because each had one: "the animation agency **page**" (x2) and "works as an **animation agency**".
+
+**Rule for future link-pass anchors: read the finished sentence aloud.** An exact-match keyword anchor dropped straight after a verb like "See" or "Try" reads as a label, not prose. Give the link a noun to hang on, or rebuild the clause around it.
+| 15922 Homepage | "...See our brand activation ideas." | animation agency |
+| 16134 What Is Generative AI Animation | "...as a resource inside other studios' productions." | animation agency |
+| 16169 Animation Conferences | "...not as an animator with a portfolio." | animation agency |
+
+**The 14208 edit is the disambiguation link, NOT the de-targeting rewrite.** It is one appended sentence
+("Hiring rather than pitching?") and it helps Google separate the two pages. The de-targeting — leaning
+14208's copy into agent/representation language and away from "agency" — still waits 3-4 weeks per the
+plan in animation-agency-page-spec.md §7.
+
+The 16169 edit deliberately mirrors that page's existing "Are you an animator? Check out Oddtoe's list of
+the best animation agents" line, so the conferences page now has one sentence for each audience.
+
+GSC: indexing requested for all four sources immediately after applying (all were already indexed).
+
+## 24 Aug 2026 — Character Design Services (16208) publish + link pass
+
+Page PUBLISHED at https://www.oddtoe.com/character-design-services/ (flat slug, page settings
+#26161f + repeat + header style 6 were already correct; Yoast title/meta already set by the builder).
+Pre-publish layout fixes (backed up as oddtoe-character-design-services-16208-pre-widen-2026-08-24.json):
+hero + two section inner rows widened 1/3→1/2 (offsets vc_col-lg-4→lg-6 — width alone does nothing when
+an offset attr is present, see design-kit-README lesson 7), table row 1/3→2/3 (lg-8), both article bodies
+split into Otto's TWO-COLUMN treatment, "More from the Oddtoe studio&hellip;" delimiter restored to the
+kit's Qwigley version, delimiter→cards spacer 50→20.
+
+Inbound links added (all `<strong><a class="dfd-custom-link-decorated">`, backups
+oddtoe-*-pre-cds-linkpass-2026-08-24.json):
+
+| Source | Sentence | Anchor |
+|---|---|---|
+| 13701 Character Designer (portfolio) | "Hiring for a production rather than browsing? The … page covers scoping, formats and documentation." (appended after the "unique character designer for hire" sentence — the hire/browse intent split) | character design services |
+| 16207 Animation Agency | "A piece that wants … , a writer and a compositor is three separate hires" | character design |
+| 15922 Homepage | "From branded animation and … to projection art" | character design |
+
+16207's other "character design" links keep pointing at the portfolio (13701) on purpose — one page per
+intent: portfolio = identity queries, 16208 = hire queries.
