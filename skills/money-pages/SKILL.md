@@ -143,10 +143,14 @@ one card and two holes until Otto spotted it.
 **Rule: the publish checklist's "draft the old post" step now includes — grep page 167 for the
 retired post ID and, if present, swap in a live published POST.** Never a page ID.
 
-## Prefer improving an existing page over building a rival (Otto, 24 Aug 2026)
+## Never propose a near-duplicate page (Otto, 24 Aug 2026)
 
-Otto's rule: **go where the data says for genuinely new pages, but where an existing page can be
-added to, recommend that instead.** He has many pages that never had the GEO treatment.
+Otto's rule, in his words: **"I don't mind new builds. You can suggest them. But when you suggest a
+near-duplicate page, I worry that the math and advice is ill-thought-out."** New pages are welcome
+wherever the data shows a real gap. The thing to avoid is a new page aimed at a cluster an existing
+page already ranks page 1 for — that splits a signal that is already working. Separately, he has many
+pages that never had the GEO treatment, so flag those as add-to candidates. Judge each on its merits;
+neither builds nor improvements win by default.
 
 This was not a preference — it was a bug. `next-best-page.py` classified a cluster using the
 *cluster-average* position, which averages the money queries against the same cluster's page-5
