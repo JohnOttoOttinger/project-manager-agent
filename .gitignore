@@ -25,6 +25,10 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Python bytecode cache
+__pycache__/
+*.pyc
+
 # Future chat application output
 node_modules/
 dist/
