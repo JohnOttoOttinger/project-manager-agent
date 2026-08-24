@@ -130,3 +130,31 @@ Otto's Chrome blocks Google Analytics — on a test load, requests to
 his own analytics in that browser, and Realtime will look empty to him even when
 collection is fine. This skill is unaffected: it reads server-side. If he reports
 "Realtime shows nothing", that is expected, not a bug.
+
+## DataForSEO without handling credentials (24 Aug 2026)
+
+The repo's `paid-domain-research` skill calls DataForSEO through n8n on Railway, where the credential
+is bound — that path is not available from a Claude Code session, and the API login/password must
+never be copied out of the dashboard into `.env` or anywhere else.
+
+**Use the API Playground instead.** With Otto signed in at `app.dataforseo.com`, the Playground runs
+real calls in his session and returns live JSON, so no credential is ever handled:
+
+- `app.dataforseo.com/api-playground/dataforseo-labs` — Related Keywords, Keyword Ideas, Keyword
+  Suggestions (discovery for topics with NO Search Console presence — the blind spot GSC cannot cover)
+- `.../keyword-data` — Google Ads search volume · `.../serp` — live SERPs · `.../domain-analytics`
+
+Set **Location: Australia** (location_code 2036) and Language: English. Read the response by parsing
+the largest `<pre>/<code>/<textarea>` on the page.
+
+**Account had to be verified first** — an unverified account shows "Verify your account to start
+fetching data", greys out the Playground, and returns no data. Verification is just the activation
+email from `hello@account.dataforseo.com`; the banner's chevron reopens the "Verify your email"
+dialog with a Resend button.
+
+**Cost is real and per-call** — a Labs `related_keywords` call returned `"cost": 0.01212`. Keep runs
+few and purposeful; report the cost the response states rather than estimating.
+
+First result (24 Aug 2026): `data visualisation training`, Australia — **search volume 10/month,
+CPC $12.62, competition MEDIUM**. Tiny local volume against a high click price, which matches the
+GSC picture that Datalabs has little untapped domestic search demand.
