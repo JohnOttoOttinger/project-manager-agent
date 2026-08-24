@@ -281,3 +281,26 @@ so the new guide pages cannot be featured in this row.
 
 Three cards verified rendering live. Backup: datalabs-homepage-167-pre-blogslot-fix-2026-08-24.json.
 Guardrail written into money-pages/SKILL.md so the publish checklist catches this next time.
+
+## 24 Aug 2026 — 53654 made honest: 4 real design conferences added
+
+Otto asked for "Best Design Conferences" as a new page. Checked first: **zero GSC impressions for any
+design-conference query** — and the reason was on the page itself. 53654 was titled "Data Visualization
+& **Design** Conferences 2026 & 2027" while all 9 of its events were data/viz, and its H1 read only
+"DATA VIZ CONFERENCES". The title promised something the content never delivered.
+
+Otto's call: fix 53654 rather than build a rival. Added 4 design events, each verified against its
+official source before use (guide-kits verification rule):
+
+| Event | Dates | Where | Source |
+|---|---|---|---|
+| Adobe MAX 2026 | 10–12 Nov 2026 (pre-conf 8–9) | Miami Beach Convention Center | max.adobe.com |
+| Design Matters 26 | 14–15 Nov 2026 | DMM.com HQ, Roppongi, Tokyo | designmatters.io (direct fetch) |
+| Config (Figma) | 2027 TBA (2026 ran 23–25 Jun) | Moscone Center, San Francisco | config.figma.com |
+| Melbourne Design Week | 2027 TBA (2026 ran 14–24 May) | Melbourne, NGV / Creative Victoria | designweek.melbourne |
+
+H1 changed to "DATA VIZ & DESIGN CONFERENCES". Entries 9 → 13. Two inserted per band so the
+image-side alternation chain (L/R/L/R…) stays intact end to end — verified before pushing.
+Images: Tokyo 51994, San Francisco 37032, Melbourne 26153 are correct cities; **Adobe MAX uses the
+generic USA asset 37062** because no Miami image exists — deliberately not an Orlando/other-Florida
+stand-in, since wrong-city images are a logged defect class on these pages.
