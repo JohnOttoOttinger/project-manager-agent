@@ -151,6 +151,7 @@ art2 = fill(blocks['article2'], {
 
 page = assemble([hero_p1, row_flow, row_secB, t_phases, row_gallery, row_tiles,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
+page = apply_theme(page, '#16262a')  # per-page tint (Otto-approved palette, 25 Aug)
 assert '120+' not in page
 print('composed chars:', len(page))
 import os, json, base64, urllib.request

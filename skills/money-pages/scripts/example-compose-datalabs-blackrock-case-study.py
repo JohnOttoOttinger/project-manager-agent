@@ -147,6 +147,7 @@ art2 = fill(blocks['article2'], {
 
 page = assemble([hero_p1, row_flow, row_secB, t_charts, row_gallery, row_tiles,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
+page = apply_theme(page, '#1e222b')  # per-page tint (Otto-approved palette, 25 Aug)
 assert 'Aladdin' not in page and 'aladdin' not in page.lower()
 assert 'Fink' not in page
 print('composed chars:', len(page))

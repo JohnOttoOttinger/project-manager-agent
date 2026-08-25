@@ -14,6 +14,8 @@ Media uploaded 25 Aug: 53879 title, 53882 superlatives, 53885 venn,
 53888 dashboard (hotspot), 53891 dataset, 53894 ops diagram.
 """
 import re, base64, urllib.parse, pathlib, json, os, urllib.request
+import sys as _sys; _sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from vcs_lib import apply_theme
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 KIT = (REPO / 'skills/money-pages/references/design-kit.html').read_text()
@@ -378,26 +380,20 @@ page = page.strip()
 leftover = re.findall(r'\{\{[A-Z0-9_]+', page)
 assert not leftover, 'unfilled tokens: ' + str(set(leftover))
 assert page.count('&hellip;') >= 2 and '...' not in page
+page = apply_theme(page, '#1f2226')  # Adidas tint (Otto-approved palette, 25 Aug)
 OUT.write_text(page)
 print('composed chars:', len(page), '| tables:', page.count('<table'), '| images:', page.count('vc_single_image'),
       '| hotspots:', page.count('dfd_hotspot'), '| svgs:', page.count('<svg'))
 
-# ---------- create the draft ----------
+# ---------- update draft 53897 ----------
 user, pw = os.environ['WP_DATALABS_USER'], os.environ['WP_DATALABS_APP_PASSWORD']
-author = os.environ.get('WP_DATALABS_AUTHOR_ID')
-body = {'title': 'Adidas: 7 Workshops, 4 Continents', 'content': page, 'status': 'draft',
-        'slug': 'adidas-data-storytelling-workshops', 'parent': 19482, 'template': 'page-custom.php'}
-if author: body['author'] = int(author)
 req = urllib.request.Request(
-    'https://www.datalabsagency.com/wp-json/wp/v2/pages',
-    data=json.dumps(body).encode(),
+    'https://www.datalabsagency.com/wp-json/wp/v2/pages/53897',
+    data=json.dumps({'content': page, 'status': 'draft'}).encode(),
     headers={'Content-Type': 'application/json',
              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
              'Authorization': 'Basic ' + base64.b64encode(f'{user}:{pw}'.encode()).decode()},
     method='POST')
 with urllib.request.urlopen(req) as r:
     d = json.load(r)
-print('WP draft created:', d['id'], '| status:', d['status'], '| slug:', d['slug'], '| parent:', d['parent'])
-print('Review:', f"https://www.datalabsagency.com/wp-admin/post.php?post={d['id']}&action=edit")
-print('\nYOAST (set in wp-admin): SEO TITLE: Adidas Case Study: Data Storytelling Workshops | Datalabs')
-print('META DESCRIPTION: How the Datalabs Agency trained 150+ Adidas procurement staff in data storytelling - seven live workshops across four continents in three weeks.')
+print('WP updated:', d['id'], '| status:', d['status'])

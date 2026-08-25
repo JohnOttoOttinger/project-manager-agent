@@ -11,6 +11,8 @@ Design language: hero + sections + table + GEO Q&A + articles + fixed footers
 territory is covered by the kit's article rows).
 """
 import re, base64, urllib.parse, pathlib, json
+import sys as _sys; _sys.path.insert(0, str(pathlib.Path(__file__).parent))
+from vcs_lib import apply_theme
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 KIT = (REPO / 'skills/money-pages/references/design-kit.html').read_text()
@@ -429,6 +431,7 @@ page = re.sub(r'\]\s+\[', '][', page)  # stray newlines between rows become empt
 page = page.strip()
 leftover = re.findall(r'\{\{[A-Z0-9_]+', page)
 assert not leftover, 'unfilled tokens: ' + str(set(leftover))
+page = apply_theme(page, '#2b1e24')  # Marriott tint (Otto-approved palette, 25 Aug)
 OUT.write_text(page)
 print('composed v2 chars:', len(page), '| tables:', page.count('<table'), '| images:', page.count('vc_single_image'),
       '| info boxes:', page.count('dfd_info_box'), '| hotspots:', page.count('dfd_hotspot'))

@@ -162,6 +162,7 @@ art2 = fill(blocks['article2'], {
 
 page = assemble([hero_p1, row_flow, row_secB, t_phases, row_tiles, t_dash,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
+page = apply_theme(page, '#16222e')  # per-page tint (Otto-approved palette, 25 Aug)
 print('composed chars:', len(page))
 import os, json, base64, urllib.request
 pathlib.Path(OUT).write_text(page)

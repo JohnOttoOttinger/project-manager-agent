@@ -300,3 +300,38 @@ def upload_media(plan, folder):
         out[fn] = mid
         print('uploaded:', fn, '->', mid)
     return out
+
+
+# ---------- per-page tinted-dark themes (Otto's style, 25 Aug 2026) ----------
+# One near-black tint per page, set at Page Options > Background color in wp-admin.
+# apply_theme() re-derives the SVG panel/hub/stroke shades and the hero overlay from
+# the page tint, and strips row-level background-color css attrs so the page ground
+# is one clean colour (Otto's call: variation comes from SVG panels + black tables).
+
+def _hex_to_rgb(h):
+    h = h.lstrip('#')
+    return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+
+def _rgb_to_hex(r, g, b):
+    return '#%02x%02x%02x' % (max(0, min(255, round(r))), max(0, min(255, round(g))), max(0, min(255, round(b))))
+
+def shade(h, f):
+    r, g, b = _hex_to_rgb(h)
+    return _rgb_to_hex(r * f, g * f, b * f)
+
+def lighten(h, f):
+    r, g, b = _hex_to_rgb(h)
+    return _rgb_to_hex(r + (255 - r) * f, g + (255 - g) * f, b + (255 - b) * f)
+
+def apply_theme(page, bg):
+    """Retint a composed page to a new page-background hex (e.g. '#1a2230')."""
+    panel = shade(bg, 0.82)    # SVG cards, a shade darker than the page
+    hub = shade(bg, 0.64)      # SVG hub circles, darker still
+    stroke = lighten(bg, 0.13) # neutral card strokes
+    dim = lighten(bg, 0.06)    # dim bars
+    for old, new in [('#262532', panel), ('#1f1e29', hub), ('#4a4860', stroke), ('#3a384c', dim),
+                     ('#2f2e3a', bg), ('#2F2E3A', bg.upper())]:
+        page = page.replace(old, new)
+    # strip row-level pure-background css attrs (uncompiled vc_custom classes; would fight the tint after an editor save)
+    page = re.sub(r'\s*css="\.vc_custom_\d+\{background-color: #[0-9a-fA-F]{3,6} !important;\}"', '', page)
+    return page

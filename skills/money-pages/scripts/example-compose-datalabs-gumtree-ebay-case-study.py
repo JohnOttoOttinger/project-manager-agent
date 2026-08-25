@@ -150,8 +150,16 @@ art2 = fill(blocks['article2'], {
 
 page = assemble([hero_p1, row_flow, row_secB, t_lenses, row_gallery, row_tiles,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
+page = apply_theme(page, '#1c241b')  # per-page tint (Otto-approved palette, 25 Aug)
 assert 'Marktplaats' not in page and 'million' not in page.lower() and '20,530' not in page
 print('composed chars:', len(page))
-create_draft('Gumtree &amp; eBay: A Visual BI Strategy', 'gumtree-ebay-visual-bi-strategy', page, OUT)
+import os, json, base64, urllib.request
+pathlib.Path(OUT).write_text(page)
+user, pw = os.environ['WP_DATALABS_USER'], os.environ['WP_DATALABS_APP_PASSWORD']
+req = urllib.request.Request('https://www.datalabsagency.com/wp-json/wp/v2/pages/53970',
+    data=json.dumps({'content': page, 'status': 'draft'}).encode(),
+    headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+             'Authorization': 'Basic ' + base64.b64encode(f'{user}:{pw}'.encode()).decode()}, method='POST')
+print('WP updated:', json.load(urllib.request.urlopen(req))['id'])
 print('\nYOAST: SEO TITLE: Gumtree & eBay Case Study: Visual BI Strategy | Datalabs')
 print('META DESCRIPTION: How the Datalabs Agency audited Gumtree Australia\\u2019s analytics landscape for the eBay Group and delivered a visual BI strategy - roadmap, governance, and tools.')

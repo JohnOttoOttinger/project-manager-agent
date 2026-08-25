@@ -187,6 +187,7 @@ facilitates&hellip;` now carries the same attrs as the Oddtoe one —
 `custom_fonts="font_family:Qwigley%3Aregular|font_style:400%20regular%3A400%3Anormal"
 module_animation="transition.expandIn" use_google_fonts="show" title_font_options="font_size:30|line_height:38"`.
 `design-kit.html` is updated, and the three legacy `...` footer subtitles in it converted to `&hellip;`.
+**25 Aug 2026: the kit itself now carries the 20px spacer under the cross-promo delimiter** (was 50 — lesson 10b existed but the kit still shipped the old value; Otto flagged the gap again on the case-study batch).
 **⚠ Master page 52964 still ships the plain version** — re-snapshotting the master before Otto restyles
 that delimiter in WPBakery will regress both changes.
 
