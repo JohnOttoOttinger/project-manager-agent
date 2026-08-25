@@ -132,15 +132,15 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the Intel system',
 
 row_faq = faq_row(blocks, 'The Intel engagement', 'Ask about your design system', [
     ('What did the Datalabs Agency deliver for Intel?',
-     'A three-phase Power BI design engagement for Intel&rsquo;s IPG division, October 2020 to April 2021: a 78-page style guide with templates and a design checklist, workshop training for 15+ analysts, a retrofit of three existing interfaces, and ten new dashboard designs including the Bug Escapes suite, plus the navigation system connecting them.'),
+     'A three-phase Power BI design engagement for Intel&rsquo;s IPG division, October 2020 to April 2021: a <strong>78-page style guide</strong> with templates and a design checklist, workshop training for <strong>15+ analysts</strong>, a retrofit of three existing interfaces, and <strong>ten new dashboard designs</strong> including the Bug Escapes suite, plus the navigation system connecting them.'),
     ('What is in the &ldquo;Business Class&rdquo; Power BI style guide?',
-     '78 pages covering dashboard design (audience, iconic memory, chart selection, hierarchy, grids, accessibility with a checklist, mobile design), styling (fonts, chart palettes, colorways, layout examples), more than 20 chart types with alternatives, and a Pre-Flight Check quality gate.'),
+     '<strong>78 pages</strong> covering dashboard design (audience, iconic memory, chart selection, hierarchy, grids, accessibility with a checklist, mobile design), styling (fonts, chart palettes, colorways, layout examples), <strong>more than 20 chart types</strong> with alternatives, and a <strong>Pre-Flight Check quality gate</strong>.'),
     ('How were the dashboard designs delivered?',
-     'As annotated flat designs with functional notes, standardised on a nine-module architecture. Intel&rsquo;s in-house Power BI development team built each screen from the annotations through iterative revision rounds &mdash; a designer-to-developer handover model rather than an agency build.'),
+     'As <strong>annotated flat designs with functional notes</strong>, standardised on a <strong>nine-module architecture</strong>. Intel&rsquo;s in-house Power BI development team built each screen from the annotations through iterative revision rounds &mdash; a designer-to-developer handover model rather than an agency build.'),
     ('Did Intel&rsquo;s own team get trained?',
-     'Yes. More than fifteen analysts went through the phase-one workshops, and the style guide, templates, and checklist were built to be theirs &mdash; the system was designed so Intel could keep extending it internally.'),
+     'Yes. <strong>More than fifteen analysts</strong> went through the phase-one workshops, and the style guide, templates, and checklist were <strong>built to be theirs</strong> &mdash; the system was designed so Intel could keep extending it internally.'),
     ('Can the Datalabs Agency build a Power BI design system for my company?',
-     'Yes. The Intel shape &mdash; style guide first, retrofit second, scale third &mdash; is our standard design-system engagement, and it works in Tableau as well as Power BI. Send a note through the contact form and we will reply with a phased outline.'),
+     'Yes. The Intel shape &mdash; <strong>style guide first, retrofit second, scale third</strong> &mdash; is our standard design-system engagement, and it works in <strong>Tableau as well as Power BI</strong>. Send a note through the contact form and we will reply with a phased outline.'),
 ])
 
 art1 = fill(blocks['article1'], {

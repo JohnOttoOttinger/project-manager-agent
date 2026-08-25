@@ -120,15 +120,15 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the engagement',
 
 row_faq = faq_row(blocks, 'The Gumtree engagement', 'Ask about a strategy audit', [
     ('What did the Datalabs Agency do for Gumtree and eBay?',
-     'An eight-week independent visual BI strategy engagement for Gumtree Australia, part of the eBay Group, from May to June 2017: a discovery audit across technical, business, data, and tool-evaluation lenses, followed by a strategy package &mdash; multi-year roadmap, governance frameworks, architecture recommendations, and implementation guidelines &mdash; presented to the Director of Analytics.'),
+     'An <strong>eight-week independent visual BI strategy engagement</strong> for Gumtree Australia, part of the eBay Group, from May to June 2017: a discovery audit across technical, business, data, and tool-evaluation lenses, followed by a strategy package &mdash; <strong>multi-year roadmap</strong>, governance frameworks, architecture recommendations, and implementation guidelines &mdash; presented to the Director of Analytics.'),
     ('Why did the client want an external consultant?',
-     'Independence. Gumtree&rsquo;s analytics leadership wanted an expert from outside the organisation who could evaluate the data landscape objectively and assess BI tools on fit-for-purpose criteria &mdash; an assessment with no build contract or software sale attached to the answer.'),
+     '<strong>Independence</strong>. Gumtree&rsquo;s analytics leadership wanted an expert from outside the organisation who could evaluate the data landscape objectively and assess BI tools on <strong>fit-for-purpose criteria</strong> &mdash; an assessment with no build contract or software sale attached to the answer.'),
     ('How was the work delivered securely?',
-     'Primarily remotely from Melbourne, using secure remote access to eBay consoles and databases under eBay&rsquo;s Data Protection Requirements Addendum and ISO 27001-aligned controls &mdash; the security standard a global technology company expects of its consultants.'),
+     'Primarily remotely from Melbourne, using <strong>secure remote access</strong> to eBay consoles and databases under eBay&rsquo;s Data Protection Requirements Addendum and <strong>ISO 27001-aligned controls</strong> &mdash; the security standard a global technology company expects of its consultants.'),
     ('Did the engagement include any dashboard builds?',
-     'No, deliberately. This was pure strategy: audit, roadmap, and recommendations. The value was an objective read of the landscape and a plan the in-house team could execute &mdash; including the governance and capability groundwork that makes later builds succeed.'),
+     'No, deliberately. This was <strong>pure strategy</strong>: audit, roadmap, and recommendations. The value was an objective read of the landscape and a plan the in-house team could execute &mdash; including the <strong>governance and capability groundwork</strong> that makes later builds succeed.'),
     ('Can the Datalabs Agency audit our BI landscape?',
-     'Yes. A strategy audit &mdash; four lenses, a roadmap, governance frameworks, and tool selection criteria &mdash; is how we recommend starting when reporting has grown faster than strategy. Send a note through the contact form and we will reply with a scoped outline.'),
+     'Yes. A strategy audit &mdash; <strong>four lenses</strong>, a roadmap, governance frameworks, and <strong>tool selection criteria</strong> &mdash; is how we recommend starting when reporting has grown faster than strategy. Send a note through the contact form and we will reply with a scoped outline.'),
 ])
 
 art1 = fill(blocks['article1'], {

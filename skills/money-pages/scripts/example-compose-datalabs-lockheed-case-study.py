@@ -129,15 +129,15 @@ row_quote = quote_row('Otto Ottinger', 'The design principle behind the Lockheed
 # ---------- FAQ ----------
 row_faq = faq_row(blocks, 'The Lockheed Martin program', 'Ask about your program', [
     ('How many people did the Datalabs Agency train at Lockheed Martin?',
-     '287 Leadership Development Program participants, all with 0&ndash;3 years of leadership experience, drawn from engineering, operations, finance, communications, HR, and security. The workshops were the capstone of Leadership Development Conference II in June 2022.'),
+     '<strong>287 Leadership Development Program participants</strong>, all with 0&ndash;3 years of leadership experience, drawn from engineering, operations, finance, communications, HR, and security. The workshops were the <strong>capstone of Leadership Development Conference II</strong> in June 2022.'),
     ('How were 287 people trained in two days?',
-     'Eight concurrent 90-minute virtual sessions across four time slots on 14 and 15 June 2022, each capped at 40&ndash;50 participants so the exercises stayed hands-on. Two slots ran each day, morning and afternoon US Eastern time.'),
+     '<strong>Eight concurrent 90-minute virtual sessions</strong> across four time slots on 14 and 15 June 2022, each capped at <strong>40&ndash;50 participants</strong> so the exercises stayed hands-on. Two slots ran each day, morning and afternoon US Eastern time.'),
     ('What materials did participants receive?',
-     'A custom slide deck in Lockheed Martin branding, a professionally designed digital workbook for each of the 287 participants, visual examples and motion graphics built for virtual delivery, and Lockheed-specific datasets for the final exercises.'),
+     'A custom slide deck in Lockheed Martin branding, a professionally designed <strong>digital workbook for each of the 287 participants</strong>, visual examples and motion graphics built for virtual delivery, and <strong>Lockheed-specific datasets</strong> for the final exercises.'),
     ('What role did the coaches play?',
-     'More than twenty Lockheed Martin leaders at Manager-to-Director level were embedded in the sessions, supported by a coaching brief, a session-prep worksheet, and a virtual vendor overview a week before delivery. They carried the method back into the business after the program ended.'),
+     '<strong>More than twenty Lockheed Martin leaders</strong> at Manager-to-Director level were <strong>embedded in the sessions</strong>, supported by a coaching brief, a session-prep worksheet, and a virtual vendor overview a week before delivery. They carried the method back into the business after the program ended.'),
     ('Can the Datalabs Agency run a capstone like this for our leadership program?',
-     'Yes. Concurrent virtual sessions, custom-branded materials, digital workbooks, and a coach-support layer is a repeatable format &mdash; the schedule scales to your cohort size and time zones. Send your program shape through the contact form and we will reply with a delivery plan.'),
+     'Yes. Concurrent virtual sessions, custom-branded materials, digital workbooks, and a <strong>coach-support layer</strong> is a repeatable format &mdash; the schedule <strong>scales to your cohort size and time zones</strong>. Send your program shape through the contact form and we will reply with a delivery plan.'),
 ])
 
 # ---------- articles ----------

@@ -133,15 +133,15 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the calculator',
 
 row_faq = faq_row(blocks, 'The Transurban project', 'Ask about your data tool', [
     ('What was the Road Usage Cost Calculator?',
-     'A public interactive web tool built for Transurban&rsquo;s Strategy team in mid-2017, letting anyone model current Australian road funding charges &mdash; fuel excise plus registration &mdash; against a proposed distance-based Road Usage Charge, for a single vehicle or a whole fleet. It launched at roadusagecalculator.com and has since been retired.'),
+     'A <strong>public interactive web tool</strong> built for Transurban&rsquo;s Strategy team in mid-2017, letting anyone model current Australian road funding charges &mdash; <strong>fuel excise plus registration</strong> &mdash; against a proposed <strong>distance-based Road Usage Charge</strong>, for a single vehicle or a whole fleet. It launched at roadusagecalculator.com and has since been retired.'),
     ('What was the Datalabs Agency&rsquo;s role?',
-     'Project management and design lead: stakeholder and requirements management with the Strategy team, the data design sessions that structured the cost calculations, user flows, and testing oversight. A development team built the application itself in HTML, CSS, and JavaScript.'),
+     '<strong>Project management and design lead</strong>: stakeholder and requirements management with the Strategy team, the <strong>data design sessions</strong> that structured the cost calculations, user flows, and testing oversight. A development team built the application itself in HTML, CSS, and JavaScript.'),
     ('What could the calculator model?',
-     'Vehicle registration costs across all eight Australian states and territories, four registration categories including rural and metropolitan variations, fuel types and excise rates, and vehicle specifications down to make, model, and year &mdash; compared in real time against an adjustable per-kilometre road usage rate.'),
+     'Vehicle registration costs across <strong>all eight Australian states and territories</strong>, four registration categories including rural and metropolitan variations, fuel types and excise rates, and vehicle specifications down to make, model, and year &mdash; compared in real time against an <strong>adjustable per-kilometre road usage rate</strong>.'),
     ('Why did the data design matter so much?',
-     'Because the rules differ by state and registration category, and the calculator had to be right in every combination. Extended data design and cleansing sessions structured those multi-dimensional rules before a single screen was built &mdash; the accuracy of every scenario depended on them.'),
+     'Because the rules differ by state and registration category, and the calculator had to be <strong>right in every combination</strong>. Extended data design and cleansing sessions structured those <strong>multi-dimensional rules</strong> before a single screen was built &mdash; the accuracy of every scenario depended on them.'),
     ('Can the Datalabs Agency build an interactive tool for my organisation?',
-     'Yes. Public calculators, explorable models, and interactive data products are a core service alongside dashboards &mdash; the same design discipline, pointed at a wider audience. Send your idea through the contact form and we will reply with an approach and scope.'),
+     'Yes. <strong>Public calculators</strong>, explorable models, and <strong>interactive data products</strong> are a core service alongside dashboards &mdash; the same design discipline, pointed at a wider audience. Send your idea through the contact form and we will reply with an approach and scope.'),
 ])
 
 art1 = fill(blocks['article1'], {

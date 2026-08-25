@@ -119,15 +119,15 @@ sec_deliver = widen_inner(fill(blocks['section2'], {
 # ---------- FAQ (Row: GEO Q&A) ----------
 faq_pairs = [
     ('How long did the Marriott dashboard project take?',
-     'Five weeks, delivered across Hong Kong and Melbourne in 2015&ndash;2016. Discovery workshops ran on site in Hong Kong; design and build ran from Melbourne, with the final work presented to Marriott&rsquo;s Chief Marketing &amp; Sales Officer and leadership team.'),
+     '<strong>Five weeks</strong>, delivered across Hong Kong and Melbourne in 2015&ndash;2016. Discovery workshops ran on site in Hong Kong; design and build ran from Melbourne, with the final work presented to Marriott&rsquo;s <strong>Chief Marketing &amp; Sales Officer</strong> and leadership team.'),
     ('What tools were used to build the Marriott dashboards?',
-     'Tableau. The four dashboards consolidated 73 data fields from five enterprise systems &mdash; reservations, competitive intelligence, financials, corporate accounts, and revenue management &mdash; into production Tableau screens.'),
+     'Tableau. The four dashboards consolidated <strong>73 data fields from five enterprise systems</strong> &mdash; reservations, competitive intelligence, financials, corporate accounts, and revenue management &mdash; into <strong>production Tableau screens</strong>.'),
     ('What was the hardest part of the design?',
-     'Deciding what not to show. With 73 available fields, the temptation is one enormous dashboard for everyone. The discovery workshops surfaced four distinct decision-making contexts, and each got its own focused screen instead &mdash; General Managers, revenue managers, F&amp;B managers, and sales teams each see what their decisions turn on.'),
+     '<strong>Deciding what not to show</strong>. With 73 available fields, the temptation is one enormous dashboard for everyone. The discovery workshops surfaced <strong>four distinct decision-making contexts</strong>, and each got its own focused screen instead &mdash; General Managers, revenue managers, F&amp;B managers, and sales teams each see what their decisions turn on.'),
     ('Did Marriott&rsquo;s teams get training as part of the project?',
-     'Yes. The engagement included a dashboard design style guide and training materials, so Marriott&rsquo;s own teams could extend the system without depending on a consultant. Capability building is part of every Datalabs Agency dashboard project.'),
+     'Yes. The engagement included a <strong>dashboard design style guide and training materials</strong>, so Marriott&rsquo;s own teams could extend the system without depending on a consultant. <strong>Capability building</strong> is part of every Datalabs Agency dashboard project.'),
     ('Can the Datalabs Agency do the same for my company?',
-     'Yes. The same engagement shape &mdash; discovery workshops with your real users, focused dashboard design, then a style guide and training &mdash; is how our dashboard design service runs today, for Power BI as well as Tableau. Start with the enquiry form on this page.'),
+     'Yes. The same engagement shape &mdash; <strong>discovery workshops with your real users</strong>, focused dashboard design, then a style guide and training &mdash; is how our dashboard design service runs today, for <strong>Power BI as well as Tableau</strong>. Start with the enquiry form on this page.'),
 ]
 faq_map = {'FAQ_TOPIC': 'The Marriott project', 'FAQ_CTA_TEXT': 'Ask about your project', 'FAQ_CTA_URL': CONTACT}
 for i, (q, a) in enumerate(faq_pairs, 1):

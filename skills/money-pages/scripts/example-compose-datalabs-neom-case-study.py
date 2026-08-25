@@ -121,15 +121,15 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the NEOM engagement
 
 row_faq = faq_row(blocks, 'The NEOM engagement', 'Ask about your data foundations', [
     ('What did the Datalabs Agency do for NEOM?',
-     'A three-phase engagement for NEOM&rsquo;s Education District across August to December 2023: four on-site training workshops for 12 education staff, co-design sessions that produced a three-tier dashboard framework, and a data audit with implementation planning &mdash; metric definitions, governance guidelines, and a technology roadmap.'),
+     'A three-phase engagement for NEOM&rsquo;s Education District across August to December 2023: <strong>four on-site training workshops</strong> for 12 education staff, co-design sessions that produced a <strong>three-tier dashboard framework</strong>, and a <strong>data audit with implementation planning</strong> &mdash; metric definitions, governance guidelines, and a technology roadmap.'),
     ('What is the three-tier dashboard framework?',
-     'One measurement model read at three altitudes: a Leadership Dashboard for the district-level executive view, a School Dashboard for individual school performance and operations, and a Student Dashboard for student-level tracking and intervention support. Initial designs covered enrolment, facility utilisation, attendance, intake projections, and applied-status tracking.'),
+     'One measurement model read at <strong>three altitudes</strong>: a <strong>Leadership Dashboard</strong> for the district-level executive view, a School Dashboard for individual school performance and operations, and a <strong>Student Dashboard</strong> for student-level tracking and intervention support. Initial designs covered enrolment, facility utilisation, attendance, intake projections, and applied-status tracking.'),
     ('What did the workshops cover?',
-     'Four sessions over two days, on site: Introduction to Data Visualisation and Storytelling, Infographics and Report Design, Creative Data Presentations with PowerPoint, and Storytelling with Data. Each combined live instruction, hands-on exercises on real NEOM education data, group critique, and a custom workbook.'),
+     '<strong>Four sessions over two days</strong>, on site: Introduction to Data Visualisation and Storytelling, Infographics and Report Design, Creative Data Presentations with PowerPoint, and Storytelling with Data. Each combined live instruction, hands-on exercises on <strong>real NEOM education data</strong>, group critique, and a custom workbook.'),
     ('Is the project confidential?',
-     'Partly. The final dashboard designs and certain project details are under NDA, so this page describes the engagement structure and publicly shareable material only.'),
+     'Partly. The final dashboard designs and certain project details are <strong>under NDA</strong>, so this page describes the engagement structure and <strong>publicly shareable material only</strong>.'),
     ('Can the Datalabs Agency set up data foundations for our organisation?',
-     'Yes. The NEOM shape &mdash; train the team, co-design the framework, audit the data, write the roadmap &mdash; works for any organisation building its reporting from a low base. Send a note through the contact form and we will reply with a phased outline.'),
+     'Yes. The NEOM shape &mdash; <strong>train the team</strong>, co-design the framework, audit the data, <strong>write the roadmap</strong> &mdash; works for any organisation building its reporting from a low base. Send a note through the contact form and we will reply with a phased outline.'),
 ])
 
 art1 = fill(blocks['article1'], {

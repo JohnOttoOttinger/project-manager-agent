@@ -299,15 +299,15 @@ row_quote = ('[vc_row bg_check="row-background-dark" dfd_enable_overlay=""][vc_c
 # ---------- FAQ (Row: GEO Q&A) ----------
 faq_pairs = [
     ('How many people did the Datalabs Agency train at Adidas?',
-     'Around 150 people across seven workshops: an executive session for roughly 30 VPs, Senior Directors, and Directors, and analyst sessions for roughly 120 junior and mid-level procurement staff across APAC, EMEA, and the Americas.'),
+     '<strong>Around 150 people across seven workshops</strong>: an executive session for <strong>roughly 30 VPs</strong>, Senior Directors, and Directors, and analyst sessions for <strong>roughly 120 junior and mid-level</strong> procurement staff across APAC, EMEA, and the Americas.'),
     ('How were seven workshops delivered across four continents in three weeks?',
-     'All sessions ran live and virtually from Melbourne between 29 November and 13 December 2022, in a three-hour interactive format. Start times spanned 2 AM to 12 PM Australian time so each cohort &mdash; Shanghai, Herzogenaurach, Portland, and Lisbon &mdash; trained in its own working day.'),
+     'All sessions ran <strong>live and virtually from Melbourne</strong> between 29 November and 13 December 2022, in a three-hour interactive format. Start times spanned <strong>2 AM to 12 PM Australian time</strong> so each cohort &mdash; Shanghai, Herzogenaurach, Portland, and Lisbon &mdash; trained in its own working day.'),
     ('What made the training Adidas-specific?',
-     'Every exercise was built from real Adidas procurement scenarios: custom dummy datasets covering supplier invoices, discounts, factory locations, and ratings, plus teaching devices like the superlatives exercise that turn supplier data into stories. No generic stock examples.'),
+     'Every exercise was built from <strong>real Adidas procurement scenarios</strong>: custom dummy datasets covering supplier invoices, discounts, factory locations, and ratings, plus teaching devices like the <strong>superlatives exercise</strong> that turn supplier data into stories. No generic stock examples.'),
     ('Did executives and analysts attend the same sessions?',
-     'No &mdash; they had separate tracks with the same methodology. Executives got level-appropriate depth in their own sessions, and analysts got hands-on time in theirs, so both sides of the reporting conversation came away speaking the same language.'),
+     'No &mdash; they had <strong>separate tracks with the same methodology</strong>. Executives got level-appropriate depth in their own sessions, and analysts got hands-on time in theirs, so both sides of the reporting conversation came away <strong>speaking the same language</strong>.'),
     ('Can the Datalabs Agency run this program for my company?',
-     'Yes. A custom curriculum, cohort scheduling across time zones, and exercises built from your own data is the standard shape of our corporate training. Send your team size and rough timing through the contact form and we will reply with a program outline and a fixed quote.'),
+     'Yes. A <strong>custom curriculum</strong>, cohort scheduling across time zones, and <strong>exercises built from your own data</strong> is the standard shape of our corporate training. Send your team size and rough timing through the contact form and we will reply with a program outline and a fixed quote.'),
 ]
 faq_map = {'FAQ_TOPIC': 'The Adidas program', 'FAQ_CTA_TEXT': 'Ask about your team', 'FAQ_CTA_URL': CONTACT}
 for i, (q, a) in enumerate(faq_pairs, 1):

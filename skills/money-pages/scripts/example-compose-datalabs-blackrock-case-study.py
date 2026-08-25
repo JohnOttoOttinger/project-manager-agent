@@ -117,15 +117,15 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the BlackRock engag
 
 row_faq = faq_row(blocks, 'The BlackRock engagement', 'Ask about your design language', [
     ('What did the Datalabs Agency do for BlackRock?',
-     'Project management and design across a three-year engagement at BlackRock&rsquo;s New York headquarters: a 75-page Tableau style guide, a Tableau dashboard system for the Eloqua marketing platform, executive reporting and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and an interactive SQL tool called the Data Grid.'),
+     'Project management and design across a <strong>three-year engagement</strong> at BlackRock&rsquo;s New York headquarters: a <strong>75-page Tableau style guide</strong>, a Tableau dashboard system for the Eloqua marketing platform, executive reporting and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and an interactive SQL tool called the <strong>Data Grid</strong>.'),
     ('What is in the 75-page Tableau style guide?',
-     'Four parts: an introduction to purpose and Tableau terminology; dashboard design principles covering audience, devices, time on dashboard, chart choice, hierarchy, grids and sequencing, and language rules; styling &mdash; fonts, colour, margins, and internal versus external themes; and a chart library documenting more than 30 chart types across basic, advanced, and specialised tiers.'),
+     '<strong>Four parts</strong>: an introduction to purpose and Tableau terminology; dashboard design principles covering audience, devices, time on dashboard, chart choice, hierarchy, grids and sequencing, and language rules; styling &mdash; fonts, colour, margins, and internal versus external themes; and a chart library documenting <strong>more than 30 chart types</strong> across basic, advanced, and specialised tiers.'),
     ('What tools did the work run on?',
-     'Tableau for the style guide and dashboard systems, SQL for the Data Grid interactive tool, and PowerPoint for executive presentation design. Everything in the style guide shipped as native Tableau workbooks aligned to BlackRock&rsquo;s brand guidelines.'),
+     'Tableau for the style guide and dashboard systems, SQL for the Data Grid interactive tool, and <strong>PowerPoint for executive presentation design</strong>. Everything in the style guide shipped as <strong>native Tableau workbooks</strong> aligned to BlackRock&rsquo;s brand guidelines.'),
     ('Did BlackRock&rsquo;s own team get trained?',
-     'Yes &mdash; team training and capability building ran alongside the design work throughout the engagement, so BlackRock&rsquo;s analysts could design to the standard themselves rather than routing everything through a consultant.'),
+     'Yes &mdash; <strong>team training and capability building</strong> ran alongside the design work throughout the engagement, so BlackRock&rsquo;s analysts could <strong>design to the standard themselves</strong> rather than routing everything through a consultant.'),
     ('Can the Datalabs Agency build a style guide for my company?',
-     'Yes. A BI style guide &mdash; Tableau or Power BI &mdash; is one of our core services, and the BlackRock shape (style guide first, dashboard systems built on it) is the model we recommend for any organisation past its first ten dashboards. Send a note through the contact form for a scoped outline.'),
+     'Yes. A <strong>BI style guide</strong> &mdash; Tableau or Power BI &mdash; is one of our core services, and the BlackRock shape (style guide first, dashboard systems built on it) is the model we recommend for any organisation <strong>past its first ten dashboards</strong>. Send a note through the contact form for a scoped outline.'),
 ])
 
 art1 = fill(blocks['article1'], {
