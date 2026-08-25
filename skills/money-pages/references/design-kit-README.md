@@ -166,6 +166,34 @@ columns of `vc_column_text`. (b) Compose the "More from the Oddtoe studio&hellip
 kit ships it — `custom_fonts="font_family:Qwigley…" use_google_fonts="show" title_font_options=…` and
 `&hellip;` not `...` — and keep the spacer under it at 20px (not 50) so the cards sit close.
 
+## Lessons from the Dashboard Design Services review (25 Aug 2026, page 53840)
+
+**11. The overnight builder composes from the KIT, not from this file — lessons do not apply themselves.**
+53840 shipped with `1/3+1/3+1/3` intro and section rows, single-column 5-paragraph articles, and a plain
+`...` delimiter: lessons 7, 8 and 10 all missed, on a page whose main heading ("What does a dashboard
+design service actually do?") is the near-twin of the one lesson 8 was written for. **Run this checklist
+against every composed draft before pushing it**, whether a human or the 05:00 task assembled it:
+head noun 3+ words → widen hero/section inner rows to `1/4+1/2+1/4` (offsets too, lesson 7);
+article body past ~4 paragraphs → two `1/2` columns (lesson 10a); table renders wider than its column →
+`1/6+2/3+1/6` (lesson 9); every `...` → `&hellip;`.
+
+**12. Zero ellipses is under-applying the rule, not playing it safe.** The cap is two per page; 53840
+had none. The hero is the natural home for shape 1 — a fragment the Bebas H1 completes
+(`So you need&hellip;` → DASHBOARD DESIGN SERVICES). Spend the second one on an article lead-in that
+genuinely hands over (`Stage by stage&hellip;`), and leave the complete labels alone.
+
+**13. The Datalabs cross-promo delimiter is Qwigley (Otto, 25 Aug 2026).** `Two workshops that Otto
+facilitates&hellip;` now carries the same attrs as the Oddtoe one —
+`custom_fonts="font_family:Qwigley%3Aregular|font_style:400%20regular%3A400%3Anormal"
+module_animation="transition.expandIn" use_google_fonts="show" title_font_options="font_size:30|line_height:38"`.
+`design-kit.html` is updated, and the three legacy `...` footer subtitles in it converted to `&hellip;`.
+**⚠ Master page 52964 still ships the plain version** — re-snapshotting the master before Otto restyles
+that delimiter in WPBakery will regress both changes.
+
+**14. A two-column split will not balance, and that is fine.** 53840's articles split 3|2 into columns of
+650px/347px and 606px/369px; the alternative 2|3 splits were no better. Keep the 3|2 the Character Design
+page established — the ragged bottom sits on the right, which is what a reader expects.
+
 ## Composing a page (repeat/omit patterns per page-types.md)
 
 - Patterns are the top-level `[vc_row]` blocks, labelled with HTML comments and `el_id="pat-*"`.

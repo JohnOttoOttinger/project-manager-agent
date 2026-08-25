@@ -1,0 +1,25 @@
+{
+  "target": 53840,
+  "target_url": "https://www.datalabsagency.com/dashboard-design-services/",
+  "approved": false,
+  "edits": [
+    {
+      "source_id": 379,
+      "type": "pages",
+      "search": "<p class=\"p1\">We are <strong>not</strong> your stale, old-school consultancy. We think <strong>there’s more to designing effective dashboards</strong> than choosing a bar graph or a pie chart.</p>",
+      "replace": "<p class=\"p1\">We are <strong>not</strong> your stale, old-school consultancy. We think <strong>there’s more to designing effective dashboards</strong> than choosing a bar graph or a pie chart. If your dashboards do not live in Power BI, the same team runs a platform-agnostic <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/dashboard-design-services/\">dashboard design service</a></strong> across Tableau, Excel, and PowerPoint.</p>"
+    },
+    {
+      "source_id": 404,
+      "type": "pages",
+      "search": "<p style=\"text-align: left;\">We think of ourselves as a <a href=\"https://www.datalabsagency.com/about-us/\">strategic data visualization agency</a>. That's why we offer our clients training, <a href=\"/?p=24319\">data visualization consultants</a>, our design assets, and any help to get their skills for designing data to the next level.</p>",
+      "replace": "<p style=\"text-align: left;\">We think of ourselves as a <a href=\"https://www.datalabsagency.com/about-us/\">strategic data visualization agency</a>. That's why we offer our clients training, <a href=\"/?p=24319\">data visualization consultants</a>, a done-for-you <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/dashboard-design-services/\">dashboard design service</a></strong>, our design assets, and any help to get their skills for designing data to the next level.</p>"
+    },
+    {
+      "source_id": 22463,
+      "type": "posts",
+      "search": "But you don't know how to get started designing your own dashboards.",
+      "replace": "But you don't know how to get started designing your own dashboards. Teams that would rather hand the work over than learn it use our <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/dashboard-design-services/\">dashboard design service</a></strong> instead."
+    }
+  ]
+}

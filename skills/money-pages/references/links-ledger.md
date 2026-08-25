@@ -360,3 +360,39 @@ and disabling it would break helpful guesses like `/power-bi-templ/` → `/produ
 **Optional upgrade once Dashboard Design Services (53840) is published:** repoint this rule's target
 from the English article to the new page, so the 390/mo money term lands on the money page. That is a
 target edit on the existing rule — no deletion, no slug change.
+
+---
+
+## 25 Aug 2026 — Dashboard Design Services (53840) published
+
+`https://www.datalabsagency.com/dashboard-design-services/` went live 25 Aug 2026 after Otto's review
+round. Google indexing requested the same day via GSC URL inspection (property
+`https://www.datalabsagency.com/`) — "URL was added to a priority crawl queue". Confirmed present in
+`page-sitemap.xml` (256 URLs; the first fetch missed it because WP Engine was serving a cached copy —
+add a cache-buster when checking a fresh sitemap). Bing picks it up via Yoast IndexNow.
+
+**Outbound links already in the page (11 in-body, 5 targets)** — these shipped with the draft, no pass
+needed: `/power-bi-dashboard-design/` (379) ×2 and
+`/tableau-business-intelligence-dashboard-designer/` (367) ×2 — the cannibalisation guardrails, linked
+out rather than competed with; `/data-visualization-style-guides/` (394) ×5;
+`/designing-great-business-dashboards-workshop/` (19385) ×2; contact form (176) ×1.
+The five links to 394 are contextual and each sits in a different section, but that is the one target
+worth trimming if Otto wants a lighter page.
+
+**Inbound link pass — PLANNED 25 Aug 2026, NOT APPLIED (awaiting Otto's approval).** Three edits:
+
+| Source | Where | Link |
+|---|---|---|
+| page 379 Power BI Dashboard Designer | "…than choosing a bar graph or a pie chart." | + sentence: platform-agnostic **dashboard design service** across Tableau, Excel, PowerPoint |
+| page 404 Tableau Style Guides | "…training, data visualization consultants, our design assets…" | inserts a done-for-you **dashboard design service** into the existing list |
+| post 22463 New Online Course for Designing Great Dashboards | "…how to get started designing your own dashboards." | + sentence for teams that would rather hand the work over |
+
+**Rejected as sources, with the reason** (so the next pass does not re-propose them): pages 367, 394,
+19385 and the homepage 167 all rank well and are topically perfect, but their copy is entirely centred
+display lines wrapped in blanket `<strong>` — there is no prose sentence a contextual link can live in
+without reading as a caption (README lesson 6). Linking them would need Otto to add a prose paragraph
+first.
+
+**`/dashboard-design/` follow-up now unblocked:** the optional upgrade recorded above — repointing the
+existing Redirection rule from the English article to this page — is now possible. Not done: it is a
+Redirection-plugin config change in wp-admin and Otto's call.
