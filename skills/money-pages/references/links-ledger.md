@@ -338,3 +338,25 @@ and it is the exact-match slug for the money term (390/mo AU, LOW competition) �
 
 Not done tonight: the browser went unresponsive mid-task (laptop closing), so step 1 could not be
 completed. Both steps left for Otto's morning. Current state is safe and unchanged for tonight's run.
+
+### CORRECTION (25 Aug 2026 morning): the Redirection rule DID work
+
+Last night I concluded "a Redirection rule cannot fix this, WordPress's guess wins". **That was wrong.**
+Checked on the bare URL this morning:
+
+    location: https://www.datalabsagency.com/2024/09/15/dashboard-design-pro-tips/
+    x-redirect-by: redirection
+
+The plugin is now serving it and `/dashboard-design/` reaches the ENGLISH post. Two things fooled me:
+1. **The cache-buster test was invalid.** Redirection matches query parameters exactly by default, so
+   `?cb=…` does not match a rule written for the bare path — it fell through to WP's guess every time.
+2. **WP Engine was serving a cached 301** to the German URL during the polling window.
+
+So the German leak is FIXED and no deletion is needed. What remains true: the ROOT cause is still
+WordPress's 404 slug-guessing, which is why near-miss typos (`/dashboard-desig/`) still land on the
+German post. Only a real page at the slug — or disabling `redirect_guess_404_permalink` — stops that,
+and disabling it would break helpful guesses like `/power-bi-templ/` → `/product/power-bi-templates/`.
+
+**Optional upgrade once Dashboard Design Services (53840) is published:** repoint this rule's target
+from the English article to the new page, so the 390/mo money term lands on the money page. That is a
+target edit on the existing rule — no deletion, no slug change.
