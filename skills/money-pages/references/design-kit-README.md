@@ -233,3 +233,30 @@ The kit is the Datalabs instance. For Oddtoe, swap (all are Datalabs media/form 
 Per SKILL.md: drafts only (never publish), author = Otto, Yoast comment block at top of draft body,
 `scripts/wp-post.sh <site> "<Title>" <file>` with Application Passwords in `.env` — or hand Otto the
 composed markup to paste into a new page's Text tab if credentials aren't set up.
+
+
+## Lesson 11 — balance the two-column body by RENDERED HEIGHT, not character count (Otto, 26 Aug 2026)
+
+Otto's rule for the lesson-10 two-column treatment: **both columns should come out roughly the same
+depth.** It is an aesthetic requirement, not a nicety — a 63/37 split looks like a mistake.
+
+Splitting the body at the midpoint by character count is NOT enough. On the Interactive Annual Report
+page (54005) a 49/51 character split still rendered 435 vs 496 px, because:
+
+- the column with **3 paragraphs carries an extra paragraph margin** the 2-paragraph column does not;
+- **bold runs and links wrap wider** than plain text, so equal characters ≠ equal lines.
+
+**Method that works — measure, then tune the copy:**
+
+1. Split at a `</p>` boundary so reading order still runs col1 top-to-bottom, then col2.
+2. Push, then measure the real thing in the browser:
+   `document.querySelectorAll('.wpb_text_column')` → `getBoundingClientRect().height` for each half.
+3. Convert the gap to characters: at the kit's column width roughly **1px of height ≈ 1 character
+   moved across** (moving x chars grows one side and shrinks the other, so the gap closes ~1.04x).
+4. Do not cut mid-sentence — the halves are separate `vc_column_text` blocks. Instead **lengthen a
+   sentence on the short side and trim one on the tall side** by that many characters.
+5. Re-measure. Target **under ~5% / under one line** of difference.
+
+Result on 54005: 435/496 and 391/452 px → **479/474 (1%)** and **413/430 (4%)**.
+
+Mobile is unaffected — the columns stack, so this only governs desktop.
