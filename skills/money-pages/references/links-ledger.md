@@ -396,3 +396,44 @@ first.
 **`/dashboard-design/` follow-up now unblocked:** the optional upgrade recorded above — repointing the
 existing Redirection rule from the English article to this page — is now possible. Not done: it is a
 Redirection-plugin config change in wp-admin and Otto's call.
+
+---
+
+## Interactive Annual Report — page 54005, PUBLISHED 26 Aug 2026
+
+Live at `https://www.datalabsagency.com/interactive-annual-report/`. Verified after publish:
+single H1, Yoast title/description as drafted, background `#2f2e3a` + header style 2 rendering,
+`/?page_id=54005` 301s to the pretty URL (site convention — WordPress stores in-body links in the
+`?page_id=` form and they redirect correctly, so the assertion script must follow redirects).
+Google indexing requested via URL inspection the same day ("Indexing requested" confirmed).
+
+Two design rules came out of Otto's review and are now in the README:
+
+- **Lesson 11 — balance two-column rows by rendered height, not character count.** Otto:
+  "Could you write effectively to have the depth of text in each column roughly come out to the
+  same length? More of a design aesthetic I have." Both rows landed at 3% and 4% difference. A
+  three-paragraph side carries an extra paragraph margin, so it needs ~1 line less text than a
+  two-paragraph side to finish level; ~1px of height ≈ 1 character moved.
+- **Lesson 12 — tailor the footer enquiry form's heading and CTA to the page topic.** The fixed
+  footer block repeats verbatim across pages; the form heading is the one part that should not.
+  This page's CTA: "Turn last year's PDF into an AI-assisted report."
+
+**Inbound link pass — APPLIED and verified live (3 links, 3 sources).** Sources backed up as
+`datalabs-{53763,17853,623}-pre-annualreport-linkpass-2026-08-26.json`.
+
+| Source | Where | Link |
+|---|---|---|
+| 53763 Types of Data Visualization | "best known for: …, impact summaries…" | **annual reports** |
+| 17853 HCF case study (`/case-studies/hcf-annual-report-case-study/`) | appended to the closing para | "These days we build that same story as an **interactive annual report** rather than a printed one." |
+| 623 Infographic Reports | "…whether they ship as print, as a PDF, or as an **interactive annual report**." | inline |
+
+Two assertion traps worth remembering: `page_id=429` appears twice on 54005 (a one-link assertion
+fails), and 623's apostrophe is a literal `'`, not `&#8217;` — match on the surrounding words, not
+the punctuation.
+
+**AI claim boundary held.** Otto confirmed AI-assisted annual reports are real and named the
+mechanism (interactive chart generation, web animations, interactive diagrams), so that went into
+`brands.md` before the page claimed it. Mercedes-Benz / Adidas / UPS are named as clients in the
+general sense only — `brands.md` still carries `TO CONFIRM: which specific clients had
+interactive/web reports built`, and no brand↔interactive-report pairing is asserted anywhere on
+the page.

@@ -120,8 +120,10 @@ R14 speaker form + **GEO Q&A** + Gravity Form.
 ## Brand deltas (unchanged from the kit system)
 
 - **Datalabs:** plum `#2f2e3a` / near-blacks `#252525`/`#000` / light `#e9e9e9`; tan accent.
-- **Oddtoe:** plum `#26161f` master bg, sand `#ddccb1`, olive `#8a9f6a`-family accents; craft
-  pages use their own dark hues (`#332D26`, `#322E34`, `#262B2A`).
+- **Oddtoe:** sand `#ddccb1`, olive `#8a9f6a`-family accents. The money kit ships plum
+  `#26161f`, but **every money page gets its own near-black** (Otto, 26 Aug 2026: bored of
+  the plum repetition) — the same per-page tinting the Visual Case Studies use. Palette and
+  rule below; craft pages already did this by hand (`#332D26`, `#322E34`, `#262B2A`).
 - Typography identical stack (Qwigley / Bebas-style condensed / body serif-sans per theme).
 
 ## Source snapshots
@@ -129,3 +131,35 @@ R14 speaker form + **GEO Q&A** + Gravity Form.
 Raw `context=edit` bodies of all 30 scanned pages: session scratchpad `dla-scan/` +
 `odd-scan/` (25 Aug 2026). Re-fetch any page the same way when a named row's markup is
 needed for composing; long-lived exemplars get promoted into kits per template-catalog.md.
+
+
+## Oddtoe money-page tints (approved 26 Aug 2026)
+
+`scripts/oddtoe_theme.py` holds the palette and does the retint. A money page carries the
+tint in **five** places — the first is wp-admin only, so the script cannot finish the job
+alone:
+
+| # | Where | Set by |
+|---|---|---|
+| 1 | Page Options `crum_page_custom_bg_color` (+ `repeat`, header style 6) | wp-admin, by hand |
+| 2 | Hero row `dfd_overlay_color` | `retint()` |
+| 3 | Three row `css=".vc_custom_N{background-color:…}"` attrs | `retint()` — **stripped**, not recoloured |
+| 4 | 28 table `border-bottom: 1px solid …` hairlines → `lighten(bg, .13)` | `retint()` |
+| 5 | Scroll-down delimiter line + icon (v0-seed lavender) → tint + sand/olive | `retint()` |
+
+Row backgrounds are stripped rather than recoloured so the page ground stays the single
+source of truth — a later tint change is then one wp-admin field, not a re-compose.
+
+| Name | Hex | Assigned to |
+|---|---|---|
+| plum | `#26161f` | kit default; retire from new builds |
+| teal | `#142322` | AI Animation Studios (16210) |
+| ink | `#171d2a` | — |
+| forest | `#16211a` | — |
+| graphite | `#1c1c1f` | — |
+| umber | `#241b16` | — |
+| slate | `#1a1e26` | — |
+| nearblack | `#101418` | — |
+
+**Rule:** never give the same tint to two pages in one cluster — the point is that a visitor
+moving between Oddtoe service pages sees a different ground each time.

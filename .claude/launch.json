@@ -2,16 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "chat-live",
-      "url": "http://localhost:3000"
-    },
-    {
-      "name": "chat-staging",
-      "runtimeExecutable": "bash",
-      "runtimeArgs": [
-        "/private/tmp/claude-501/-Users-Ottinger-Claude-Projects-2026-project-manager-agent/ac73e97d-88ff-4358-9a98-a456143cc435/scratchpad/staging/run-chat-staging.sh"
-      ],
-      "port": 3210
+      "name": "deck-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8781", "--directory", "/private/tmp/claude-501/-Users-Ottinger-Claude-Projects-2026-project-manager-agent/a6374f8f-7db8-463e-bc3b-d2dcf5f581fb/scratchpad"],
+      "port": 8781
     }
   ]
 }
