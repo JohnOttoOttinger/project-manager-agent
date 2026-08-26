@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "funding-and-investor-updates",
+  "agent": "investment",
+  "name": "Funding & Investor Updates",
+  "description": "Finds funding your business could actually apply for, and keeps the evidence behind each match.",
+  "icon": "grant",
+  "installable": true,
+  "requires": [],
+  "modules": [
+    { "id": "funding-radar", "name": "Funding Radar", "role": "core", "source": "optional" }
+  ]
+}

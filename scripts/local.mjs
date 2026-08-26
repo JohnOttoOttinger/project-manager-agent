@@ -128,6 +128,9 @@ const workflowIds = {
   checklist: "phase6LearnerChecklist",
   taskSetup: "phase4TaskSetup",
   skillSync: "phase5SyncEnabledSkills",
+  // Otto: restored after the upstream merge dropped it; importReviewedWorkflows
+  // publishes this and posts the setup-lost-lead-data webhook.
+  lostLeadSetup: "phase16LostLeadSetup",
   tools: reviewedWorkflows
     .filter(({ name }) => MUST_BE_LIVE.test(name))
     .map(({ workflow }) => workflow.id)
