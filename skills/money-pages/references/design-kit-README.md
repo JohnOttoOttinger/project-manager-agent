@@ -260,3 +260,40 @@ page (54005) a 49/51 character split still rendered 435 vs 496 px, because:
 Result on 54005: 435/496 and 391/452 px → **479/474 (1%)** and **413/430 (4%)**.
 
 Mobile is unaffected — the columns stack, so this only governs desktop.
+
+
+## Lesson 12 — the footer enquiry form is NOT fixed furniture: tailor its heading and CTA (Otto, 26 Aug 2026)
+
+The "FIXED FOOTER BLOCKS" note says everything below it ships as-is. **One exception: the enquiry-form
+row's heading and subtitle.** They must be rewritten to the page's topic on every page.
+
+Shipping them untouched is a real defect, not a cosmetic one. The Datalabs kit's stock copy is a
+**speaker-booking** ask — `Looking for a speaker for your event?` / `Professional & Thought-provoking`
+— so the Interactive Annual Report page (54005) spent its entire final CTA inviting speaking gigs from
+readers who had just been convinced to rebuild their annual report. The page argued one thing and asked
+for another.
+
+**What to change (and only this):**
+
+- the `dfd_heading` **title text** — a question naming the specific job the page just described;
+- the `subtitle` **attribute** — the Qwigley lead-in that hands over to the form.
+
+Leave the row, spacers, `dfd_heading` attributes, column widths and `[gravityform id="1"]` exactly as
+they are. Same form, same styling — new words.
+
+**How to write the pair**
+
+| Slot | Shape | Example (54005) |
+|---|---|---|
+| Heading (h2, Bebas) | A question that states the reader's current problem in their words, not the service name | `Still publishing your annual report as a PDF?` |
+| Subtitle (h3, Qwigley) | Sentence case, the concrete first step, ends in `&hellip;` because it hands over to the form | `Send us the one you already have&hellip;` |
+
+The enquiry-form subtitle is kit furniture and stays **outside** the two-ellipsis-per-page count (see
+the ellipsis rule above), so it may trail even when a hero or article lead-in already does.
+
+**Never promise a service `brands.md` does not list.** Otto asked for the 54005 CTA to mention turning
+a report into an "AI and interactive experience". The page body makes no AI claim and the Datalabs
+canonical service list is training workshops, dashboard design and consulting, BI style guides, and
+templates — no AI service. So the CTA was written to the interactive rebuild the page actually
+delivers. If AI-assisted reporting becomes a real, named offer, add it to `brands.md` first and the
+CTA can then say so (banned.md rule 3).
