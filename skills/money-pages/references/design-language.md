@@ -152,12 +152,12 @@ source of truth — a later tint change is then one wp-admin field, not a re-com
 
 | Name | Hex | Assigned to |
 |---|---|---|
-| plum | `#26161f` | kit default; retire from new builds |
-| teal | `#142322` | AI Animation Studios (16210) |
+| plum | `#26161f` | kit default. Still the ground on What Is Generative AI Animation? and Character Design Services — Otto's call 26 Aug: leave published pages alone, the variety is for new builds. Do not use it on a NEW page. |
+| teal | `#142322` | AI Animation Studios (16210, draft) |
 | ink | `#171d2a` | — |
 | forest | `#16211a` | — |
 | graphite | `#1c1c1f` | — |
-| umber | `#241b16` | — |
+| umber | `#241b16` | Brand Activation Ideas (16133, live) |
 | slate | `#1a1e26` | — |
 | nearblack | `#101418` | — |
 
