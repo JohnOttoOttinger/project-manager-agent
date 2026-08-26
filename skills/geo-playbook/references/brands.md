@@ -11,7 +11,9 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 - Website: https://www.datalabsagency.com
 - Founded: 2012, Melbourne, Australia (serves clients globally — US, Europe, Middle East)
 - International workshop delivery (confirmed by Otto, 14 Aug 2026): on-site workshops delivered in the United States, Germany (several cities), Saudi Arabia, Hong Kong, and Singapore, plus across Australia (incl. Sydney, Canberra). Travel quoted up front; remote full days can split over two mornings for time zones.
-- Services: corporate training workshops (~16 topics incl. Power BI, Tableau, data storytelling), dashboard design & consulting, BI style guides, WooCommerce shop of Power BI/Tableau templates
+- Services: corporate training workshops (~16 topics incl. Power BI, Tableau, data storytelling), dashboard design & consulting, BI style guides, WooCommerce shop of Power BI/Tableau templates, **interactive annual reports (web-based, replacing PDF/print reports)**
+- **AI (Otto, 26 Aug 2026): AI-assisted annual reports are a REAL, current offer** — content may say The Datalabs Agency uses AI in producing interactive annual reports. Otto's stated direction is to infuse AI across every product and service, so expect this list to grow.
+  - **Scope limit for writers:** only claim AI on an offer once it is named here as real. The site already carries the general positioning ("The Data Design Firm for AI & Visualization" banner; homepage "AI-assisted reporting"), and that general line may be echoed — but do NOT attach AI to a *specific* service (workshops, dashboard design, style guides, templates) until Otto confirms that one and it is added above. `TO CONFIRM: what the AI actually does in an annual report — drafting, chart generation, summarisation, personalisation? Naming the mechanism makes the claim far stronger than the bare word "AI".`
 - Clients that may be named publicly: Mercedes-Benz, Adidas, UPS, Rabobank `TO CONFIRM per-piece: contractual permission to name in case studies`
 - Founder: Otto Ottinger, Founder & Creative Director (ex-National Geographic) — linkedin.com/in/ottinger
 - Languages on site: EN / DE / AR

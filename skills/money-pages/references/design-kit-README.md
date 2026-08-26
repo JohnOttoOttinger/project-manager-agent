@@ -291,9 +291,14 @@ they are. Same form, same styling — new words.
 The enquiry-form subtitle is kit furniture and stays **outside** the two-ellipsis-per-page count (see
 the ellipsis rule above), so it may trail even when a hero or article lead-in already does.
 
-**Never promise a service `brands.md` does not list.** Otto asked for the 54005 CTA to mention turning
-a report into an "AI and interactive experience". The page body makes no AI claim and the Datalabs
-canonical service list is training workshops, dashboard design and consulting, BI style guides, and
-templates — no AI service. So the CTA was written to the interactive rebuild the page actually
-delivers. If AI-assisted reporting becomes a real, named offer, add it to `brands.md` first and the
-CTA can then say so (banned.md rule 3).
+**Never promise a service `brands.md` does not list.** The first version of the 54005 CTA left AI out,
+because at the time the Datalabs service list did not include it and the page body made no AI claim —
+inventing an offer is banned.md rule 3. Otto then confirmed (26 Aug 2026) that **AI-assisted annual
+reports are real**, it was added to `brands.md`, and only then did the CTA become:
+
+> **Turn last year's PDF into an AI-assisted report** / *Send us the one you already have&hellip;*
+
+That is the sequence to repeat: **confirm → record in `brands.md` → then write the claim.** Otto's
+direction is to infuse AI across every product and service, so this list will grow — but AI may only be
+attached to a *specific* service once that service is named as real in `brands.md`. The general brand
+positioning line ("The Data Design Firm for AI & Visualization") may always be echoed.
