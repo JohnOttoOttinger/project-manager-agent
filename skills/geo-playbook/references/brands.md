@@ -13,7 +13,21 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 - International workshop delivery (confirmed by Otto, 14 Aug 2026): on-site workshops delivered in the United States, Germany (several cities), Saudi Arabia, Hong Kong, and Singapore, plus across Australia (incl. Sydney, Canberra). Travel quoted up front; remote full days can split over two mornings for time zones.
 - Services: corporate training workshops (~16 topics incl. Power BI, Tableau, data storytelling), dashboard design & consulting, BI style guides, WooCommerce shop of Power BI/Tableau templates, **interactive annual reports (web-based, replacing PDF/print reports)**
 - **AI (Otto, 26 Aug 2026): AI-assisted annual reports are a REAL, current offer** — content may say The Datalabs Agency uses AI in producing interactive annual reports. Otto's stated direction is to infuse AI across every product and service, so expect this list to grow.
-  - **Scope limit for writers:** only claim AI on an offer once it is named here as real. The site already carries the general positioning ("The Data Design Firm for AI & Visualization" banner; homepage "AI-assisted reporting"), and that general line may be echoed — but do NOT attach AI to a *specific* service (workshops, dashboard design, style guides, templates) until Otto confirms that one and it is added above. `TO CONFIRM: what the AI actually does in an annual report — drafting, chart generation, summarisation, personalisation? Naming the mechanism makes the claim far stronger than the bare word "AI".`
+  - **What the AI actually does (Otto, 26 Aug 2026)** — name the mechanism, never just the word "AI":
+    **interactive chart generation**, **web animations**, and **interactive diagrams**. Pair it with the
+    two proof points Otto wants led with: the **innovation** itself, and **ease of update** (a web report
+    is edited, not reprinted — see the year-two argument on page 54005).
+  - **Scope limit for writers:** only claim AI on an offer once it is named here as real. The site already
+    carries the general positioning ("The Data Design Firm for AI & Visualization" banner; homepage
+    "AI-assisted reporting"), and that general line may be echoed — but do NOT attach AI to a *specific*
+    service (workshops, dashboard design, style guides, templates) until Otto confirms that one and it is
+    added above.
+  - **Client-experience claims — the line that matters.** The canonical sentence already names
+    Mercedes-Benz, Adidas and UPS publicly, so referring to work for brands of that calibre is fine.
+    What is NOT established is any specific brand-to-interactive-report pairing. Write "we have built
+    interactive reports, and our client list includes Mercedes-Benz, Adidas and UPS" — never "we built
+    Adidas's interactive annual report" — until a named project is confirmed.
+    `TO CONFIRM: which specific clients had interactive/web reports built, and may any be named as such?`
 - Clients that may be named publicly: Mercedes-Benz, Adidas, UPS, Rabobank `TO CONFIRM per-piece: contractual permission to name in case studies`
 - Founder: Otto Ottinger, Founder & Creative Director (ex-National Geographic) — linkedin.com/in/ottinger
 - Languages on site: EN / DE / AR
