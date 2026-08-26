@@ -8,8 +8,14 @@ export const AGENT_NODE_BY_ID = Object.freeze({
   bookkeeping: "Bookkeeping Agent",
 });
 
+// Otto: AGENT_IDS lists nine skill-owner IDs, but only these five have agent
+// nodes in the reviewed workflow. Routing and model-wiring checks run over the
+// routed five; the other four IDs exist so skill.yaml files can declare them
+// as owners (their skills ride along in the compiled bundle).
+export const ROUTED_AGENT_IDS = Object.freeze(Object.keys(AGENT_NODE_BY_ID));
+
 export const AGENT_NODE_NAMES = Object.freeze(
-  AGENT_IDS.map((agentId) => AGENT_NODE_BY_ID[agentId]),
+  ROUTED_AGENT_IDS.map((agentId) => AGENT_NODE_BY_ID[agentId]),
 );
 
 function targets(workflow, sourceName, outputType) {
@@ -71,11 +77,11 @@ export function validateAgentRouting(workflow) {
   }
   if (
     JSON.stringify(rules.map((rule) => rule.outputKey)) !==
-    JSON.stringify(AGENT_IDS)
+    JSON.stringify(ROUTED_AGENT_IDS)
   ) {
     failures.push("agent switch outputs do not match the five reviewed IDs");
   }
-  for (const [index, agentId] of AGENT_IDS.entries()) {
+  for (const [index, agentId] of ROUTED_AGENT_IDS.entries()) {
     const targetsForOutput = (outputs[index] ?? []).map(
       (connection) => connection.node,
     );

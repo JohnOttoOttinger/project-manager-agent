@@ -302,3 +302,33 @@ That is the sequence to repeat: **confirm → record in `brands.md` → then wri
 direction is to infuse AI across every product and service, so this list will grow — but AI may only be
 attached to a *specific* service once that service is named as real in `brands.md`. The general brand
 positioning line ("The Data Design Firm for AI & Visualization") may always be echoed.
+
+---
+
+## Lesson 13 — every Oddtoe money page gets its own near-black (26 Aug 2026)
+
+The kit ships plum `#26161f`, and after four pages Otto's verdict on the result was blunt:
+"I'm bored of the dark purple repetition." Visual Case Studies had already solved this for
+Datalabs (`vcs_lib.apply_theme`), so Oddtoe money pages now do the same.
+
+Run `scripts/oddtoe_theme.py:retint(content, 'teal')` on the composed body **before** pushing,
+then set `crum_page_custom_bg_color` to the same hex in wp-admin Page Options — that field is
+Ronneby post meta and is not exposed over REST, so it is always a manual step. Palette,
+assignment table, and the full list of tint anchor points live in `design-language.md`.
+
+Two things worth knowing before you touch it:
+
+- **Row backgrounds get stripped, not recoloured.** The three `pat-article-1`,
+  `pat-article-2`, and `related-workshops` rows carry a `css=".vc_custom_N{background-color:
+  …}"` attr identical to the page ground. Deleting it leaves the ground as the single source
+  of truth, so the next tint change is one wp-admin field instead of a re-compose.
+- **The kit's scroll-down delimiter was lavender.** `delim_line_color="#8224E31C"` /
+  `icon_color="#EEE6F6"` / `icon_hover_color="#D4C9E0"` were leftovers from the v0 seed that
+  survived the v1 snapshot — faint enough on plum that nobody caught them, and part of why
+  the pages read so purple. The kit is fixed; `retint()` also repairs pages composed before
+  the fix.
+
+**Check the draft's Page Options before assuming a tint problem is a tint problem.** Page
+16210 was still on `#ffffff` with header style `0` when this ran — the builder had pushed the
+draft but the wp-admin settings pass had never happened, which is a different bug wearing the
+same clothes.

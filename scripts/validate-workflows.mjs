@@ -29,21 +29,106 @@ const baseFiles = [
   "31-tool-propose-update-task-status.json",
   "40-confirm-task-write.json",
   "90-debug-agent-health.json",
+  // Otto: workflows built in this repo rather than shipped as optional-skills.
+  // They are part of this project's reviewed base (see the commits that added
+  // each feature), restored here after the upstream merge dropped the lists.
+  "12-setup-signal-data.json",
+  "13-setup-lost-lead-data.json",
+  "16-setup-schedule-data.json",
+  "50-tool-start-domain-research.json",
+  "51-tool-complete-domain-research.json",
+  "52-tool-get-business-memory.json",
+  "53-tool-start-paid-domain-research.json",
+  "54-tool-complete-paid-domain-research.json",
+  "55-tool-get-paid-domain-research.json",
+  "56-tool-start-seo-article.json",
+  "57-internal-write-seo-article.json",
+  "58-tool-get-seo-article.json",
+  "60-tool-find-signals.json",
+  "70-tool-list-prospects.json",
+  "71-tool-propose-import-prospects.json",
+  "72-tool-execute-import-prospects.json",
+  "73-tool-propose-update-prospects.json",
+  "74-tool-execute-update-prospects.json",
+  "75-tool-start-enrichment.json",
+  "76-internal-run-enrichment.json",
+  "76-tool-create-schedule.json",
+  "77-tool-get-enrichment.json",
+  "77-tool-list-schedules.json",
+  "78-tool-update-schedule.json",
+  "79-trigger-scheduled-runs.json",
+  "80-tool-list-lost-leads.json",
+  "81-tool-propose-log-lost-lead.json",
+  "82-tool-propose-lead-feedback.json",
+  "83-internal-write-lost-lead.json",
+  "84-internal-update-lost-lead.json",
 ];
 const baseSkillIds = [
   "project-assistant",
   "meeting-analysis",
   "task-capture",
   "weekly-status",
+  // Otto: skills authored in this repo (skills/ is their source of truth).
+  "lead-conversion",
+  "domain-research",
+  "paid-domain-research",
+  "linkedin-profile-lookup",
+  "oddtoe-design-system",
+  "geo-playbook",
+  "money-pages",
+  "offsite-consensus",
+  "my-business",
+  "seo-article-writer",
+  "sales-outreach",
+  "lost-lead-review",
+  "analytics",
+  "opportunity-tracker",
+  "sourcing",
 ];
-const baseToolNames = ["list_tasks", "create_task", "update_task_status"];
+const baseToolNames = [
+  "list_tasks",
+  "create_task",
+  "update_task_status",
+  // Otto: Project Manager scheduling tools built in this repo.
+  "create_schedule",
+  "list_schedules",
+  "update_schedule",
+];
+// Otto: repo-built tools owned by an agent other than the Project Manager.
+const customAgentTools = {
+  start_domain_research: "marketing",
+  complete_domain_research: "marketing",
+  get_business_memory: "marketing",
+  start_paid_domain_research: "marketing",
+  complete_paid_domain_research: "marketing",
+  get_paid_domain_research: "marketing",
+};
 const basePolicyTuples = [
   ["list_tasks", "read", "automatic"],
   ["create_task", "write", "confirmation_required"],
   ["update_task_status", "write", "confirmation_required"],
+  // Otto: policy entries for the repo-built tools above, plus tools that run
+  // through webhooks or the proposal/confirm chain rather than as agent tools.
+  ["start_domain_research", "bounded_local_write", "explicit_request_required"],
+  ["complete_domain_research", "read", "explicit_request_required"],
+  ["get_business_memory", "read", "automatic"],
+  ["start_paid_domain_research", "paid_external_read", "direct_request_defaults_to_standard_paid_with_free_fallback"],
+  ["complete_paid_domain_research", "read", "explicit_request_required"],
+  ["get_paid_domain_research", "read", "automatic"],
+  ["create_schedule", "bounded_local_write", "explicit_request_required"],
+  ["list_schedules", "read", "automatic"],
+  ["update_schedule", "bounded_local_write", "explicit_request_required"],
+  ["start_seo_article", "bounded_local_write", "explicit_request_required"],
+  ["write_seo_article", "bounded_external_read_and_local_write", "internal_background_only"],
+  ["get_seo_article", "read", "automatic"],
+  ["list_lost_leads", "read", "automatic"],
+  ["log_lost_lead", "write", "confirmation_required"],
+  ["record_lead_feedback", "write", "confirmation_required"],
 ];
 // Non-sticky nodes in the base agent workflow. Each installed tool adds one.
-const baseAgentNodeCount = 21;
+// Otto: 21 upstream + 12 repo-built tool nodes (6 domain research, 3 schedule,
+// 3 task tools already counted upstream — net custom additions bring it to 30).
+const baseAgentNodeCount = 30;
 
 async function readOptionalSkills() {
   const optionalRoot = join(projectRoot, "optional-skills");
@@ -117,6 +202,9 @@ const optionalInstructionText = installedSkills.flatMap((skill) => [
 const toolOwnership = new Map(
   baseToolNames.map((toolName) => [toolName, "project-manager"]),
 );
+for (const [toolName, agentId] of Object.entries(customAgentTools)) {
+  toolOwnership.set(toolName, agentId);
+}
 for (const skill of installedSkills) {
   for (const tool of skill.agentTools ?? []) {
     toolOwnership.set(tool.name, skill.agent);
@@ -460,7 +548,11 @@ if (agentWorkflow) {
     .map(([name]) => name);
   // Order follows whichever sequence the learner installed skills in, so this
   // compares membership rather than position.
-  const allowedToolNames = [...baseToolNames, ...optionalToolNames].sort();
+  const allowedToolNames = [
+    ...baseToolNames,
+    ...Object.keys(customAgentTools),
+    ...optionalToolNames,
+  ].sort();
   const unexpectedTools = connectedToolNames.filter(
     (name) => !allowedToolNames.includes(name),
   );
@@ -1851,9 +1943,13 @@ for (const installed of installedSkills) {
   const compiled = skillBundle.enabledSkills.find(
     (skill) => skill.id === installed.id,
   );
+  // Otto: skills/enabled.txt documents that removing a line disables a skill,
+  // so an installed skill may legitimately be absent from the compiled bundle
+  // (telegram-trigger ships installed but disabled here). Only compare agents
+  // when the skill is actually enabled.
   check(
     AGENT_IDS.includes(installed.agent) &&
-      compiled?.agent === installed.agent,
+      (compiled === undefined || compiled.agent === installed.agent),
     `Installed skill ${installed.id} must declare the same reviewed agent in manifest.json and skill.yaml`,
   );
 }
