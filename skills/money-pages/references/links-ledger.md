@@ -437,3 +437,26 @@ mechanism (interactive chart generation, web animations, interactive diagrams), 
 general sense only — `brands.md` still carries `TO CONFIRM: which specific clients had
 interactive/web reports built`, and no brand↔interactive-report pairing is asserted anywhere on
 the page.
+
+---
+
+## Brand Activation Ideas — design pass, 26 Aug 2026
+
+Live page https://www.oddtoe.com/brand-activation-ideas/. Three changes, all render-verified.
+Pre-change bodies in `site-backups/oddtoe-16133-pre-umber-retint-*.json` and
+`oddtoe-16133-pre-qwigley-qa-bolds-*.json`.
+
+1. **Ground retinted plum → umber `#241b16`** (first page off the kit plum; see design-language).
+2. **"More from the Oddtoe studio…" delimiter got its Qwigley attrs** — this page predated README
+   lesson 10, so it was rendering in the body face with a literal `...`. Now `&hellip;`, Qwigley at
+   30px/38, and the spacer under it dropped 50 → 20. Confirmed live: `fontFamily: "Qwigley"`.
+   **It animates in on scroll** (`transition.expandIn`), so a jump-to-anchor or a scripted
+   `scrollIntoView` can land with it still invisible — scroll into it before judging it missing.
+3. **Q&A answers given keyphrase bolding** (17 bolds across 5 answers). They were bare prose while
+   every other body block on the page carried 2–5 keyphrase bolds — the kit rule was never applied
+   to the accordion. de-ai-check clean; the two WARNs it reports ("rather than" ×4, one unemphasised
+   paragraph) both predate this pass.
+
+**Trap:** several Q&A phrases recur elsewhere on the page — "with international commissions welcome"
+appears twice. Scope accordion edits to the `[dfd_accordion]…[/dfd_accordion]` block and assert
+count==1 inside that slice, not across the whole body.
