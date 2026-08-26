@@ -460,3 +460,33 @@ Pre-change bodies in `site-backups/oddtoe-16133-pre-umber-retint-*.json` and
 **Trap:** several Q&A phrases recur elsewhere on the page — "with international commissions welcome"
 appears twice. Scope accordion edits to the `[dfd_accordion]…[/dfd_accordion]` block and assert
 count==1 inside that slice, not across the whole body.
+
+---
+
+## AI Animation Studios — PUBLISHED 26 Aug 2026
+
+Live at https://www.oddtoe.com/ai-animation-studios/ (page 16210). First Oddtoe money page built
+on a non-plum ground: teal `#142322`, header style 6, `crum_page_custom_bg_repeat=repeat`.
+
+Verified on the live URL: 200, single H1, FAQPage schema present, canonical brand sentence intact,
+Yoast title "AI Animation Studios: What to Ask Before You Hire | Oddtoe" (58) and description (154).
+de-ai-check: clean, no warnings. Indexing requested via URL inspection on the `sc-domain:oddtoe.com`
+property ("Indexing requested" confirmed).
+
+**Inbound link pass — 3 links, 3 sources, all verified live.** Backups:
+`oddtoe-{16207,16134,16208}-pre-aistudios-linkpass-2026-08-26.json`.
+
+| Source | Where | Link |
+|---|---|---|
+| [Animation Agency](https://www.oddtoe.com/animation-agency/) | after "…instead of a group chat full of freelancers." | "The same question comes up one level down, when the shortlist is all **AI animation studios**…" |
+| [What Is Generative AI Animation?](https://www.oddtoe.com/what-is-generative-ai-animation/) | "…who will be directing it" | "— the same question that separates the AI animation studios on your shortlist." |
+| [Character Design Services](https://www.oddtoe.com/character-design-services/) | after the generative-AI-animator hand-off sentence | "When that hand-off goes to an outside team, the shortlist is usually **AI animation studios**…" |
+
+**Link styling is per-page, not global.** Character Design Services and Animation Agency use
+`<strong><a class="dfd-custom-link-decorated">`; the target paragraph on What Is Generative AI
+Animation? uses an inline `<a style="color: #ddccb1;">` sand link with a root-relative href. Match
+whatever the surrounding paragraph already does rather than pasting one house style everywhere.
+
+**Byline check that was a false alarm:** author ID 1 looked like the agent user, but user 1 *is* the
+Oddtoe brand account (`WP_ODDTOE_AUTHOR_ID=1`) and every other Oddtoe money page uses it. Confirm
+against sibling pages before "fixing" an author.
