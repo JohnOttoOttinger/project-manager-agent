@@ -669,3 +669,34 @@ a 2.4KB blob through a tool call — it matches PHP's `base64(rawurlencode(...))
 allowed to edit this item" — in the browser, with Otto's own session. So it is a WooCommerce
 capability on that product, not a credential problem, and neither route reaches it. 2 clicks; not
 worth chasing unless Otto wants it.
+
+---
+
+## Attribution pass — tiers 1 and 2, 27 Aug 2026
+
+Prompted by the GEO research: quotes from a named expert lift AI citation **+27.8%** and sourced
+statistics **+25.9%** (Princeton-led study, nine tactics tested head to head) — the two strongest
+signals measured, and both were absent from every queue page sampled (0 of 12).
+
+**Tier 1 — redeploy Otto's own published quotes.** The Avatar Quote module
+(`new_testimonials main_style="style-1" main_layout="layout-1"`, image + author + subtitle +
+description, olive `thumb_color="rgba(81,86,52,0.46)"`) already existed on the Oddtoe homepage and
+About page. The generative-AI-in-sculpture quote moved onto
+[Generative AI Artist](https://www.oddtoe.com/studio/generative-ai-artist/) — the page it is actually
+about. **One placement, not four.** The same quote is already on two pages; adding it to two more
+would make it furniture, which is the failure mode that kills the signal. Topiarist was skipped by a
+guard: it already carried a quote.
+
+**Tier 2 — surface credentials that are already published.** A survey found every credential
+concentrated on one page and **none on the four pages that sell**: prop designer, prop fabrication,
+brand activation ideas, experiential agencies all had zero mention of National Geographic, the
+cartoonist/puppeteer/data-visualiser/street-artist résumé, or the twenty-year span. That is the
+anonymous-brand-voice problem the research names, in its purest form.
+
+Otto's own sentence — already public verbatim on `/what-is-generative-ai-animation/` — was placed on
+the two prop pages. de-ai-check clean on both. **Nothing was written for him**; `banned.md` forbids
+invented quotes, and an invented expert quote is precisely the fake authority the citation research
+is measuring against.
+
+**Tier 3 is Otto's to supply.** The highest-value pages have no existing quote that fits, so those
+need short prompts answered in his voice and placed verbatim.
