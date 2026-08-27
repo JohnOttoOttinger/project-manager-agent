@@ -641,3 +641,31 @@ that reads a live URL right after a write needs this.
 | `my-product` pages | 2 | No REST route; needs wp-admin by hand. |
 | meta description | 1 | Yoast fields are not REST-writable. |
 | Power BI Templates | 1 | WooCommerce product, does not resolve on the product endpoint. |
+
+---
+
+## The two `my-product` pages — done via wp-admin, 27 Aug 2026
+
+[Topiary Design](https://www.oddtoe.com/my-product/topiary-design-garden-park-project/) (14808) and
+[Gag Cartoonist](https://www.oddtoe.com/my-product/gag-cartoonist-syndication/) (15269) both had
+visible accordions and no schema. Built the FAQPage JSON-LD from their existing questions in the
+browser and added the canonical sentence. 3 questions each, verified live.
+
+**The trap that wasted two attempts: WPBakery owns the content field.** Setting `#content` directly
+and pressing Update looks like it works — WordPress reports "Portfolio updated" — and then silently
+saves the *builder's* model instead, reverting the edit. The content length snaps back to the
+original and every check reports the change missing.
+
+**Fix:** click `.wpb_switch-to-composer` ("Classic Mode") first. That detaches the builder and makes
+the textarea authoritative; the same edit then saves correctly. Confirm `#vc_inline-frame` is gone
+before writing. This applies to any page where the builder is active, which is most of Oddtoe.
+
+Also: build the base64 payload in the browser with `btoa(encodeURIComponent(...))` rather than pasting
+a 2.4KB blob through a tool call — it matches PHP's `base64(rawurlencode(...))` closely enough that
+`vc_raw_html` decodes it, and it keeps the CTA filter and the extraction in one place.
+
+**BLOCKED, not done: [Power BI Templates](https://www.datalabsagency.com/product/power-bi-templates/)**
+(product 24182). REST returns `rest_forbidden_context` and wp-admin returns "Sorry, you are not
+allowed to edit this item" — in the browser, with Otto's own session. So it is a WooCommerce
+capability on that product, not a credential problem, and neither route reaches it. 2 clicks; not
+worth chasing unless Otto wants it.
