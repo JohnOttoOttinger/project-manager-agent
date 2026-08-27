@@ -168,8 +168,14 @@ def ga4_report(
     end: str = "yesterday",
     limit: int = 25,
     order_by_metric: str | None = None,
+    property_id: str | None = None,
 ) -> list[dict]:
-    """Run a GA4 report and return rows as flat dicts."""
+    """Run a GA4 report and return rows as flat dicts.
+
+    property_id defaults to GA4_ODDTOE_PROPERTY_ID. Pass Datalabs' own property
+    (env GA4_DATALABS_PROPERTY_ID, 265583155) to read that brand — the service
+    account token is account-wide, so only the property number changes.
+    """
     body: dict = {
         "dateRanges": [{"startDate": start, "endDate": end}],
         "metrics": [{"name": m} for m in metrics],
@@ -180,10 +186,8 @@ def ga4_report(
     if order_by_metric:
         body["orderBys"] = [{"metric": {"metricName": order_by_metric}, "desc": True}]
 
-    url = (
-        "https://analyticsdata.googleapis.com/v1beta/properties/"
-        f"{config()['property_id']}:runReport"
-    )
+    prop = property_id or config()["property_id"]
+    url = f"https://analyticsdata.googleapis.com/v1beta/properties/{prop}:runReport"
     response = _call(url, body)
 
     rows = []
