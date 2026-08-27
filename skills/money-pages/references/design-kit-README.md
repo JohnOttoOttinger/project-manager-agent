@@ -332,3 +332,20 @@ Two things worth knowing before you touch it:
 16210 was still on `#ffffff` with header style `0` when this ran — the builder had pushed the
 draft but the wp-admin settings pass had never happened, which is a different bug wearing the
 same clothes.
+
+---
+
+## Lesson 14 — never bold a list (27 Aug 2026)
+
+`de-ai-check`'s `blanket bold` rule fires on any `<strong>` over 60 characters, and a bolded list of
+places or products crosses that line almost every time. It caught me twice in one session: a country
+list on the workshop hub, and "Australia, the United States, Europe, the Middle East and Asia" on the
+case studies page — the second one shipped before the before/after diff caught it.
+
+**Bold the claim, not the enumeration.** "Travel is quoted up front" bolded, with the countries plain,
+says the same thing and passes. A reader skimming bold text wants the point, not the inventory.
+
+**Always diff de-ai-check before and after an edit, and treat any increase as your bug.** Most pages
+carry pre-existing failures from copy written before these rules; the only number that matters is
+whether your change made it worse. Equal counts mean the flagged lines are the page's own history,
+and rewriting them is not part of a GEO retrofit.
