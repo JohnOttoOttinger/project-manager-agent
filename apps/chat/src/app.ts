@@ -87,6 +87,7 @@ interface PipelinePayload {
   nextPages: PipelineItem[];
   awaitingReview: PipelineItem[];
   outreach: PipelineItem[];
+  published: PipelineItem[];
 }
 const SAMPLE_PIPELINE: PipelinePayload = {
   sample: true,
@@ -101,6 +102,9 @@ const SAMPLE_PIPELINE: PipelinePayload = {
   outreach: [
     { title: "LinkedIn post — workshop pricing", brand: "datalabs" },
     { title: "Pitch — best data agencies listicle", brand: "datalabs" },
+  ],
+  published: [
+    { title: "Brand activation ideas", brand: "oddtoe" },
   ],
 };
 function pipelineBrand(line: string): string {
@@ -148,11 +152,18 @@ async function loadPipeline(): Promise<PipelinePayload> {
 
   const nextPages: PipelineItem[] = [];
   const awaitingReview: PipelineItem[] = [];
+  const published: PipelineItem[] = [];
   for (const line of (backlog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && nextPages.length < 3) {
+    if (/^\s*-\s*\[ \]/.test(line) && nextPages.length < 6) {
       nextPages.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
-    } else if (/^\s*-\s*\[~\]/.test(line) && awaitingReview.length < 5) {
+    } else if (/^\s*-\s*\[~\]/.test(line) && awaitingReview.length < 6) {
       awaitingReview.push({
+        title: pipelineTitle(line),
+        brand: pipelineBrand(line),
+        url: pipelineUrl(line),
+      });
+    } else if (/^\s*-\s*\[x\]/i.test(line) && published.length < 6) {
+      published.push({
         title: pipelineTitle(line),
         brand: pipelineBrand(line),
         url: pipelineUrl(line),
@@ -161,11 +172,11 @@ async function loadPipeline(): Promise<PipelinePayload> {
   }
   const outreach: PipelineItem[] = [];
   for (const line of (outreachLog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && outreach.length < 5) {
+    if (/^\s*-\s*\[ \]/.test(line) && outreach.length < 6) {
       outreach.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
     }
   }
-  return { sample: false, nextPages, awaitingReview, outreach };
+  return { sample: false, nextPages, awaitingReview, outreach, published };
 }
 const BRAND_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PROSPECT_IMPORT_ROWS = 200;

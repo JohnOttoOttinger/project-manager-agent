@@ -2406,3 +2406,441 @@ h2 { text-transform: uppercase; }
   .agent-button { padding: 0.6rem 0.8rem; }
   .agent-list { gap: 0.45rem; }
 }
+
+/* ============================================================
+   Studio Dark v5 — stage layout, section tabs, chat drawer,
+   dashboards, and the Content Pipeline board (Otto, 26 Aug).
+   The centre is now a per-agent dashboard ("stage"); chat lives
+   in a slide-over drawer on the right.
+   ============================================================ */
+
+.app-shell {
+  width: min(90rem, calc(100% - 3rem));
+}
+
+/* ---- Stage (centre column) ---- */
+
+.stage {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: #141716;
+}
+
+.stage-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+  padding: 1.1rem 1.5rem 0;
+  border-bottom: 1px solid #32362f;
+  background: rgb(30 34 32 / 60%);
+  flex-wrap: wrap;
+}
+
+.stage-header__identity {
+  padding-bottom: 0.8rem;
+  min-width: 12rem;
+}
+
+.stage-title {
+  margin: 0.1rem 0 0;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: #ddccb1;
+  text-transform: uppercase;
+}
+
+.stage-tabs {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+  align-self: flex-end;
+  overflow-x: auto;
+}
+
+.stage-tab {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: #a89f88;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.7rem 0.9rem 0.75rem;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.stage-tab:hover { color: #ddccb1; }
+
+.stage-tab[aria-selected="true"] {
+  color: #ddccb1;
+  border-bottom-color: #ddccb1;
+}
+
+.stage-tab:disabled {
+  color: #5d6156;
+  cursor: default;
+}
+
+.chat-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.7rem 0.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid #3c403c;
+  border-radius: var(--radius);
+  background: #ddccb1;
+  color: #1b1f1d;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.chat-toggle svg { width: 1.05rem; height: 1.05rem; }
+.chat-toggle:hover { background: #e9dcc4; }
+
+.stage-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1.4rem 1.5rem 2rem;
+}
+
+/* ---- Dashboard building blocks ---- */
+
+.dash-section-label {
+  margin: 0 0 0.6rem;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a89f88;
+}
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.4rem;
+}
+
+.stat-card {
+  padding: 0.9rem 1rem 0.8rem;
+  border: 1px solid #32362f;
+  border-radius: var(--radius);
+  background: #1e2220;
+}
+
+.stat-card__value {
+  margin: 0;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 2.1rem;
+  line-height: 1;
+  color: #ddccb1;
+}
+
+.stat-card__label {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #a89f88;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.dash-card {
+  border: 1px solid #32362f;
+  border-radius: var(--radius);
+  background: #1e2220;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1.2rem;
+}
+
+.dash-empty {
+  color: #a89f88;
+  font-size: 0.9rem;
+  margin: 0.4rem 0;
+}
+
+.dash-note {
+  color: #7d8271;
+  font-size: 0.8rem;
+  margin: 0.8rem 0 0;
+}
+
+/* ---- Pipeline (CRM) table ---- */
+
+.dash-table-wrap { overflow-x: auto; }
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.dash-table th {
+  text-align: left;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-weight: 400;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #a89f88;
+  padding: 0.45rem 0.9rem 0.45rem 0;
+  border-bottom: 1px solid #3c403c;
+  white-space: nowrap;
+}
+
+.dash-table td {
+  padding: 0.55rem 0.9rem 0.55rem 0;
+  border-bottom: 1px solid #272b26;
+  color: #f0ece0;
+  vertical-align: top;
+}
+
+.dash-table td.dash-table__muted { color: #a89f88; }
+
+.dash-table__company { font-weight: 700; white-space: nowrap; }
+
+.stage-chip {
+  display: inline-block;
+  padding: 0.14rem 0.55rem 0.18rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.stage-chip--imported { background: #2c312e; color: #cbc4b2; border-color: #3c403c; }
+.stage-chip--needs_review { background: #4a3527; color: #e8c9a1; border-color: #6b4a2f; }
+.stage-chip--enriched { background: #33382f; color: #cfe2c4; border-color: #8a8f6a; }
+.stage-chip--emailed { background: #26333a; color: #b8d4de; border-color: #3d5560; }
+.stage-chip--opened { background: #2f3a26; color: #d3e0b8; border-color: #55632f; }
+.stage-chip--followed_up { background: #3a2f3a; color: #dcc4dc; border-color: #5c485c; }
+.stage-chip--replied { background: #3f3a1f; color: #ece0a2; border-color: #6d6430; }
+.stage-chip--closed { background: #222624; color: #8b9184; border-color: #3c403c; }
+.stage-chip--tier { background: #3b3327; color: #ddccb1; border-color: #ddccb1; }
+
+/* ---- Kanban board (Content Pipeline) ---- */
+
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(14rem, 1fr));
+  gap: 0.9rem;
+  align-items: start;
+  overflow-x: auto;
+}
+
+.kanban-col {
+  border: 1px solid #32362f;
+  border-radius: var(--radius);
+  background: #1b1f1d;
+  padding: 0.8rem 0.8rem 0.9rem;
+  min-height: 10rem;
+}
+
+.kanban-col__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ddccb1;
+}
+
+.kanban-col__count {
+  font-size: 0.8rem;
+  color: #a89f88;
+}
+
+.kanban-card {
+  border: 1px solid #32362f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #22272400;
+  background-color: #232826;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.85rem;
+  color: #f0ece0;
+  line-height: 1.35;
+}
+
+.kanban-card__brand {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+}
+
+.kanban-card__brand--datalabs { background: #8a8f6a; }
+.kanban-card__brand--oddtoe { background: #ddccb1; }
+.kanban-card__brand--general { background: #5d6156; }
+
+.kanban-card a {
+  color: #ddccb1;
+  font-size: 0.78rem;
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
+/* ---- Chat drawer ---- */
+
+.chat-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgb(0 0 0 / 45%);
+}
+
+.chat-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  width: min(34rem, 100vw);
+  height: 100vh;
+  height: 100dvh;
+  border-left: 1px solid #3c403c;
+  box-shadow: -1.5rem 0 4rem rgb(0 0 0 / 55%);
+  transform: translateX(105%);
+  transition: transform 220ms ease;
+  visibility: hidden;
+}
+
+.chat-drawer--open {
+  transform: translateX(0);
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-drawer { transition: none; }
+}
+
+/* The old always-hidden sidebar pipeline card stays retired. */
+.pipeline-panel { display: none; }
+
+/* Sidebar workspace nav shares agent-button styling; give the active
+   state the same treatment as an active agent chip. */
+.workspace-nav { margin-top: 0.4rem; }
+.workspace-nav__button { width: 100%; }
+
+@media (max-width: 50rem) {
+  .stage-header { padding: 0.9rem 1rem 0; }
+  .stage-body { padding: 1rem 1rem 1.5rem; }
+  .kanban { grid-template-columns: repeat(2, minmax(12rem, 1fr)); }
+  .chat-drawer { width: 100vw; }
+}
+
+/* Kanban cards clamp long backlog notes to a readable preview. */
+.kanban-card {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+/* ---- Sidebar brand toggle (primary brand switch, top of agent nav) ---- */
+
+.sidebar-brand { margin: 0.9rem 0 0.2rem; }
+
+.sidebar-brand__toggle {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.3rem;
+  border: 1px solid #3c403c;
+  border-radius: var(--radius);
+  background: #1e2220;
+}
+
+.sidebar-brand__toggle .brand-toggle__option { flex: 1; justify-content: center; }
+
+/* ---- Icon cards: compact clickable summaries that expand on click ---- */
+
+.icon-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.6rem;
+  margin: 0.2rem 0 0.9rem;
+}
+
+.icon-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid #32362f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #232826;
+  color: #f0ece0;
+  padding: 0.55rem 0.65rem;
+  margin-bottom: 0.55rem;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.icon-card:hover { border-color: #8a8f6a; }
+
+.icon-card--dimmed { opacity: 0.42; }
+.icon-card--dimmed:hover { opacity: 0.8; }
+
+.icon-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.icon-card__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: calc(var(--radius) - 4px);
+  background: #2c312e;
+  border: 1px solid #3c403c;
+  font-size: 0.95rem;
+}
+
+.icon-card__title {
+  min-width: 0;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.icon-card__detail {
+  display: none;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid #32362f;
+  color: #cbc4b2;
+  font-size: 0.8rem;
+  white-space: pre-line;
+}
+
+.icon-card--open .icon-card__detail { display: block; }
+
+.icon-card__detail a { color: #ddccb1; white-space: nowrap; }
+
+/* Kanban columns now hold icon cards; keep columns airy. */
+.kanban-col .icon-card { margin-bottom: 0.5rem; }
+
+.icon-card-grid { align-items: start; }

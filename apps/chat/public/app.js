@@ -136,6 +136,17 @@
     pipelinePanel: document.querySelector("#pipeline-panel"),
     pipelineBadge: document.querySelector("#pipeline-badge"),
     pipelineContent: document.querySelector("#pipeline-content"),
+    stageTitle: document.querySelector("#stage-title"),
+    stageBrandLabel: document.querySelector("#stage-brand-label"),
+    sectionTabs: document.querySelector("#section-tabs"),
+    stageBody: document.querySelector("#stage-body"),
+    chatToggle: document.querySelector("#chat-toggle"),
+    chatDrawer: document.querySelector("#chat-drawer"),
+    chatScrim: document.querySelector("#chat-scrim"),
+    drawerClose: document.querySelector("#drawer-close"),
+    pipelineNavButton: document.querySelector("#pipeline-nav-button"),
+    sidebarBrand: document.querySelector("#sidebar-brand"),
+    sidebarBrandToggle: document.querySelector("#sidebar-brand-toggle"),
   };
 
   const BRAND_STORAGE_KEY = "ai-solopreneur-active-brand";
@@ -157,6 +168,12 @@
   let activeConversationTitle = "New conversation";
   let pendingRefreshTimer = null;
   let articleRefreshTimer = null;
+  // Stage state: the centre shows a per-agent dashboard ("agent" view)
+  // or the cross-brand Content Pipeline board ("pipeline" view). Chat
+  // lives in the slide-over drawer.
+  let activeView = "agent";
+  let activeTabId = "";
+  let chatDrawerOpen = false;
   const narrowLayout = window.matchMedia("(max-width: 50rem)");
 
   function cleanText(value, fallback, maximumLength) {
@@ -1103,6 +1120,10 @@
     applyAgentIdentity();
     renderAgentList();
     renderSuggestions();
+    if (activeView === "agent") {
+      activeTabId = "";
+      renderStage();
+    }
     renderStoredConversation(targetMessageId);
     renderHistoryList();
     setHistoryOpen(false);
@@ -1246,14 +1267,20 @@
       button.append(name, status, description);
       if (agent.status === "active") {
         button.addEventListener("click", () => {
-          if (agent.id === activeAgentId) {
+          if (agent.id === activeAgentId && activeView === "agent") {
             return;
           }
+          const isSameAgent = agent.id === activeAgentId;
           activeAgentId = agent.id;
+          activeView = "agent";
+          activeTabId = "";
           applyAgentIdentity();
           renderAgentList();
           renderSuggestions();
-          void createConversation(agent.id);
+          renderStage();
+          if (!isSameAgent) {
+            void createConversation(agent.id);
+          }
         });
       }
 
@@ -1328,19 +1355,11 @@
     renderQuickActions();
     renderSuggestions();
     renderPipeline(lastPipelinePayload);
+    renderStage();
   }
 
-  function renderBrandBar() {
-    if (config.brands.length === 0) {
-      return;
-    }
-    const current = activeBrand();
-    document.documentElement.style.setProperty(
-      "--brand-primary",
-      current.colour,
-    );
-    elements.brandBar.hidden = false;
-    elements.brandToggle.replaceChildren();
+  function buildBrandToggle(container, current) {
+    container.replaceChildren();
     for (const brand of config.brands) {
       const option = document.createElement("button");
       option.className = "brand-toggle__option";
@@ -1365,8 +1384,27 @@
           setActiveBrand(brand.id);
         }
       });
-      elements.brandToggle.append(option);
+      container.append(option);
     }
+  }
+
+  function renderBrandBar() {
+    if (config.brands.length === 0) {
+      return;
+    }
+    const current = activeBrand();
+    document.documentElement.style.setProperty(
+      "--brand-primary",
+      current.colour,
+    );
+    // The primary switch lives at the top of the sidebar's agent nav;
+    // the drawer keeps its own copy so brand is switchable mid-chat.
+    if (elements.sidebarBrand) {
+      elements.sidebarBrand.hidden = false;
+      buildBrandToggle(elements.sidebarBrandToggle, current);
+    }
+    elements.brandBar.hidden = false;
+    buildBrandToggle(elements.brandToggle, current);
     elements.brandNote.textContent = `Acting for ${current.label} — pages and posts target this brand's site and voice.`;
   }
 
@@ -1492,6 +1530,570 @@
     } catch {
       // The pipeline card is optional; the chat works without it.
     }
+  }
+
+  // ---- Stage: per-agent dashboards, section tabs, pipeline board ----
+
+  const SECTION_TABS = {
+    "business-development": [
+      { id: "bd-pipeline", label: "Pipeline" },
+      { id: "bd-outreach", label: "Outreach" },
+      { id: "bd-lists", label: "Lists" },
+    ],
+    marketing: [
+      { id: "mk-overview", label: "Overview" },
+      { id: "mk-campaigns", label: "Campaigns" },
+      { id: "mk-content", label: "Content" },
+    ],
+  };
+  const DEFAULT_TABS = [{ id: "overview", label: "Overview" }];
+
+  function tabsForCurrentView() {
+    if (activeView === "pipeline") {
+      return [{ id: "board", label: "Board" }];
+    }
+    return SECTION_TABS[activeAgentId] ?? DEFAULT_TABS;
+  }
+
+  function setChatDrawerOpen(isOpen) {
+    chatDrawerOpen = isOpen;
+    elements.chatDrawer.classList.toggle("chat-drawer--open", isOpen);
+    elements.chatScrim.hidden = !isOpen;
+    elements.chatToggle.setAttribute("aria-expanded", String(isOpen));
+    if (isOpen) {
+      window.setTimeout(() => elements.input.focus(), 180);
+    }
+  }
+
+  function openChatWithPrompt(prompt) {
+    setChatDrawerOpen(true);
+    if (typeof prompt === "string" && prompt.trim()) {
+      elements.input.value = prompt;
+      elements.input.dispatchEvent(new Event("input"));
+    }
+  }
+
+  function dashLabel(text) {
+    const label = document.createElement("p");
+    label.className = "dash-section-label";
+    label.textContent = text;
+    return label;
+  }
+
+  function statCard(value, label) {
+    const card = document.createElement("div");
+    card.className = "stat-card";
+    const number = document.createElement("p");
+    number.className = "stat-card__value";
+    number.textContent = String(value);
+    const caption = document.createElement("p");
+    caption.className = "stat-card__label";
+    caption.textContent = label;
+    card.append(number, caption);
+    return card;
+  }
+
+  function stageChip(status) {
+    const chip = document.createElement("span");
+    chip.className = `stage-chip stage-chip--${status}`;
+    chip.textContent = status.replaceAll("_", " ");
+    return chip;
+  }
+
+  function dashCard() {
+    const card = document.createElement("div");
+    card.className = "dash-card";
+    return card;
+  }
+
+  function dashEmpty(text) {
+    const empty = document.createElement("p");
+    empty.className = "dash-empty";
+    empty.textContent = text;
+    return empty;
+  }
+
+  function dashNote(text) {
+    const note = document.createElement("p");
+    note.className = "dash-note";
+    note.textContent = text;
+    return note;
+  }
+
+  function renderStageTabs() {
+    const tabs = tabsForCurrentView();
+    if (!tabs.some((tab) => tab.id === activeTabId)) {
+      activeTabId = tabs[0].id;
+    }
+    elements.sectionTabs.replaceChildren();
+    for (const tab of tabs) {
+      const button = document.createElement("button");
+      button.className = "stage-tab";
+      button.type = "button";
+      button.setAttribute("role", "tab");
+      button.setAttribute(
+        "aria-selected",
+        String(tab.id === activeTabId),
+      );
+      button.textContent = tab.label;
+      button.addEventListener("click", () => {
+        if (tab.id !== activeTabId) {
+          activeTabId = tab.id;
+          renderStage();
+        }
+      });
+      elements.sectionTabs.append(button);
+    }
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed (${response.status})`);
+    }
+    return response.json();
+  }
+
+  function renderBdPipelineTab(body) {
+    body.append(dashLabel("Prospect pipeline"));
+    const holder = dashCard();
+    holder.append(dashEmpty("Loading the prospect store…"));
+    body.append(holder);
+    void fetchJson(`/api/prospects?brand=${encodeURIComponent(activeBrand()?.id ?? "oddtoe")}`)
+      .then((payload) => {
+        holder.replaceChildren();
+        const summary = payload.summary ?? {};
+        const byStatus = summary.byStatus ?? {};
+        const stats = document.createElement("div");
+        stats.className = "dash-stats";
+        stats.append(
+          statCard(summary.total ?? 0, "Targets"),
+          statCard(byStatus.enriched ?? 0, "Enriched"),
+          statCard(byStatus.needs_review ?? 0, "Needs review"),
+          statCard(byStatus.emailed ?? 0, "Emailed"),
+          statCard(byStatus.replied ?? 0, "Replied"),
+        );
+        holder.append(stats);
+
+        const prospects = Array.isArray(payload.prospects)
+          ? payload.prospects
+          : [];
+        if (prospects.length === 0) {
+          holder.append(
+            dashEmpty(
+              "No prospects yet. Import a list through chat to seed the pipeline.",
+            ),
+          );
+          return;
+        }
+        const wrap = document.createElement("div");
+        wrap.className = "dash-table-wrap";
+        const table = document.createElement("table");
+        table.className = "dash-table";
+        const head = document.createElement("thead");
+        const headRow = document.createElement("tr");
+        for (const column of [
+          "Agency",
+          "Region",
+          "Tier",
+          "Stage",
+          "Contact",
+          "Angle",
+        ]) {
+          const th = document.createElement("th");
+          th.textContent = column;
+          headRow.append(th);
+        }
+        head.append(headRow);
+        const tableBody = document.createElement("tbody");
+        const sorted = [...prospects].sort((first, second) => {
+          const firstTier = first.tier === "" ? 99 : Number(first.tier) || 98;
+          const secondTier =
+            second.tier === "" ? 99 : Number(second.tier) || 98;
+          return firstTier - secondTier;
+        });
+        for (const prospect of sorted) {
+          const row = document.createElement("tr");
+          const company = document.createElement("td");
+          company.className = "dash-table__company";
+          company.textContent = prospect.company ?? "";
+          const region = document.createElement("td");
+          region.className = "dash-table__muted";
+          region.textContent = prospect.region ?? "";
+          const tier = document.createElement("td");
+          if (prospect.tier) {
+            const chip = document.createElement("span");
+            chip.className = "stage-chip stage-chip--tier";
+            chip.textContent = `Priority ${prospect.tier}`;
+            tier.append(chip);
+          }
+          const stage = document.createElement("td");
+          stage.append(stageChip(prospect.status ?? "imported"));
+          const contact = document.createElement("td");
+          contact.className = "dash-table__muted";
+          contact.textContent = prospect.contactName
+            ? `${prospect.contactName}${prospect.contactEmail ? " · " + prospect.contactEmail : ""}`
+            : "—";
+          const angle = document.createElement("td");
+          angle.className = "dash-table__muted";
+          const notes = prospect.notes ?? "";
+          angle.textContent =
+            notes.length > 90 ? `${notes.slice(0, 90)}…` : notes;
+          angle.title = notes;
+          row.append(company, region, tier, stage, contact, angle);
+          tableBody.append(row);
+        }
+        table.append(head, tableBody);
+        wrap.append(table);
+        holder.append(wrap);
+        holder.append(
+          dashNote(
+            "Live from the local prospect store. Imports, enrichment, and updates run through chat.",
+          ),
+        );
+      })
+      .catch(() => {
+        holder.replaceChildren(
+          dashEmpty(
+            "The prospect store is not reachable. Restart the local app and reload.",
+          ),
+        );
+      });
+  }
+
+  function renderBdOutreachTab(body) {
+    body.append(dashLabel("Outreach"));
+    const card = dashCard();
+    card.append(
+      dashEmpty(
+        "Outreach drafting is not built yet (phases 3–5: Mailchimp campaign, tracking, follow-up).",
+      ),
+      dashNote(
+        "The opener asset is live: every agency is featured on the experiential-agencies guide page with UTM-tagged links.",
+      ),
+    );
+    body.append(card);
+  }
+
+  function renderBdListsTab(body) {
+    body.append(dashLabel("Lists"));
+    const card = dashCard();
+    card.append(dashEmpty("Loading lists…"));
+    body.append(card);
+    void fetchJson(`/api/prospects?brand=${encodeURIComponent(activeBrand()?.id ?? "oddtoe")}`)
+      .then((payload) => {
+        card.replaceChildren();
+        const lists = payload.summary?.listNames ?? [];
+        if (lists.length === 0) {
+          card.append(dashEmpty("No lists imported yet."));
+          return;
+        }
+        for (const listName of lists) {
+          const row = document.createElement("p");
+          row.style.margin = "0.3rem 0";
+          row.textContent = listName;
+          card.append(row);
+        }
+      })
+      .catch(() => {
+        card.replaceChildren(dashEmpty("The prospect store is not reachable."));
+      });
+  }
+
+  function pipelineItemsFor(payload, key) {
+    const items = payload?.[key];
+    return Array.isArray(items) ? items : [];
+  }
+
+  function itemMatchesBrand(item, brand) {
+    return !brand || item.brand === "general" || item.brand === brand.id;
+  }
+
+  // Compact display title for an icon card: cut at the first heavy
+  // delimiter so backlog prose reads as a card label, not a paragraph.
+  function shortTitle(title) {
+    let cut = title;
+    for (const delimiter of [" — ", " (", ". ", "; ", ": "]) {
+      const index = cut.indexOf(delimiter);
+      if (index > 8) {
+        cut = cut.slice(0, index);
+      }
+    }
+    return cut.length > 72 ? `${cut.slice(0, 72)}…` : cut;
+  }
+
+  function makeIconCard(item, icon, { dimmed = false } = {}) {
+    const card = document.createElement("button");
+    card.className = "icon-card";
+    card.type = "button";
+    if (dimmed) {
+      card.classList.add("icon-card--dimmed");
+    }
+    card.setAttribute("aria-expanded", "false");
+
+    const head = document.createElement("span");
+    head.className = "icon-card__head";
+    const tile = document.createElement("span");
+    tile.className = "icon-card__icon";
+    tile.setAttribute("aria-hidden", "true");
+    tile.textContent = icon;
+    const title = document.createElement("span");
+    title.className = "icon-card__title";
+    const dot = document.createElement("span");
+    dot.className = `kanban-card__brand kanban-card__brand--${item.brand}`;
+    dot.title = item.brand;
+    title.append(dot, document.createTextNode(shortTitle(item.title)));
+    head.append(tile, title);
+    card.append(head);
+
+    const detail = document.createElement("span");
+    detail.className = "icon-card__detail";
+    detail.textContent = item.title;
+    if (item.url) {
+      const link = document.createElement("a");
+      link.href = item.url;
+      link.target = "_blank";
+      link.rel = "noreferrer";
+      link.textContent = "Open ↗";
+      link.addEventListener("click", (event) => event.stopPropagation());
+      detail.append(document.createTextNode(" "), link);
+    }
+    card.append(detail);
+
+    card.addEventListener("click", () => {
+      const open = card.classList.toggle("icon-card--open");
+      card.setAttribute("aria-expanded", String(open));
+    });
+    return card;
+  }
+
+  function renderMarketingOverviewTab(body) {
+    const brand = activeBrand();
+    body.append(
+      dashLabel(
+        brand ? `Content pipeline — ${brand.label}` : "Content pipeline",
+      ),
+    );
+    const holder = dashCard();
+    holder.append(dashEmpty("Loading the content pipeline…"));
+    body.append(holder);
+    void fetchJson("/api/pipeline")
+      .then((payload) => {
+        holder.replaceChildren();
+        const forBrand = (key) =>
+          pipelineItemsFor(payload, key).filter((item) =>
+            itemMatchesBrand(item, brand),
+          );
+        const stats = document.createElement("div");
+        stats.className = "dash-stats";
+        stats.append(
+          statCard(forBrand("nextPages").length, "Next pages"),
+          statCard(forBrand("awaitingReview").length, "Awaiting review"),
+          statCard(forBrand("outreach").length, "Outreach to send"),
+          statCard(forBrand("published").length, "Recently published"),
+        );
+        holder.append(stats);
+        const review = forBrand("awaitingReview");
+        holder.append(dashLabel("Awaiting your review"));
+        if (review.length === 0) {
+          holder.append(dashEmpty("Nothing waiting on you for this brand."));
+        } else {
+          const grid = document.createElement("div");
+          grid.className = "icon-card-grid";
+          for (const item of review) {
+            grid.append(makeIconCard(item, "👀"));
+          }
+          holder.append(grid);
+        }
+        const upNext = forBrand("nextPages");
+        holder.append(dashLabel("Up next"));
+        if (upNext.length === 0) {
+          holder.append(dashEmpty("Backlog is clear for this brand."));
+        } else {
+          const grid = document.createElement("div");
+          grid.className = "icon-card-grid";
+          for (const item of upNext) {
+            grid.append(makeIconCard(item, "📝"));
+          }
+          holder.append(grid);
+        }
+        if (payload.sample === true) {
+          holder.append(dashNote("Sample data — the backlog skill is not present."));
+        }
+        holder.append(
+          dashNote(
+            "Click a card for the full note. Both-brand board lives under Content Pipeline.",
+          ),
+        );
+      })
+      .catch(() => {
+        holder.replaceChildren(dashEmpty("The pipeline is not reachable."));
+      });
+  }
+
+  function renderComingSoonTab(body, label) {
+    body.append(dashLabel(label));
+    const card = dashCard();
+    card.append(
+      dashEmpty(`${label} view is not designed yet.`),
+      dashNote("Tell the agent what you want here and we will build it."),
+    );
+    body.append(card);
+  }
+
+  function renderAgentOverviewTab(body) {
+    const agent = activeAgent();
+    body.append(dashLabel("About this agent"));
+    const about = dashCard();
+    const description = document.createElement("p");
+    description.style.margin = "0";
+    description.textContent = agent?.description ?? "";
+    about.append(description);
+    body.append(about);
+
+    const prompts = brandExamplePromptsFor(activeAgentId) ??
+      agent?.examplePrompts ?? [];
+    if (prompts.length > 0) {
+      body.append(dashLabel("Start something"));
+      const card = dashCard();
+      for (const prompt of prompts.slice(0, 4)) {
+        const button = document.createElement("button");
+        button.className = "quick-action";
+        button.type = "button";
+        button.style.display = "block";
+        button.style.width = "100%";
+        button.style.textAlign = "left";
+        button.style.marginBottom = "0.5rem";
+        button.textContent = prompt;
+        button.addEventListener("click", () => {
+          openChatWithPrompt(prompt);
+        });
+        card.append(button);
+      }
+      body.append(card);
+    }
+    body.append(
+      dashNote(
+        "This section's dashboard is not designed yet — the chat drawer is the full agent.",
+      ),
+    );
+  }
+
+  function kanbanColumn(title, icon, items, brand) {
+    const column = document.createElement("div");
+    column.className = "kanban-col";
+    const heading = document.createElement("p");
+    heading.className = "kanban-col__title";
+    const text = document.createElement("span");
+    text.textContent = `${icon} ${title}`;
+    const count = document.createElement("span");
+    count.className = "kanban-col__count";
+    count.textContent = String(items.length);
+    heading.append(text, count);
+    column.append(heading);
+    if (items.length === 0) {
+      column.append(dashEmpty("Empty."));
+      return column;
+    }
+    for (const item of items) {
+      column.append(
+        makeIconCard(item, icon, {
+          dimmed: !itemMatchesBrand(item, brand),
+        }),
+      );
+    }
+    return column;
+  }
+
+  function renderPipelineBoard(body) {
+    const brand = activeBrand();
+    body.append(
+      dashLabel(
+        brand
+          ? `Content pipeline — both brands, ${brand.label} highlighted`
+          : "Content pipeline — both brands",
+      ),
+    );
+    const board = document.createElement("div");
+    board.className = "kanban";
+    body.append(board);
+    board.append(dashEmpty("Loading the board…"));
+    void fetchJson("/api/pipeline")
+      .then((payload) => {
+        board.replaceChildren(
+          kanbanColumn(
+            "Backlog",
+            "📝",
+            pipelineItemsFor(payload, "nextPages"),
+            brand,
+          ),
+          kanbanColumn(
+            "Awaiting review",
+            "👀",
+            pipelineItemsFor(payload, "awaitingReview"),
+            brand,
+          ),
+          kanbanColumn(
+            "Outreach to send",
+            "📣",
+            pipelineItemsFor(payload, "outreach"),
+            brand,
+          ),
+          kanbanColumn(
+            "Published",
+            "✅",
+            pipelineItemsFor(payload, "published"),
+            brand,
+          ),
+        );
+        if (payload.sample === true) {
+          body.append(
+            dashNote("Sample data — the backlog skill is not present."),
+          );
+        }
+        body.append(
+          dashNote("Click a card for the full note; dimmed cards belong to the other brand."),
+        );
+      })
+      .catch(() => {
+        board.replaceChildren(dashEmpty("The pipeline is not reachable."));
+      });
+  }
+
+  function renderStage() {
+    if (!elements.stageBody) {
+      return;
+    }
+    renderStageTabs();
+    elements.pipelineNavButton.setAttribute(
+      "aria-pressed",
+      String(activeView === "pipeline"),
+    );
+    const brand = activeBrand();
+    elements.stageBrandLabel.textContent = brand ? brand.label : "Workspace";
+    const body = document.createElement("div");
+    if (activeView === "pipeline") {
+      elements.stageTitle.textContent = "Content Pipeline";
+      renderPipelineBoard(body);
+    } else {
+      elements.stageTitle.textContent = displayAgentName();
+      if (activeTabId === "bd-pipeline") {
+        renderBdPipelineTab(body);
+      } else if (activeTabId === "bd-outreach") {
+        renderBdOutreachTab(body);
+      } else if (activeTabId === "bd-lists") {
+        renderBdListsTab(body);
+      } else if (activeTabId === "mk-overview") {
+        renderMarketingOverviewTab(body);
+      } else if (activeTabId === "mk-campaigns") {
+        renderComingSoonTab(body, "Campaigns");
+      } else if (activeTabId === "mk-content") {
+        renderComingSoonTab(body, "Content");
+      } else {
+        renderAgentOverviewTab(body);
+      }
+    }
+    elements.stageBody.replaceChildren(...body.children);
   }
 
   function brandExamplePromptsFor(agentId) {
@@ -2161,6 +2763,29 @@
     );
   }
 
+  elements.chatToggle?.addEventListener("click", () => {
+    setChatDrawerOpen(!chatDrawerOpen);
+  });
+  elements.drawerClose?.addEventListener("click", () => {
+    setChatDrawerOpen(false);
+  });
+  elements.chatScrim?.addEventListener("click", () => {
+    setChatDrawerOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && chatDrawerOpen) {
+      setChatDrawerOpen(false);
+    }
+  });
+  elements.pipelineNavButton?.addEventListener("click", () => {
+    if (activeView === "pipeline") {
+      return;
+    }
+    activeView = "pipeline";
+    activeTabId = "";
+    renderStage();
+  });
+
   async function initialise() {
     syncHistoryPanelAccess();
     await loadAgents();
@@ -2171,6 +2796,7 @@
     renderDocuments();
     renderBrandBar();
     renderQuickActions();
+    renderStage();
     void loadPipeline();
     if (new URLSearchParams(window.location.search).get("demo") === "1") {
       window.setTimeout(seedDemoConversation, 400);

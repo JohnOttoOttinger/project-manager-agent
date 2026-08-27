@@ -79,7 +79,9 @@
         "12-setup-signal-data.json",
         "90-debug-agent-health.json",
         "14-setup-funding-data.json",
-        "16-setup-schedule-data.json"
+        "16-setup-schedule-data.json",
+        "18-setup-xero-capture-data.json",
+        "17-setup-bookkeeping-data.json"
       ]
     },
     {
@@ -87,18 +89,8 @@
       "name": "5. Ways your agent gets started",
       "description": "Entry points that let something outside your computer start your agent: a Telegram message today, an inbox or a schedule later.",
       "workflows": [
-        "70-trigger-telegram-message.json"
-      ]
-    },
-    {
-      "id": "skill-schedules",
-      "name": "7. Schedules",
-      "description": "Recurring runs the agent manages for you: create, read, and update a schedule, and the trigger that fires the scheduled runs.",
-      "workflows": [
-        "76-tool-create-schedule.json",
-        "77-tool-list-schedules.json",
-        "78-tool-update-schedule.json",
-        "79-trigger-scheduled-runs.json"
+        "70-trigger-telegram-message.json",
+        "107-trigger-reconciliation-review.json"
       ]
     },
     {
@@ -124,6 +116,36 @@
         "71-run-funding-scan.json",
         "72-run-funding-beat.json",
         "76-trigger-daily-funding-scan.json"
+      ]
+    },
+    {
+      "id": "skill-schedules",
+      "name": "7. Schedules",
+      "description": "Recurring runs the agent manages for you: create, read, and update a schedule, and the trigger that fires the scheduled runs.",
+      "workflows": [
+        "76-tool-create-schedule.json",
+        "77-tool-list-schedules.json",
+        "78-tool-update-schedule.json",
+        "79-trigger-scheduled-runs.json"
+      ]
+    },
+    {
+      "id": "skill-bookkeeping",
+      "name": "8. Your bookkeeping",
+      "description": "Reading the transactions waiting in Xero, with complete browser evidence and fail-closed queue status.",
+      "workflows": [
+        "110-tool-get-xero-queue-status.json",
+        "111-webhook-import-xero-statement-scan.json",
+        "112-webhook-get-xero-annotations.json",
+        "100-tool-check-xero-connection.json",
+        "101-tool-set-bookkeeping-profile.json",
+        "102-tool-start-reconciliation-review.json",
+        "103-tool-get-reconciliation-suggestions.json",
+        "104-tool-record-reconciliation-decision.json",
+        "105-run-reconciliation-review.json",
+        "106-run-transaction-matching.json",
+        "108-tool-prepare-green-matches.json",
+        "109-run-receipt-lookup.json"
       ]
     }
   ]

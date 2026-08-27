@@ -8,10 +8,10 @@
       content="A private, local workspace for reusable business agents."
     />
     <title>Project Manager</title>
-    <link rel="stylesheet" href="/fonts/fonts-local.css?v=sd4" />
-    <link rel="stylesheet" href="/styles.css?v=sd4" />
-    <script src="/agent.config.js?v=sd4" defer></script>
-    <script src="/app.js?v=sd4" defer></script>
+    <link rel="stylesheet" href="/fonts/fonts-local.css?v=sd5" />
+    <link rel="stylesheet" href="/styles.css?v=sd5" />
+    <script src="/agent.config.js?v=sd5" defer></script>
+    <script src="/app.js?v=sd5" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#message-input">Skip to message box</a>
@@ -41,9 +41,40 @@
           </div>
         </div>
 
+        <div
+          class="sidebar-brand"
+          id="sidebar-brand"
+          hidden
+          aria-label="Acting for brand"
+        >
+          <p class="section-label">Acting for</p>
+          <div
+            class="brand-toggle sidebar-brand__toggle"
+            id="sidebar-brand-toggle"
+            role="radiogroup"
+            aria-label="Acting for brand"
+          ></div>
+        </div>
+
         <section class="agent-selector" aria-labelledby="agent-selector-title">
           <p class="section-label" id="agent-selector-title">Agents</p>
           <div class="agent-list" id="agent-list" role="list"></div>
+        </section>
+
+        <section class="workspace-nav" aria-labelledby="workspace-nav-title">
+          <p class="section-label" id="workspace-nav-title">Workspace</p>
+          <button
+            class="agent-button workspace-nav__button"
+            id="pipeline-nav-button"
+            type="button"
+            aria-pressed="false"
+          >
+            <span class="agent-button__name">Content Pipeline</span>
+            <span class="agent-button__status">Board</span>
+            <span class="agent-button__description">
+              Pages and outreach across both brands, from backlog to published.
+            </span>
+          </button>
         </section>
 
         <section
@@ -94,7 +125,49 @@
         </p>
       </aside>
 
-      <section class="chat-card" aria-labelledby="conversation-title">
+      <section class="stage" aria-labelledby="stage-title">
+        <header class="stage-header">
+          <div class="stage-header__identity">
+            <p class="chat-header__kicker">
+              Section · <span id="stage-brand-label">Workspace</span>
+            </p>
+            <h2 class="stage-title" id="stage-title">Project Manager</h2>
+          </div>
+          <nav class="stage-tabs" id="section-tabs" aria-label="Section views"></nav>
+          <button
+            class="chat-toggle"
+            id="chat-toggle"
+            type="button"
+            aria-controls="chat-drawer"
+            aria-expanded="false"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9l-4 4v-4H6a2 2 0 0 1-2-2V6Z"
+                fill="none"
+                stroke="currentColor"
+                stroke-linejoin="round"
+                stroke-width="1.8"
+              />
+            </svg>
+            <span>Chat</span>
+          </button>
+        </header>
+        <div class="stage-body" id="stage-body" tabindex="-1"></div>
+      </section>
+
+      <div
+        class="chat-scrim"
+        id="chat-scrim"
+        hidden
+        aria-hidden="true"
+      ></div>
+
+      <section
+        class="chat-card chat-drawer"
+        id="chat-drawer"
+        aria-labelledby="conversation-title"
+      >
         <header class="chat-header">
           <div class="chat-header__identity">
             <span class="mobile-mark" id="mobile-agent-initials" aria-hidden="true">
@@ -118,6 +191,23 @@
                 <path d="M5 6h14M5 12h14M5 18h9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8" />
               </svg>
               <span class="visually-hidden">Open chat history</span>
+            </button>
+            <button
+              class="history-button drawer-close"
+              id="drawer-close"
+              type="button"
+              aria-controls="chat-drawer"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="m7 7 10 10M17 7 7 17"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-linecap="round"
+                  stroke-width="1.8"
+                />
+              </svg>
+              <span class="visually-hidden">Close chat drawer</span>
             </button>
             <button class="reset-button" id="reset-button" type="button">
               <svg viewBox="0 0 24 24" aria-hidden="true">

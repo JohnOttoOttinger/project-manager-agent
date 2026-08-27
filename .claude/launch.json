@@ -6,6 +6,20 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8781", "--directory", "/private/tmp/claude-501/-Users-Ottinger-Claude-Projects-2026-project-manager-agent/a6374f8f-7db8-463e-bc3b-d2dcf5f581fb/scratchpad"],
       "port": 8781
+    },
+    {
+      "name": "aurora-invoicing",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/Ottinger/Documents/AI Soloprenuer/aurora-invoicing",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3010"
+      ],
+      "port": 3010
     }
   ]
 }

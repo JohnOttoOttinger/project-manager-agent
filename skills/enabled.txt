@@ -19,3 +19,5 @@ analytics
 opportunity-tracker
 sourcing
 funding-radar
+xero-statement-capture
+xero-reconciliation
