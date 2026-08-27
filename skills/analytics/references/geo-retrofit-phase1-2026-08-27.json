@@ -24,7 +24,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 233.6,
   "brand": "oddtoe",
-  "name": "Animation Agents \u2022 Oddtoe"
+  "name": "Animation Agents \u2022 Oddtoe",
+  "au_clicks": 1,
+  "au_impressions": 281
  },
  {
   "path": "/animation-conferences-2026-2027/",
@@ -50,7 +52,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 57.2,
   "brand": "oddtoe",
-  "name": "Animation Conferences 2026 & 2027 \u2014 The World's Best"
+  "name": "Animation Conferences 2026 & 2027 \u2014 The World's Best",
+  "au_clicks": 1,
+  "au_impressions": 68
  },
  {
   "path": "/",
@@ -78,7 +82,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 33.8,
   "brand": "oddtoe",
-  "name": "Generative AI Animation - Video Art"
+  "name": "Generative AI Animation - Video Art",
+  "au_clicks": 1,
+  "au_impressions": 19
  },
  {
   "path": "/artist-designer/prop-designer-maker/",
@@ -104,7 +110,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 28.0,
   "brand": "oddtoe",
-  "name": "Film & TV Prop Designer | 3D Prop Maker Melbourne & Los Angeles"
+  "name": "Film & TV Prop Designer | 3D Prop Maker Melbourne & Los Angeles",
+  "au_clicks": 10,
+  "au_impressions": 1521
  },
  {
   "path": "/artist-designer/comedy-writer/",
@@ -132,7 +140,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 25.3,
   "brand": "oddtoe",
-  "name": "Comedy Writer \u2022 Oddtoe"
+  "name": "Comedy Writer \u2022 Oddtoe",
+  "au_clicks": 1,
+  "au_impressions": 5
  },
  {
   "path": "/studio/generative-ai-animator/",
@@ -159,7 +169,9 @@
   "extra_clicks_180d": 2.8,
   "rank_score": 19.1,
   "brand": "oddtoe",
-  "name": "Generative AI Animator \u2022 Oddtoe"
+  "name": "Generative AI Animator \u2022 Oddtoe",
+  "au_clicks": 3,
+  "au_impressions": 35
  },
  {
   "path": "/studio/documentary-animator/",
@@ -186,7 +198,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 11.6,
   "brand": "oddtoe",
-  "name": "Documentary Animator \u2022 Oddtoe"
+  "name": "Documentary Animator \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 12
  },
  {
   "path": "/animation-conferences-2024-2025/",
@@ -212,7 +226,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 7.5,
   "brand": "oddtoe",
-  "name": "Animation Conferences 2026 & 2027 \u2014 The World's Best"
+  "name": "Animation Conferences 2026 & 2027 \u2014 The World's Best",
+  "au_clicks": 1,
+  "au_impressions": 24
  },
  {
   "path": "/artist-designer/topiarist/",
@@ -239,7 +255,9 @@
   "extra_clicks_180d": 45.7,
   "rank_score": 6.4,
   "brand": "oddtoe",
-  "name": "Topiary Designer Melbourne, Australia Garden & Landscape Design"
+  "name": "Topiary Designer Melbourne, Australia Garden & Landscape Design",
+  "au_clicks": 0,
+  "au_impressions": 130
  },
  {
   "path": "/studio/generative-ai-artist/",
@@ -266,7 +284,9 @@
   "extra_clicks_180d": 11.3,
   "rank_score": 3.8,
   "brand": "oddtoe",
-  "name": "Generative AI Artist \u2022 Oddtoe"
+  "name": "Generative AI Artist \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 107
  },
  {
   "path": "/weird-art/",
@@ -293,7 +313,9 @@
   "extra_clicks_180d": 12.2,
   "rank_score": 3.4,
   "brand": "oddtoe",
-  "name": "Weird Art \u2022 Oddtoe"
+  "name": "Weird Art \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 13
  },
  {
   "path": "/artist-designer/sensory-garden-designer/",
@@ -320,7 +342,9 @@
   "extra_clicks_180d": 7.7,
   "rank_score": 3.4,
   "brand": "oddtoe",
-  "name": "Sensory Garden Designer \u2022 Oddtoe"
+  "name": "Sensory Garden Designer \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 3
  },
  {
   "path": "/experiential-design-techniques-examples/",
@@ -347,7 +371,9 @@
   "extra_clicks_180d": 11.4,
   "rank_score": 3.0,
   "brand": "oddtoe",
-  "name": "Experiential Design Techniques & Examples \u2022 Oddtoe"
+  "name": "Experiential Design Techniques & Examples \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 21
  },
  {
   "path": "/my-product/topiary-design-garden-park-project/",
@@ -375,7 +401,9 @@
   "extra_clicks_180d": 3.3,
   "rank_score": 3.0,
   "brand": "oddtoe",
-  "name": "Topiary Design: The Garden Park Project \u2022 Oddtoe"
+  "name": "Topiary Design: The Garden Park Project \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 3
  },
  {
   "path": "/incredible-3d-gardens/",
@@ -402,7 +430,9 @@
   "extra_clicks_180d": 0.3,
   "rank_score": 3.0,
   "brand": "oddtoe",
-  "name": "Incredible 3d Gardens : Innovative Landscape Designer for Children \u2022 Oddtoe"
+  "name": "Incredible 3d Gardens : Innovative Landscape Designer for Children \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 16
  },
  {
   "path": "/artist-designer/character-designer/",
@@ -428,7 +458,9 @@
   "extra_clicks_180d": 0.7,
   "rank_score": 2.6,
   "brand": "oddtoe",
-  "name": "Character Designer \u2022 Oddtoe"
+  "name": "Character Designer \u2022 Oddtoe",
+  "au_clicks": 1,
+  "au_impressions": 360
  },
  {
   "path": "/experiential-marketing-agencies/",
@@ -454,7 +486,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 2.2,
   "brand": "oddtoe",
-  "name": "The Biggest Experiential Marketing & Activation Agencies in the World \u2022 Oddtoe"
+  "name": "The Biggest Experiential Marketing & Activation Agencies in the World \u2022 Oddtoe",
+  "au_clicks": 1,
+  "au_impressions": 4
  },
  {
   "path": "/artist-designer/projection-artist/",
@@ -482,7 +516,9 @@
   "extra_clicks_180d": 0.4,
   "rank_score": 1.7,
   "brand": "oddtoe",
-  "name": "Projection Artist \u00bb Light designer, projected animation"
+  "name": "Projection Artist \u00bb Light designer, projected animation",
+  "au_clicks": 0,
+  "au_impressions": 3
  },
  {
   "path": "/geometric-art/",
@@ -510,7 +546,9 @@
   "extra_clicks_180d": 0.8,
   "rank_score": 1.5,
   "brand": "oddtoe",
-  "name": "Geometric Art \u2022 Oddtoe"
+  "name": "Geometric Art \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 1
  },
  {
   "path": "/my-product/gag-cartoonist-syndication/",
@@ -537,7 +575,9 @@
   "extra_clicks_180d": 6.7,
   "rank_score": 1.4,
   "brand": "oddtoe",
-  "name": "Gag Cartoonist \u2022 Oddtoe"
+  "name": "Gag Cartoonist \u2022 Oddtoe",
+  "au_clicks": 0,
+  "au_impressions": 6
  },
  {
   "path": "/2026/03/29/9-incredible-examples-of-interactive-data-visualization/",
@@ -565,7 +605,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 34.7,
   "brand": "datalabs",
-  "name": "8 Examples of Incredible Interactive Data Visualization"
+  "name": "8 Examples of Incredible Interactive Data Visualization",
+  "au_clicks": 0,
+  "au_impressions": 80
  },
  {
   "path": "/2026/05/11/data-visualization-websites/",
@@ -593,7 +635,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 6.1,
   "brand": "datalabs",
-  "name": "Data Visualization Websites \u2014 101 of the Best Data Viz Sites & Resources"
+  "name": "Data Visualization Websites \u2014 101 of the Best Data Viz Sites & Resources",
+  "au_clicks": 0,
+  "au_impressions": 4
  },
  {
   "path": "/case-studies/",
@@ -621,7 +665,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 2.7,
   "brand": "datalabs",
-  "name": "Data Visualization Case Studies"
+  "name": "Data Visualization Case Studies",
+  "au_clicks": 0,
+  "au_impressions": 4
  },
  {
   "path": "/infographic-reports/",
@@ -648,7 +694,9 @@
   "extra_clicks_180d": 4.9,
   "rank_score": 2.2,
   "brand": "datalabs",
-  "name": "Infographic Reports & Infographic Design"
+  "name": "Infographic Reports & Infographic Design",
+  "au_clicks": 0,
+  "au_impressions": 7
  },
  {
   "path": "/data-visualization-style-guides/power-bi-style-guides/",
@@ -675,7 +723,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 2.2,
   "brand": "datalabs",
-  "name": "Power BI Style Guides & Brand Guidelines \u2014\u00a0Design Better with Datalabs"
+  "name": "Power BI Style Guides & Brand Guidelines \u2014\u00a0Design Better with Datalabs",
+  "au_clicks": 0,
+  "au_impressions": 3
  },
  {
   "path": "/infographic-numbers/",
@@ -703,7 +753,9 @@
   "extra_clicks_180d": 5.0,
   "rank_score": 1.7,
   "brand": "datalabs",
-  "name": "Infographic Numbers"
+  "name": "Infographic Numbers",
+  "au_clicks": 0,
+  "au_impressions": 0
  },
  {
   "path": "/",
@@ -731,7 +783,9 @@
   "extra_clicks_180d": 2.3,
   "rank_score": 1.7,
   "brand": "datalabs",
-  "name": "Data Visualization Consultant & Trainer in Melbourne | Datalabs"
+  "name": "Data Visualization Consultant & Trainer in Melbourne | Datalabs",
+  "au_clicks": 2,
+  "au_impressions": 621
  },
  {
   "path": "/animated-data-videos/",
@@ -758,7 +812,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 1.6,
   "brand": "datalabs",
-  "name": "Animated Data Videos"
+  "name": "Animated Data Videos",
+  "au_clicks": 1,
+  "au_impressions": 2
  },
  {
   "path": "/case-studies/infographic-workshop-case-study/",
@@ -786,7 +842,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 1.5,
   "brand": "datalabs",
-  "name": "Al Jazeera Infographics Workshop Case Study"
+  "name": "Al Jazeera Infographics Workshop Case Study",
+  "au_clicks": 0,
+  "au_impressions": 0
  },
  {
   "path": "/2024/06/03/data-design-principles-repetition-alignment-symmetry/",
@@ -813,7 +871,9 @@
   "extra_clicks_180d": 1.7,
   "rank_score": 1.2,
   "brand": "datalabs",
-  "name": "Design Repetition, Principles of Alignment, Symmetry in Graphics"
+  "name": "Design Repetition, Principles of Alignment, Symmetry in Graphics",
+  "au_clicks": 1,
+  "au_impressions": 30
  },
  {
   "path": "/visual-communications-strategies/",
@@ -840,7 +900,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 1.2,
   "brand": "datalabs",
-  "name": "Visual Communication Strategies \u2014\u00a0Design Consultants | Datalabs"
+  "name": "Visual Communication Strategies \u2014\u00a0Design Consultants | Datalabs",
+  "au_clicks": 0,
+  "au_impressions": 11
  },
  {
   "path": "/data-visualization-training-workshops-webinars/infographics-report-design-workshop/",
@@ -867,7 +929,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 1.0,
   "brand": "datalabs",
-  "name": "Infographics Workshop: Infographic Design Training"
+  "name": "Infographics Workshop: Infographic Design Training",
+  "au_clicks": 0,
+  "au_impressions": 0
  },
  {
   "path": "/2024/06/02/agm-presentations-dont-suck/",
@@ -894,7 +958,9 @@
   "extra_clicks_180d": 0.8,
   "rank_score": 0.8,
   "brand": "datalabs",
-  "name": "Annual General Meeting (AGM) Presentations That Don't Suck"
+  "name": "Annual General Meeting (AGM) Presentations That Don't Suck",
+  "au_clicks": 0,
+  "au_impressions": 1
  },
  {
   "path": "/data-visualization-training-workshops-webinars/",
@@ -922,7 +988,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 0.8,
   "brand": "datalabs",
-  "name": "Data Visualization Training: Workshops & Courses"
+  "name": "Data Visualization Training: Workshops & Courses",
+  "au_clicks": 0,
+  "au_impressions": 4
  },
  {
   "path": "/2024/06/16/10-data-viz-guys-and-gals-to-follow-on-instagram/",
@@ -949,7 +1017,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 0.7,
   "brand": "datalabs",
-  "name": "10 Data Visualization Guys & Gals to Follow on Instagram for Inspiration"
+  "name": "10 Data Visualization Guys & Gals to Follow on Instagram for Inspiration",
+  "au_clicks": 0,
+  "au_impressions": 1
  },
  {
   "path": "/product/power-bi-templates/",
@@ -976,7 +1046,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 0.6,
   "brand": "datalabs",
-  "name": "Power BI Templates"
+  "name": "Power BI Templates",
+  "au_clicks": 0,
+  "au_impressions": 6
  },
  {
   "path": "/data-visualization-training-workshops-webinars/visual-storytelling-for-government-workshop/",
@@ -1003,7 +1075,9 @@
   "extra_clicks_180d": 0.4,
   "rank_score": 0.5,
   "brand": "datalabs",
-  "name": "Visual Storytelling for Government Workshop - Onsite or Remote Training"
+  "name": "Visual Storytelling for Government Workshop - Onsite or Remote Training",
+  "au_clicks": 0,
+  "au_impressions": 3
  },
  {
   "path": "/data-visualization-training-workshops-webinars/power-bi-workshop-creative-dashboard-design/",
@@ -1030,7 +1104,9 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 0.5,
   "brand": "datalabs",
-  "name": "Power BI Workshop \u2014\u00a0Creative Dashboard Design Training with Datalabs"
+  "name": "Power BI Workshop \u2014\u00a0Creative Dashboard Design Training with Datalabs",
+  "au_clicks": 0,
+  "au_impressions": 1
  },
  {
   "path": "/2024/06/04/6-captivating-information-visualization-examples/",
@@ -1058,7 +1134,9 @@
   "extra_clicks_180d": 1.0,
   "rank_score": 0.4,
   "brand": "datalabs",
-  "name": "Examples of Information Visualization: 6 of the Best \u2014 Datalabs"
+  "name": "Examples of Information Visualization: 6 of the Best \u2014 Datalabs",
+  "au_clicks": 0,
+  "au_impressions": 5
  },
  {
   "path": "/interactive-infographics/",
@@ -1085,6 +1163,8 @@
   "extra_clicks_180d": 0.0,
   "rank_score": 0.4,
   "brand": "datalabs",
-  "name": "Interactive Infographics"
+  "name": "Interactive Infographics",
+  "au_clicks": 0,
+  "au_impressions": 8
  }
 ]
