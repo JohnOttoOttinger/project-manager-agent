@@ -601,3 +601,43 @@ wp_navigation, wp_font_family, wp_font_face and product — the `my-product` typ
 `show_in_rest`, and the techniques page does not resolve by slug on any of them. They need either a
 browser form-save (the route Oddtoe posts already require) or `show_in_rest` enabling on that post
 type. Do not report them as done.
+
+---
+
+## GEO retrofit — Phase 1 progress, 27 Aug 2026
+
+**21 of 37 auditable queue pages now score 4/4** on the in-scope elements (Q&A + FAQPage schema,
+canonical sentence, question headings, meta description). Every page backed up before editing; every
+push verified against stored REST content and a cache-busted live fetch; `de-ai-check` diffed
+before/after on all of them with one regression, caught and fixed.
+
+Shipped this session: 5 Datalabs workshop pages · 6 Datalabs posts · Infographic Reports · Power BI
+Style Guides · Visual Communications · Infographic Numbers · Animated Data Videos · Interactive
+Infographics · Case Studies · Animation Agents · Experiential Agencies · Documentary Animator ·
+Sensory Garden Designer · Comedy Writer · Projection Artist · Geometric Art · Incredible 3D Gardens ·
+Animation Conferences · Film & TV Prop Designer · plus 18 canonical sentences.
+
+**The auditor was understating progress by nearly half.** `geo-retrofit-rank.py` fetched live URLs
+without a cache-buster, so WP Engine's edge cache returned pre-edit HTML and freshly-completed pages
+audited as untouched — Datalabs read 11/19 cached versus 14/19 real. Now cache-busted. Any measurement
+that reads a live URL right after a write needs this.
+
+**Two extraction rules learned building schema from existing page copy:**
+
+- Where a page already shows Q&A but has no schema, derive the JSON-LD from the questions already
+  there rather than writing new ones. Documentary Animator, Sensory Garden Designer and Incredible 3D
+  Gardens all had the visible half and were missing only the machine-readable half.
+- **A call to action phrased as a question is not an FAQ entry.** "Interested in Creating the World's
+  Most Unique Experience?" was swept into the 3D Gardens schema by a naive "ends with ?" test. Google's
+  guidance is that FAQPage is for genuine informational Q&A; filter CTA openers
+  (interested in / want to / ready to / looking to / need) before building.
+
+**What remains, and why it is not just more of the same:**
+
+| Remaining | Count | Why it needs Otto or a different tool |
+|---|---|---|
+| question H2s only | 9 | Rewrites headings Otto wrote. In scope, but it changes visible copy he chose — worth one approved example before doing nine. |
+| Homepages (both, 1/4) | 2 | A Q&A row on a homepage is a real design decision, not a retrofit. |
+| `my-product` pages | 2 | No REST route; needs wp-admin by hand. |
+| meta description | 1 | Yoast fields are not REST-writable. |
+| Power BI Templates | 1 | WooCommerce product, does not resolve on the product endpoint. |

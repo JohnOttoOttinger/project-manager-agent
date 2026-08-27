@@ -122,8 +122,13 @@ IN_SCOPE = [("qa_block", "Q&A + FAQ schema"), ("canonical_sentence", "canonical 
 
 
 def fetch(url):
+    # cache-bust every audit fetch. WP Engine serves stale HTML with a rising age: header
+    # for minutes after a save, which made freshly-completed pages audit as untouched and
+    # understated progress by nearly half (27 Aug 2026).
+    sep = "&" if "?" in url else "?"
     try:
-        return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read().decode("utf-8", "ignore")
+        return urllib.request.urlopen(
+            urllib.request.Request(f"{url}{sep}geoaudit=1", headers=UA), timeout=30).read().decode("utf-8", "ignore")
     except Exception as e:
         return f"__ERROR__{e}"
 
