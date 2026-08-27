@@ -490,3 +490,30 @@ whatever the surrounding paragraph already does rather than pasting one house st
 **Byline check that was a false alarm:** author ID 1 looked like the agent user, but user 1 *is* the
 Oddtoe brand account (`WP_ODDTOE_AUTHOR_ID=1`) and every other Oddtoe money page uses it. Confirm
 against sibling pages before "fixing" an author.
+
+---
+
+## Film & TV Prop Designer — GEO retrofit, 27 Aug 2026 (first Phase 1 page)
+
+Live page https://www.oddtoe.com/artist-designer/prop-designer-maker/ (13753). Two pushes, both
+verified live. Backups: `oddtoe-13753-pre-canonical-*.json`, `oddtoe-13753-pre-faq-additions-*.json`.
+
+1. **Canonical sentence added** — the page's only missing in-scope element; it now scores 4/4.
+2. **Q&A 7 → 9 entries**, with the FAQPage JSON-LD updated to match (9 questions, round-trip
+   verified through the base64/rawurlencode before pushing). New entries answer "prop fabrication
+   services" and "promotional / marketing props" — both queries with real demand and no answer
+   anywhere on the site ("marketing prop maker" 374 impressions, "promotional prop maker" 331).
+   Each links out: to [Prop Fabrication Services](https://www.oddtoe.com/prop-fabrication-services/)
+   and [Brand Activation Ideas](https://www.oddtoe.com/brand-activation-ideas/).
+
+**A reasoning error worth not repeating.** I claimed Google was serving this page for "prop
+fabrication services" instead of the dedicated page, and called it cannibalisation. The dedicated
+page was published 25 Aug — one day AFTER the 180-day GSC window closed. It could not have appeared.
+**Check a page's publish date against the analysis window before reading anything into its absence.**
+The link still belongs there, for the opposite reason: a two-day-old page has no inbound links, and
+adding one from a page earning 112 clicks is how it gets discovered.
+
+**Sync the schema whenever the accordion changes.** The FAQ JSON-LD is a separate `vc_raw_html`
+block (base64 of rawurlencode of a `<script type="application/ld+json">` wrapper). Editing the
+accordion without it leaves the two disagreeing, which is worse than having no schema. Decode,
+append to `mainEntity`, re-encode, and assert the round trip before pushing.

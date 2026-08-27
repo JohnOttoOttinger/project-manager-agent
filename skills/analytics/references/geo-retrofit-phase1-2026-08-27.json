@@ -90,12 +90,10 @@
   "path": "/artist-designer/prop-designer-maker/",
   "tier": "A \u00b7 activation / fabrication",
   "weight": 1.0,
-  "geo_have": 3,
+  "geo_have": 4,
   "raw_impressions": 75107,
   "raw_clicks": 112,
-  "missing": [
-   "canonical sentence"
-  ],
+  "missing": [],
   "clean_impressions": 16789,
   "clean_clicks": 112,
   "sample_impressions": 27880,
@@ -112,7 +110,8 @@
   "brand": "oddtoe",
   "name": "Film & TV Prop Designer | 3D Prop Maker Melbourne & Los Angeles",
   "au_clicks": 10,
-  "au_impressions": 1521
+  "au_impressions": 1521,
+  "done": "canonical sentence + 2 Q&A entries, 27 Aug"
  },
  {
   "path": "/artist-designer/comedy-writer/",
