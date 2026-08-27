@@ -576,3 +576,28 @@ failure.
 **`grep -c` counts LINES, not matches.** Verifying schema with `grep -c '"@type": "Question"'`
 returned 1 for a five-question page, because minified JSON-LD sits on a single line. Parse the
 `ld+json` block and count `mainEntity` instead.
+
+---
+
+## Oddtoe activations — partial, 27 Aug 2026
+
+[The Biggest Experiential Marketing & Activation Agencies](https://www.oddtoe.com/experiential-marketing-agencies/)
+(16173) now carries a five-question Q&A row with FAQPage schema. Backup:
+`oddtoe-16173-pre-faq-2026-08-27.json`. Answers are sourced from the page's own reporting (Freeman's
+7,000 people / 90+ locations / 4,300+ expositions; Cheil's 8,000+ across 46 countries; the
+Omnicom–IPG close in Nov 2025, Jack Morton leaving Omnicom in Jan 2026, INVNT acquired Apr 2026) and
+link out to Brand Activation Ideas and the prop page.
+
+**The pricing answer is the honest one.** Oddtoe has no rate card and `brands.md` still lists pricing
+as TO FILL, so the answer says the studio quotes per project after a scoping conversation and that
+travel outside Melbourne is quoted separately — the phrasing already used in the prop page's table
+footnote. No figure was invented to fill the gap.
+
+**BLOCKED — two activation pages are invisible to the REST API.**
+`/experiential-design-techniques-examples/` and `/my-product/topiary-design-garden-park-project/`
+both return 200 publicly but cannot be reached through `wp/v2`: the registered types are
+post, page, attachment, nav_menu_item, wp_block, wp_template, wp_template_part, wp_global_styles,
+wp_navigation, wp_font_family, wp_font_face and product — the `my-product` type is not registered
+`show_in_rest`, and the techniques page does not resolve by slug on any of them. They need either a
+browser form-save (the route Oddtoe posts already require) or `show_in_rest` enabling on that post
+type. Do not report them as done.
