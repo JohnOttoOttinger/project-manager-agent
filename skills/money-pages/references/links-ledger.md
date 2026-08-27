@@ -517,3 +517,32 @@ adding one from a page earning 112 clicks is how it gets discovered.
 block (base64 of rawurlencode of a `<script type="application/ld+json">` wrapper). Editing the
 accordion without it leaves the two disagreeing, which is worse than having no schema. Decode,
 append to `mainEntity`, re-encode, and assert the round trip before pushing.
+
+---
+
+## Datalabs workshop hub — Q&A block built from scratch, 27 Aug 2026
+
+[Data Visualization Training: Workshops & Courses](https://www.datalabsagency.com/data-visualization-training-workshops-webinars/)
+(661) had no accordion and no FAQ schema. Added the kit's `PATTERN: faq` row above the contact-form
+row, with six questions and matching FAQPage JSON-LD. Backup:
+`datalabs-661-pre-faq-2026-08-27.json`.
+
+**Every answer is sourced, none invented.** The verified facts came from the published
+[workshop pricing page](https://www.datalabsagency.com/data-visualisation-workshop-pricing/) —
+$4,600–$7,500 inc GST, up to 12 attendees, on-site full day ~7 hours / half-day 4 hours, remote on
+Zoom/Teams/Webex with a full day splittable over two mornings, interactive workbook, 70 dashboard
+grid templates, 18 dashboard icons, ~16 topics, founder trained at National Geographic — plus
+`brands.md` for delivery countries (US, Germany, Saudi Arabia, Hong Kong, Singapore; Sydney,
+Canberra) and travel quoted up front. This page is the source to reuse for the other workshop pages.
+
+**Two traps this pass hit:**
+
+- **de-ai-check caught my own blanket bold.** A bolded country list ran to 61 characters and tripped
+  the rule. Bold the short claim next to a list ("Travel is quoted up front"), not the list itself.
+- **Do not verify a push against the plain live URL.** WP Engine served a cached copy with a rising
+  `age:` header for several minutes, reporting every new string as MISSING while the content was
+  already saved. Verify against `?context=edit` over REST, or fetch the live URL with a cache-buster
+  query. Three consecutive "failures" here were all cache.
+
+The kit's FAQ pattern ships **five** `vc_tta_section` slots. For more questions, replace the joined
+run of sections rather than trying to append after the last one.
