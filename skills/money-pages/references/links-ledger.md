@@ -546,3 +546,33 @@ Canberra) and travel quoted up front. This page is the source to reuse for the o
 
 The kit's FAQ pattern ships **five** `vc_tta_section` slots. For more questions, replace the joined
 run of sections rather than trying to append after the last one.
+
+---
+
+## Datalabs workshop group — Q&A retrofit complete, 27 Aug 2026
+
+All five workshop-line pages now carry a kit-native Q&A row with matching FAQPage schema.
+`scripts/faq_block.py` builds the row and asserts the accordion/schema round trip before returning,
+so a mismatch fails locally instead of on a live page. Backups: `datalabs-{661,19413,19399,359,19178}-pre-faq-*.json`.
+
+| Page | Questions | Angle |
+|---|---|---|
+| [Data Visualization Training](https://www.datalabsagency.com/data-visualization-training-workshops-webinars/) | 6 | the hub: cost, format, group size, software, travel, takeaways |
+| [Power BI Workshop](https://www.datalabsagency.com/data-visualization-training-workshops-webinars/power-bi-workshop-creative-dashboard-design/) | 5 | leads with "is this a software course?" — no, it teaches design |
+| [Visual Storytelling for Government](https://www.datalabsagency.com/data-visualization-training-workshops-webinars/visual-storytelling-for-government-workshop/) | 5 | who it is for, on-site at a department, Sydney/Canberra |
+| [Infographics Workshop](https://www.datalabsagency.com/data-visualization-training-workshops-webinars/infographics-report-design-workshop/) | 5 | format and audience, from the page's own copy |
+| [Al Jazeera Case Study](https://www.datalabsagency.com/case-studies/infographic-workshop-case-study/) | 5 | what was asked for in 2015, then "can you run it for us" |
+
+Questions are deliberately different per page — five pages carrying identical Q&A is duplicate
+content, not coverage.
+
+**Verify a de-ai-check FAIL before treating it as yours.** All four pages failed `blanket bold`
+after the edit. Running the check on the *originals* showed identical counts — every flagged string
+was pre-existing page copy predating the rule. Diff the before/after counts; do not rewrite someone
+else's copy because your addition surfaced an old problem. On two pages the FAIL count actually
+*dropped*, because the canonical sentence embedded in a Q&A answer resolved the missing-canonical
+failure.
+
+**`grep -c` counts LINES, not matches.** Verifying schema with `grep -c '"@type": "Question"'`
+returned 1 for a five-question page, because minified JSON-LD sits on a single line. Parse the
+`ld+json` block and count `mainEntity` instead.
