@@ -88,10 +88,13 @@ def position_band(pos: float) -> tuple[float, str]:
     return 0.45, "deep — structure alone rarely moves it"
 
 
-def gsc_pages(site: str, days: int) -> dict:
+def gsc_pages(site: str, days: int, country: str | None = None) -> dict:
     end = datetime.date.today() - datetime.timedelta(days=3)
     start = end - datetime.timedelta(days=days)
     body = {"startDate": str(start), "endDate": str(end), "dimensions": ["page"], "rowLimit": 25000}
+    if country:
+        body["dimensionFilterGroups"] = [{"filters": [
+            {"dimension": "country", "operator": "equals", "expression": country}]}]
     req = urllib.request.Request(
         f"https://www.googleapis.com/webmasters/v3/sites/{urllib.parse.quote(site, safe='')}/searchAnalytics/query",
         data=json.dumps(body).encode(),
@@ -135,10 +138,15 @@ def main() -> None:
     ap.add_argument("--exclude", default=r"^/(de|ar|es|fr|zh|ja|ru)/",
                     help="path regex to drop before ranking (default: translated pages)")
     ap.add_argument("--tier", default="", help="only report tiers whose label starts with this, e.g. A")
+    ap.add_argument("--country", default="aus",
+                    help="ISO-3 country filter (default aus). Measured 27 Aug 2026: filtering the "
+                         "Oddtoe prop page to Australia dropped machine-shaped impressions from 78%% "
+                         "to 5%%, because the query enumeration is almost entirely offshore. Pass an "
+                         "empty string for worldwide, and expect the noise back.")
     a = ap.parse_args()
     site = SITES[a.brand]
 
-    pages = gsc_pages(site, a.days)
+    pages = gsc_pages(site, a.days, a.country or None)
     if a.exclude:
         drop = re.compile(a.exclude, re.I)
         before = len(pages)
