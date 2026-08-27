@@ -4,7 +4,10 @@ Load this skill before writing ANY content for Datalabs Agency or Oddtoe — pag
 
 ## The six writing rules (non-negotiable)
 
-1. **Answer-first.** Every section opens with a direct 40–60 word answer under a question-shaped heading ("How much does a Power BI workshop cost in Australia?"). Each section must make sense lifted out alone — retrieval is passage-level, not page-level.
+1. **Answer-first, in self-contained sections.** Every section opens with a direct 40–60 word answer and must make sense lifted out alone — retrieval is passage-level, not page-level. **That is the requirement. A question-shaped heading is one way to meet it, not the goal.**
+   - **Required** inside the Q&A block, where questions are the form and the FAQPage schema makes them machine-readable. That block is the strongest question signal a page can send.
+   - **Optional** for body headings. Convert one only when it is a bare label doing no voice work AND that question is not already asked in the page's Q&A block. Leave headings that carry the writing ("Illustration first. Always.") alone.
+   - **Why (Otto, 27 Aug 2026):** *"Real users should be having a good experience on the page. If every header is a question, that serves Google's purposes but maybe not mine. I am interested in my site traffic growing, but not if Google is the only one benefitting."* Headings double as the page's table of contents; a run of them all opening "How do you…" scans worse for a human than distinct noun phrases, and answering the same question twice on one page serves nobody. A page may legitimately score 3/4 on the retrofit audit for this reason — that is a correct outcome, not a gap.
 2. **Self-contained sections** of 75–300 words. No "as mentioned above", no forward references.
 3. **Named, attributed statistics.** "A 2025 Semrush study of 150,000 AI citations found…" — never "studies show". If no real source exists, use no statistic.
 4. **Comparison tables** wherever two options are weighed. AI answers extract tables preferentially.

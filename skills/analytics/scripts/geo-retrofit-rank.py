@@ -168,13 +168,18 @@ def main() -> None:
         if html.startswith("__ERROR__"):
             rows.append({"path": path, **m, "error": html[9:69]}); continue
         au = audit(html, a.brand)
+        # A Q&A block with FAQPage schema IS the page's question surface. Requiring
+        # question-shaped body headings on top of it double-counts the same signal and
+        # pushes toward converting every heading, which reads badly for humans — see
+        # geo-playbook rule 1, amended 27 Aug 2026 at Otto's direction.
+        questions_covered = au["qa_block"] or au["question_headings"] >= 2
         have = sum([au["qa_block"], au["canonical_sentence"],
-                    au["question_headings"] >= 2, au["meta_description"]])
+                    questions_covered, au["meta_description"]])
         gap = (4 - have) / 4
         cw, clabel = commercial(path, a.brand)
         pw, plabel = position_band(m["position"])
         missing = [label for key, label in IN_SCOPE
-                   if not (au[key] >= 2 if key == "question_headings" else au[key])]
+                   if not (questions_covered if key == "question_headings" else au[key])]
         rows.append({"path": path, **m,
                      "ctr": round(m["clicks"] / m["impressions"], 4) if m["impressions"] else 0,
                      "geo_have": have, "missing": missing, "words": au["words"],
