@@ -163,3 +163,19 @@ source of truth — a later tint change is then one wp-admin field, not a re-com
 
 **Rule:** never give the same tint to two pages in one cluster — the point is that a visitor
 moving between Oddtoe service pages sees a different ground each time.
+
+## Registered 28 Aug 2026 (Otto-approved, from the Gantt + Sculptor builds)
+
+**"Circle-Number Steps"** — the how-to/process module. One canonical spec, page-tinted:
+
+- `[vc_raw_html]` base64 block inside a `1/6 + 2/3 + 1/6` inner row, wrapper `max-width: 720px; margin: 0 auto;`
+- each step: flex row, `margin-bottom: 34px` between steps
+- circle: `56px` white (`#ffffff`), `border-radius: 50%`, numeral in Bebas `30px`, numeral color = the PAGE's
+  background tint (ink `#171d2a` on Gantt 54047, umber `#241b16` on Sculptor), `margin-right: 20px`
+- title: Arvo **Bold** `16px`, `letter-spacing: 0.5px`, white, `margin: 0 0 2px` (tight to its body — Otto, 28 Aug)
+- body: `line-height: 22px`, page-tinted body color (Datalabs `#c9c6bc`, Oddtoe `#cec5b6` + Arvo per Oddtoe convention)
+- optional intro paragraph inside the wrapper (Sculptor's EOI line), `margin: 0 0 30px`
+- font FALLBACK stacks stay per-site (`'Bebas Neue', sans-serif` Datalabs / `'Bebas Neue', BebasNeueRegular, sans-serif` Oddtoe) — same face, different theme font names
+- instances: Gantt 54047 (`el_id="gantt-steps"`), Sculptor staging 16227 commission section
+
+Steps content rule: verbatim-faithful to the page's prose — the module restates, never invents.
