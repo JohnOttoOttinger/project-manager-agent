@@ -700,3 +700,37 @@ is measuring against.
 
 **Tier 3 is Otto's to supply.** The highest-value pages have no existing quote that fits, so those
 need short prompts answered in his voice and placed verbatim.
+
+## 2026-08-28 · Homepage intro rewrite (page 15922) — Otto-approved copy + link swap
+
+Otto flagged the homepage intro as too keyword-rich to read as human. Rewrote to his approved
+draft (three sentences, "Plain Signpost" closer) and swapped the intro's outbound links from deep
+money pages to the site's top pages:
+
+- KEPT: "generative AI animation" → /what-is-generative-ai-animation/ (16 Aug pass link, phrase
+  survives verbatim in the new copy)
+- REMOVED from intro: "brand activation ideas" → /brand-activation-ideas/ and "animation agency"
+  → /animation-agency/ (the 22 Aug tail-sentence anchor). Both pages keep their other inbound
+  links; if homepage → activation-ideas equity matters later, re-add lower on the page.
+- ADDED: "portfolio" → /portfolio-aggregate/, "artist & designer" → /artist-designer/,
+  "About Oddtoe" → /about-oddtoe/ — all strong + dfd-custom-link-decorated, verified rendering
+  live same day (tan dotted, four links total in the paragraph).
+
+Backup of prior raw content: site-backups/oddtoe-15922-intro-rewrite-original-2026-08-28.txt.
+Edit made via REST (content-agent), not wp-admin — WPBakery save trap avoided.
+
+**Same day, follow-up (Otto: "add brand activation ideas somewhere on the homepage"):** placed in
+the events-management accordion answer ("...looking for exciting art for a festival or to activate
+a space?") — now reads "Then check out Oddtoe's projection art, installation art, and street art.
+Or start with these **brand activation ideas**." (strong + dfd-custom-link-decorated →
+/brand-activation-ideas/). Thematic exact-match: the question itself says "activate a space".
+Verified rendering live after a WP Engine "Quick clear all cache" (the REST update did NOT purge
+the edge cache on its own — the plain URL served stale HTML until the admin-bar purge; remember
+this for future REST content edits).
+
+## NGK case study (16219) link pass — 28 Aug 2026
+Published page: https://www.oddtoe.com/national-geographic-kids-case-study/ (publish + Yoast + Page Options done 28 Aug)
+- Homepage 15922: "Tucker Tick Comic / National Geographic" info_banner card → linked to case study (read_more box)
+- About 13203: same Tucker Tick banner card → linked to case study
+- What Is Generative AI Animation 16134: prose phrase "began at National Geographic" → decorated link
+- Character Design Services 16208: new pedigree sentence, anchor "characters and games for National Geographic Kids" → decorated link
