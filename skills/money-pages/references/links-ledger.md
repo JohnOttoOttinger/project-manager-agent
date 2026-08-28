@@ -734,3 +734,13 @@ Published page: https://www.oddtoe.com/national-geographic-kids-case-study/ (pub
 - About 13203: same Tucker Tick banner card → linked to case study
 - What Is Generative AI Animation 16134: prose phrase "began at National Geographic" → decorated link
 - Character Design Services 16208: new pedigree sentence, anchor "characters and games for National Geographic Kids" → decorated link
+
+## Sculptor page (11172) link pass — 28 Aug 2026 (post-swap; Otto: "Do the link pass")
+Target: https://www.oddtoe.com/artist-designer/kinetic-sculptor/ (now H1 "Sculptor")
+Already-linked before the pass (left alone): homepage 15922 ("large-scale sculpture"), Melbourne 13352 ("public art sculptor"), topiarist 11160 ×2, installation-artist 11178 ×2, brand-activation 16133 ×2, inflatable-artist 16190 ("kinetic sculpture"), experiential-marketing 16124 ("sculpture" in the props/installations list — looked unlinked in a stripped-text scan, was already decorated; check raw before adding).
+Applied (REST edits, backups in session scratchpad):
+- 2026-08-28 · oddtoe · source 13203 About (anchor "sculptural outdoor spaces", strong + dfd-custom-link-decorated) → target 11172
+- 2026-08-28 · oddtoe · source 14629 Weird Art (anchor "sculpture" in "the whimsy of sculpture", dfd-custom-link-decorated matching the page's sibling links, reciprocal of the sculptor humour section's weird-art link) → target 11172
+- 2026-08-28 · oddtoe · hub 13226 card renamed "Public Art Sculptor" → "Sculptor" (h3 + link title attr) to match the new H1; card href unchanged
+WP Engine "Quick clear all cache" purged after the edits (REST edits don't purge the edge cache); all three pages live-verified.
+SAME SESSION, before the pass: 11172's hero rev_slider swapped per Otto — "Oddview — C: Youtube Hero TV Credit" (oddview-c-youtube-hero-1) → "Video Hero — Stained Glass Art in 3D" (video-hero-character-designer-11, the slider from my-product 14868 Stained Glass Window Project; 3D-design content, more relevant). Live-verified rev_slider_115 renders; data/tmp/sculptor-staging.txt updated.
