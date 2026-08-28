@@ -349,3 +349,31 @@ says the same thing and passes. A reader skimming bold text wants the point, not
 carry pre-existing failures from copy written before these rules; the only number that matters is
 whether your change made it worse. Equal counts mean the flagged lines are the page's own history,
 and rewriting them is not part of a GEO retrofit.
+
+---
+
+## Lesson 15 — a hand-written `css=` class on inner columns is a phantom until you back it with `!important` (28 Aug 2026)
+
+Otto: "It looks very narrow between the text columns. Didn't we make a padding rule?" We did — the
+Oddtoe discipline pages carry `css=".vc_custom_oddtoe_col_gutter{padding-left: 20px;padding-right: 20px;}"`
+on their `1/4` inner columns, and WPBakery even prints that rule into an inline `<style>` on the page.
+**It still lost.** On the Sculptor page only the intro section rendered the 20px gutter; the other six
+two-column sections rendered a 6px text-to-text gap, because a higher-specificity Ronneby rule
+(unreadable via CSSOM — the theme CSS is served cross-origin) beats the single-class custom rule in
+those rows. Same class, same printed rule, different winners per section.
+
+**Fix that works via REST:** ship the rule once with `!important`, riding in any `[vc_raw_html]` block
+on the page:
+
+    <style>.vc_custom_oddtoe_col_gutter{padding-left:20px!important;padding-right:20px!important;}</style>
+
+On 16227 it rides in the commission-steps module. After applying it, EVERY pair measured `gap: 40`.
+
+**Two knock-ons:**
+- The live kinetic-sculptor page 11172 has the same phantom class — the staged body carries the fix,
+  so the swap heals it; any other discipline page using this class should be measured before trusting it.
+- Widening the gutter re-wraps every column, so the Lesson-11 balance pass must be REDONE after the
+  fix, not before (three sections on 16227 drifted 39–66px and needed retuning).
+
+Datalabs `1/2`-column articles are a different pattern: no custom class, theme default gutter renders
+20px, matches the rest of the kit — leave them alone.
