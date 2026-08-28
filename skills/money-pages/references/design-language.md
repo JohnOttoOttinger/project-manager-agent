@@ -119,7 +119,7 @@ R14 speaker form + **GEO Q&A** + Gravity Form.
 
 ## Brand deltas (unchanged from the kit system)
 
-- **Datalabs:** plum `#2f2e3a` / near-blacks `#252525`/`#000` / light `#e9e9e9`; tan accent.
+- **Datalabs:** plum `#2f2e3a` / near-blacks `#252525`/`#000` / light `#e9e9e9`; tan accent. **Per-page tints extended to Datalabs money pages (Otto, 28 Aug 2026): Gantt Charts 54047 = ink `#171d2a`, Data Analytics Classes 54048 = forest `#16211a`** — same `oddtoe_theme.py` palette; Datalabs retint additionally relifts table cells off pure black (th/even lighten+.05, zebra +.11) and the composer must set `template: page-custom.php` via REST.
 - **Oddtoe:** sand `#ddccb1`, olive `#8a9f6a`-family accents. The money kit ships plum
   `#26161f`, but **every money page gets its own near-black** (Otto, 26 Aug 2026: bored of
   the plum repetition) — the same per-page tinting the Visual Case Studies use. Palette and
