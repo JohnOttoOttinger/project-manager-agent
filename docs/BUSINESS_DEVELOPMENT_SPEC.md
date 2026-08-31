@@ -275,9 +275,31 @@ and the drafting logic can all be built and tested against the Oddtoe path.
    record and the `outreach_events` timeline, drag-to-move, keyboard move
    control, manual add, and buttons that hand list-import and prospect-finding
    to chat.
-3. **Guardrails + drafting** — suppression check, cap, hook selection, UTM
+3. **Guardrails + drafting** — *server layer done 31 Aug 2026.* Schema
+   version 9 adds `outreach_settings` (per brand: sender name, sender
+   contact, unsubscribe line, daily cap, follow-up interval, guide-page
+   URL). `campaigns.brief_json` now carries `{offer, guidePageUrl,
+   utmCampaign, dailyCap?, followUpDays?}` and overrides the brand
+   defaults. New store methods `saveOutreachSettings`,
+   `getOutreachSettings`, `createCampaign`, `getCampaign`,
+   `draftableProspects`, `countDraftedToday`, `recordProspectDrafts`; new
+   routes `GET|POST /api/outreach/settings`, `POST /api/outreach/campaigns`,
+   `GET /api/prospects/draftable`, `POST /api/prospects/drafts`.
+
+   The guardrails live in the store, not the skill, so a model cannot talk
+   past them: drafting is refused outright until a brand has a sender block
+   and an unsubscribe line; suppressed addresses are excluded on read *and*
+   re-checked on write, so an opt-out arriving mid-run still blocks the
+   send; the daily cap counts what was actually drafted today; a prospect
+   with an existing `draft_id` cannot be drafted twice even if its card is
+   dragged back to an earlier column; and every excluded prospect is
+   returned by name with a reason rather than dropped.
+
+   Still to do: the composing half — see §11.
+
+4. **Signals** — suppression check, cap, hook selection, UTM
    tagging, Gmail batch draft creation.
-4. **Signals** — GA4 click read, inbox reply scan, Sent scan.
+ — GA4 click read, inbox reply scan, Sent scan.
 5. **Follow-up** — due dates, the single follow-up draft, auto-close.
 6. **Morning brief** — wire steps 4 and 5 into a scheduled routine.
 7. **Skill update** — `sales-outreach` currently tells the agent that
@@ -287,6 +309,31 @@ and the drafting logic can all be built and tested against the Oddtoe path.
 
 Steps 1–2 were independent of everything in §9 and are complete. Step 3 is
 the first one that needs B1 and B4.
+
+## 11. Where drafting actually runs
+
+Established 31 Aug 2026 by checking the running instances, not by assumption:
+
+- **n8n holds no Gmail credential.** Its credential store has Anthropic,
+  DataForSEO, Apify (×2) and the Xero Capture Bridge. There is no Gmail node
+  in any workflow. The in-app chat agent therefore *cannot* create a Gmail
+  draft, and no amount of tool-workflow authoring changes that.
+- **A cloud routine cannot reach the prospect store.** The store is SQLite
+  behind `localhost:3000`. The existing 4pm scout and 5am builder work
+  because everything they touch — WordPress, GSC, GA4, GitHub — is remote.
+  A cloud routine has the Gmail MCP but not the store.
+- **Only a local Claude Code session has both**: the Gmail connector and
+  `localhost:3000`.
+
+So the composing half of step 3 is a **skill run from a local Claude Code
+session**, not an n8n tool and not a cloud routine. The session reads
+`/api/prospects/draftable`, composes one email per prospect, creates each
+Gmail draft through the Gmail connector, and posts the draft ids back to
+`/api/prospects/drafts`. The app's board shows the result.
+
+This also constrains §8: the morning brief cannot be a pure cloud routine
+while the store is local. Either it runs locally on a schedule, or the parts
+that need the store move behind a reachable API. Decide that at step 6.
 
 ### Deviation logged during the build
 

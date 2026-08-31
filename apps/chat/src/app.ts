@@ -39,8 +39,11 @@ import {
   type HistoryMessage,
   type PaidComponentStatus,
   type ProspectConfidence,
+  OutreachNotConfiguredError,
+  type CampaignBrief,
   type ProspectRowInput,
   type ProspectStatus,
+  type RecordedDraftInput,
   type SuppressionReason,
   type SeoArticleJobInput,
   type SeoArticleJobStatus,
@@ -231,6 +234,23 @@ function validateProspectStatus(value: unknown): ProspectStatus | undefined {
   }
   return value as ProspectStatus;
 }
+function optionalWholeNumber(
+  value: unknown,
+  label: string,
+): number | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      `The ${label} must be a whole number of at least 1.`,
+    );
+  }
+  return parsed;
+}
 function requireProspectStatus(value: unknown): ProspectStatus {
   const status = validateProspectStatus(value);
   if (status === undefined) {
@@ -366,6 +386,7 @@ type ErrorCode =
   | "MESSAGE_TOO_LONG"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
+  | "OUTREACH_NOT_CONFIGURED"
   | "PROSPECT_NOT_FOUND"
   | "PROSPECT_STORE_ERROR"
   | "RESEARCH_JOB_NOT_FOUND"
@@ -3284,6 +3305,274 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "PROSPECT_STORE_ERROR",
                 "The prospect list is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/settings") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            const settings = chatStore.getOutreachSettings(brand);
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              configured: settings !== undefined,
+              settings: settings ?? null,
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "outreach settings payload",
+            );
+            const brand = validateBrandSlug(body.brand);
+            const senderName = prospectText(body.senderName, 120);
+            const senderContact = prospectText(body.senderContact, 200);
+            const unsubscribeLine = prospectText(body.unsubscribeLine, 400);
+            if (
+              senderName === "" ||
+              senderContact === "" ||
+              unsubscribeLine === ""
+            ) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Outreach needs a sender name, a way to contact the sender, and an unsubscribe line. All three are required before any draft can be prepared.",
+              );
+            }
+            const settings = chatStore.saveOutreachSettings(brand, {
+              senderName,
+              senderContact,
+              unsubscribeLine,
+              dailyCap: optionalWholeNumber(body.dailyCap, "daily cap"),
+              followUpDays: optionalWholeNumber(
+                body.followUpDays,
+                "follow-up interval",
+              ),
+              guidePageUrl: prospectText(body.guidePageUrl, 500) || undefined,
+            });
+            sendJson(response, 200, { schemaVersion: 1, settings });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read or save outreach settings", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The outreach settings could not be reached.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/campaigns") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "campaign payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const name = prospectText(body.name, 120);
+          if (name === "") {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "A campaign needs a name.",
+            );
+          }
+          const brief: CampaignBrief = {
+            offer: prospectText(body.offer, 1000),
+            guidePageUrl: prospectText(body.guidePageUrl, 500),
+            utmCampaign: prospectText(body.utmCampaign, 120) || "outreach",
+            dailyCap: optionalWholeNumber(body.dailyCap, "daily cap"),
+            followUpDays: optionalWholeNumber(
+              body.followUpDays,
+              "follow-up interval",
+            ),
+          };
+          const campaign = chatStore.createCampaign(brand, name, brief);
+          sendJson(response, 201, { schemaVersion: 1, campaign });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not create a campaign", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "That campaign could not be saved.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/draftable") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const campaignId =
+            prospectText(url.searchParams.get("campaignId"), 64) || undefined;
+          const listName =
+            prospectText(url.searchParams.get("list"), 120) || undefined;
+          const limit = optionalWholeNumber(
+            url.searchParams.get("limit") === null
+              ? undefined
+              : Number(url.searchParams.get("limit")),
+            "limit",
+          );
+          const result = chatStore.draftableProspects(brand, {
+            campaignId,
+            listName,
+            limit,
+          });
+          sendJson(response, 200, { schemaVersion: 1, ...result });
+          return;
+        } catch (error) {
+          if (error instanceof OutreachNotConfiguredError) {
+            sendError(
+              response,
+              new PublicError(400, "OUTREACH_NOT_CONFIGURED", error.message),
+            );
+          } else if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not list draftable prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The draftable prospects could not be read.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/drafts") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "draft payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const campaignId = prospectText(body.campaignId, 64) || undefined;
+          const rawDrafts = businessMemoryObjectArray(
+            body.drafts,
+            "recorded drafts",
+            200,
+          );
+          const drafts: RecordedDraftInput[] = rawDrafts.map((candidate) => {
+            const prospectId = prospectText(candidate.prospectId, 64);
+            const draftId = prospectText(candidate.draftId, 200);
+            if (prospectId === "" || draftId === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Every recorded draft needs a prospect id and the Gmail draft id.",
+              );
+            }
+            return {
+              prospectId,
+              draftId,
+              hook: prospectText(candidate.hook, 200) || undefined,
+              hookEvidence:
+                prospectText(candidate.hookEvidence, 500) || undefined,
+            };
+          });
+          const results = chatStore.recordProspectDrafts(
+            brand,
+            drafts,
+            campaignId,
+          );
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            results,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof OutreachNotConfiguredError) {
+            sendError(
+              response,
+              new PublicError(400, "OUTREACH_NOT_CONFIGURED", error.message),
+            );
+          } else if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not record drafts", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those drafts could not be recorded.",
               ),
             );
           }

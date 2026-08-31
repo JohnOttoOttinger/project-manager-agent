@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -281,6 +281,86 @@ export function suppressionKey(email: string): string {
   return email.trim().toLowerCase();
 }
 
+export interface OutreachSettingsInput {
+  senderName: string;
+  senderContact: string;
+  unsubscribeLine: string;
+  dailyCap?: number | undefined;
+  followUpDays?: number | undefined;
+  guidePageUrl?: string | undefined;
+}
+
+export interface OutreachSettingsRecord {
+  brand: string;
+  senderName: string;
+  senderContact: string;
+  unsubscribeLine: string;
+  dailyCap: number;
+  followUpDays: number;
+  guidePageUrl: string;
+  updatedAt: string;
+}
+
+export interface CampaignBrief {
+  offer: string;
+  guidePageUrl: string;
+  utmCampaign: string;
+  dailyCap?: number | undefined;
+  followUpDays?: number | undefined;
+}
+
+export interface CampaignRecord {
+  campaignId: string;
+  brand: string;
+  name: string;
+  status: "draft" | "active" | "completed";
+  brief: CampaignBrief;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Why one prospect was left out of a drafting run. Reported, never silent. */
+export interface DraftSkip {
+  prospectId: string;
+  company: string;
+  reason: string;
+}
+
+export interface DraftCandidate {
+  prospect: ProspectRecord;
+  /** The guide-page link carrying this prospect's own utm_content. */
+  outreachUrl: string;
+  /** Set when the prospect is draftable but the user must look first. */
+  warning: string;
+}
+
+export interface DraftableResult {
+  brand: string;
+  settings: OutreachSettingsRecord;
+  campaign: CampaignRecord | undefined;
+  eligible: DraftCandidate[];
+  skipped: DraftSkip[];
+  dailyCap: number;
+  draftedToday: number;
+  remainingToday: number;
+}
+
+export interface RecordedDraftInput {
+  prospectId: string;
+  draftId: string;
+  hook?: string | undefined;
+  hookEvidence?: string | undefined;
+}
+
+export interface RecordedDraftResult {
+  prospectId: string;
+  company: string;
+  outcome: "recorded" | "not_found" | "suppressed";
+  followUpDue: string;
+}
+
+export class OutreachNotConfiguredError extends Error {}
+
 export const OUTREACH_EVENT_TYPES = [
   "imported",
   "enriched",
@@ -538,6 +618,49 @@ function enrichmentJobFromRow(row: EnrichmentJobRow): EnrichmentJobRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function clampWholeNumber(
+  value: number | undefined,
+  fallback: number,
+  minimum: number,
+  maximum: number,
+): number {
+  if (!Number.isFinite(value) || !Number.isInteger(value)) {
+    return fallback;
+  }
+  return Math.max(minimum, Math.min(Number(value), maximum));
+}
+
+function addDaysIso(from: string, days: number): string {
+  const date = new Date(from);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+/**
+ * The guide-page link for one prospect. utm_content carries the prospect id
+ * so a GA4 read can tell which single prospect clicked — distinct from the
+ * guide's own outbound links, which measure traffic in the other direction.
+ */
+function buildOutreachUrl(
+  guidePageUrl: string,
+  utmCampaign: string,
+  prospectId: string,
+): string {
+  if (guidePageUrl === "") {
+    return "";
+  }
+  try {
+    const url = new URL(guidePageUrl);
+    url.searchParams.set("utm_source", "outreach");
+    url.searchParams.set("utm_medium", "email");
+    url.searchParams.set("utm_campaign", utmCampaign);
+    url.searchParams.set("utm_content", prospectId);
+    return url.toString();
+  } catch {
+    return "";
+  }
 }
 
 function prospectFromRow(row: ProspectRow): ProspectRecord {
@@ -1355,6 +1478,24 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 9) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE outreach_settings (
+            brand TEXT PRIMARY KEY,
+            sender_name TEXT NOT NULL,
+            sender_contact TEXT NOT NULL,
+            unsubscribe_line TEXT NOT NULL,
+            daily_cap INTEGER NOT NULL DEFAULT 20,
+            follow_up_days INTEGER NOT NULL DEFAULT 7,
+            guide_page_url TEXT NOT NULL DEFAULT '',
+            updated_at TEXT NOT NULL
+          ) STRICT;
+
+          PRAGMA user_version = 9;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1367,6 +1508,7 @@ export class ChatStore {
     this.database.prepare("SELECT event_id FROM outreach_events LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM enrichment_jobs LIMIT 1").all();
     this.database.prepare("SELECT suppression_id FROM suppressions LIMIT 1").all();
+    this.database.prepare("SELECT brand FROM outreach_settings LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -2861,6 +3003,368 @@ export class ChatStore {
       )
       .all(brand, ...keys) as unknown as Array<{ email_key: string }>;
     return new Set(rows.map((row) => row.email_key));
+  }
+
+  // ---- Outreach settings, campaigns and drafting -------------------------
+
+  saveOutreachSettings(
+    brand: string,
+    input: OutreachSettingsInput,
+  ): OutreachSettingsRecord {
+    const now = nowIso();
+    const dailyCap = clampWholeNumber(input.dailyCap, 20, 1, 200);
+    const followUpDays = clampWholeNumber(input.followUpDays, 7, 1, 90);
+    this.database
+      .prepare(
+        `INSERT INTO outreach_settings (
+           brand, sender_name, sender_contact, unsubscribe_line,
+           daily_cap, follow_up_days, guide_page_url, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(brand) DO UPDATE SET
+           sender_name = excluded.sender_name,
+           sender_contact = excluded.sender_contact,
+           unsubscribe_line = excluded.unsubscribe_line,
+           daily_cap = excluded.daily_cap,
+           follow_up_days = excluded.follow_up_days,
+           guide_page_url = excluded.guide_page_url,
+           updated_at = excluded.updated_at`,
+      )
+      .run(
+        brand,
+        input.senderName.trim(),
+        input.senderContact.trim(),
+        input.unsubscribeLine.trim(),
+        dailyCap,
+        followUpDays,
+        input.guidePageUrl?.trim() ?? "",
+        now,
+      );
+    return this.getOutreachSettings(brand)!;
+  }
+
+  getOutreachSettings(brand: string): OutreachSettingsRecord | undefined {
+    const row = this.database
+      .prepare(`SELECT * FROM outreach_settings WHERE brand = ?`)
+      .get(brand) as unknown as
+      | {
+          brand: string;
+          sender_name: string;
+          sender_contact: string;
+          unsubscribe_line: string;
+          daily_cap: number;
+          follow_up_days: number;
+          guide_page_url: string;
+          updated_at: string;
+        }
+      | undefined;
+    if (row === undefined) {
+      return undefined;
+    }
+    return {
+      brand: row.brand,
+      senderName: row.sender_name,
+      senderContact: row.sender_contact,
+      unsubscribeLine: row.unsubscribe_line,
+      dailyCap: row.daily_cap,
+      followUpDays: row.follow_up_days,
+      guidePageUrl: row.guide_page_url,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  createCampaign(
+    brand: string,
+    name: string,
+    brief: CampaignBrief,
+  ): CampaignRecord {
+    const now = nowIso();
+    const campaignId = randomUUID();
+    this.database
+      .prepare(
+        `INSERT INTO campaigns (
+           campaign_id, brand, name, status, brief_json, created_at, updated_at
+         ) VALUES (?, ?, ?, 'active', ?, ?, ?)`,
+      )
+      .run(campaignId, brand, name.trim(), JSON.stringify(brief), now, now);
+    return this.getCampaign(campaignId)!;
+  }
+
+  getCampaign(campaignId: string): CampaignRecord | undefined {
+    const row = this.database
+      .prepare(`SELECT * FROM campaigns WHERE campaign_id = ?`)
+      .get(campaignId) as unknown as
+      | {
+          campaign_id: string;
+          brand: string;
+          name: string;
+          status: "draft" | "active" | "completed";
+          brief_json: string;
+          created_at: string;
+          updated_at: string;
+        }
+      | undefined;
+    if (row === undefined) {
+      return undefined;
+    }
+    let brief: CampaignBrief = { offer: "", guidePageUrl: "", utmCampaign: "" };
+    try {
+      const parsed = JSON.parse(row.brief_json) as Partial<CampaignBrief>;
+      brief = {
+        offer: typeof parsed.offer === "string" ? parsed.offer : "",
+        guidePageUrl:
+          typeof parsed.guidePageUrl === "string" ? parsed.guidePageUrl : "",
+        utmCampaign:
+          typeof parsed.utmCampaign === "string" ? parsed.utmCampaign : "",
+        dailyCap:
+          typeof parsed.dailyCap === "number" ? parsed.dailyCap : undefined,
+        followUpDays:
+          typeof parsed.followUpDays === "number"
+            ? parsed.followUpDays
+            : undefined,
+      };
+    } catch {
+      // A malformed brief falls back to the brand defaults rather than
+      // taking the whole drafting run down.
+    }
+    return {
+      campaignId: row.campaign_id,
+      brand: row.brand,
+      name: row.name,
+      status: row.status,
+      brief,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Who may be drafted to right now, and — just as important — who may not
+   * and why. The guardrails live here rather than in the skill so that a
+   * model cannot talk its way past a suppression, a missing address or the
+   * daily cap.
+   */
+  draftableProspects(
+    brand: string,
+    options: {
+      campaignId?: string | undefined;
+      listName?: string | undefined;
+      limit?: number | undefined;
+    } = {},
+  ): DraftableResult {
+    const settings = this.getOutreachSettings(brand);
+    if (settings === undefined) {
+      throw new OutreachNotConfiguredError(
+        `No outreach settings for ${brand}. Set the sender name, contact and unsubscribe line before drafting anything.`,
+      );
+    }
+    const campaign = options.campaignId === undefined
+      ? undefined
+      : this.getCampaign(options.campaignId);
+    if (options.campaignId !== undefined && campaign === undefined) {
+      throw new OutreachNotConfiguredError("That campaign does not exist.");
+    }
+    if (campaign !== undefined && campaign.brand !== brand) {
+      throw new OutreachNotConfiguredError(
+        "That campaign belongs to the other brand.",
+      );
+    }
+
+    const dailyCap = campaign?.brief.dailyCap ?? settings.dailyCap;
+    const draftedToday = this.countDraftedToday(brand);
+    const remainingToday = Math.max(0, dailyCap - draftedToday);
+
+    const guidePageUrl =
+      campaign?.brief.guidePageUrl || settings.guidePageUrl;
+    const utmCampaign = campaign?.brief.utmCampaign || "outreach";
+
+    const conditions = ["brand = ?"];
+    const parameters: string[] = [brand];
+    if (options.listName !== undefined) {
+      conditions.push("list_name = ?");
+      parameters.push(options.listName);
+    }
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM prospects WHERE ${conditions.join(" AND ")}
+         ORDER BY
+           CASE WHEN tier = '' THEN 99 ELSE CAST(tier AS INTEGER) END ASC,
+           company ASC`,
+      )
+      .all(...parameters) as unknown as ProspectRow[];
+    const prospects = rows.map(prospectFromRow);
+
+    const suppressed = this.suppressedEmails(
+      brand,
+      prospects.map((prospect) => prospect.contactEmail),
+    );
+
+    const eligible: DraftCandidate[] = [];
+    const skipped: DraftSkip[] = [];
+    const requestedLimit = clampWholeNumber(options.limit, remainingToday, 0, 500);
+    const allowance = Math.min(remainingToday, requestedLimit);
+
+    for (const prospect of prospects) {
+      const skip = (reason: string) => {
+        skipped.push({
+          prospectId: prospect.prospectId,
+          company: prospect.company,
+          reason,
+        });
+      };
+      if (!["imported", "needs_review", "enriched"].includes(prospect.status)) {
+        skip(`already ${prospect.status.replaceAll("_", " ")}`);
+        continue;
+      }
+      if (prospect.draftId !== "") {
+        skip("a draft already exists for this prospect");
+        continue;
+      }
+      if (prospect.contactEmail === "") {
+        skip("no contact email — enrich or fill it first");
+        continue;
+      }
+      if (suppressed.has(suppressionKey(prospect.contactEmail))) {
+        skip("on the do-not-contact list");
+        continue;
+      }
+      if (eligible.length >= allowance) {
+        skip(
+          remainingToday === 0
+            ? `today's cap of ${dailyCap} is already used`
+            : "over the number asked for in this run",
+        );
+        continue;
+      }
+      eligible.push({
+        prospect,
+        outreachUrl: buildOutreachUrl(
+          guidePageUrl,
+          utmCampaign,
+          prospect.prospectId,
+        ),
+        warning:
+          prospect.status === "needs_review"
+            ? `Enrichment flagged this contact${prospect.flagReason ? `: ${prospect.flagReason}` : ""}. Check it before you send.`
+            : "",
+      });
+    }
+
+    return {
+      brand,
+      settings,
+      campaign,
+      eligible,
+      skipped,
+      dailyCap,
+      draftedToday,
+      remainingToday,
+    };
+  }
+
+  countDraftedToday(brand: string): number {
+    const today = nowIso().slice(0, 10);
+    const row = this.database
+      .prepare(
+        `SELECT COUNT(*) AS drafted FROM prospects
+         WHERE brand = ? AND substr(drafted_at, 1, 10) = ?`,
+      )
+      .get(brand, today) as { drafted: number } | undefined;
+    return row?.drafted ?? 0;
+  }
+
+  /**
+   * Record drafts the agent has created in Gmail. Suppression is re-checked
+   * here as well as in draftableProspects — the list can change between
+   * reading the candidates and writing the result.
+   */
+  recordProspectDrafts(
+    brand: string,
+    entries: readonly RecordedDraftInput[],
+    campaignId?: string,
+  ): RecordedDraftResult[] {
+    const settings = this.getOutreachSettings(brand);
+    if (settings === undefined) {
+      throw new OutreachNotConfiguredError(
+        `No outreach settings for ${brand}.`,
+      );
+    }
+    const campaign = campaignId === undefined
+      ? undefined
+      : this.getCampaign(campaignId);
+    const followUpDays = campaign?.brief.followUpDays ?? settings.followUpDays;
+    const now = nowIso();
+    const followUpDue = addDaysIso(now, followUpDays);
+    const results: RecordedDraftResult[] = [];
+
+    this.transaction(() => {
+      for (const entry of entries) {
+        const row = this.database
+          .prepare(
+            `SELECT * FROM prospects WHERE prospect_id = ? AND brand = ?`,
+          )
+          .get(entry.prospectId, brand) as unknown as ProspectRow | undefined;
+        if (row === undefined) {
+          results.push({
+            prospectId: entry.prospectId,
+            company: "",
+            outcome: "not_found",
+            followUpDue: "",
+          });
+          continue;
+        }
+        if (
+          this.suppressedEmails(brand, [row.contact_email]).size > 0
+        ) {
+          results.push({
+            prospectId: entry.prospectId,
+            company: row.company,
+            outcome: "suppressed",
+            followUpDue: "",
+          });
+          continue;
+        }
+        this.database
+          .prepare(
+            `UPDATE prospects SET
+               draft_id = ?, drafted_at = ?, hook = ?, hook_evidence = ?,
+               follow_up_due = ?, status = 'emailed', campaign_id = ?,
+               updated_at = ?
+             WHERE prospect_id = ?`,
+          )
+          .run(
+            entry.draftId.trim(),
+            now,
+            entry.hook?.trim() ?? "",
+            entry.hookEvidence?.trim() ?? "",
+            followUpDue,
+            campaignId ?? row.campaign_id,
+            now,
+            entry.prospectId,
+          );
+        this.database
+          .prepare(
+            `INSERT INTO outreach_events (
+               event_id, prospect_id, campaign_id, event_type, detail,
+               occurred_at, created_at
+             ) VALUES (?, ?, ?, 'emailed', ?, ?, ?)`,
+          )
+          .run(
+            randomUUID(),
+            entry.prospectId,
+            campaignId ?? row.campaign_id,
+            `Gmail draft prepared${entry.hook ? ` — hook: ${entry.hook}` : ""}`,
+            now,
+            now,
+          );
+        results.push({
+          prospectId: entry.prospectId,
+          company: row.company,
+          outcome: "recorded",
+          followUpDue,
+        });
+      }
+    });
+    return results;
   }
 
   prepareArticleBrief(
