@@ -161,12 +161,8 @@
         -100
       ],
       "name": "Gmail Draft \u2014 Oddtoe",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "REPLACE_IN_N8N_UI",
-          "name": "Gmail \u2014 Oddtoe"
-        }
-      }
+      "notes": "Bind the 'Gmail \u2014 Oddtoe' Gmail credential to this node before use.",
+      "notesInFlow": true
     },
     {
       "parameters": {
@@ -185,12 +181,8 @@
         100
       ],
       "name": "Gmail Draft \u2014 Datalabs",
-      "credentials": {
-        "gmailOAuth2": {
-          "id": "REPLACE_IN_N8N_UI",
-          "name": "Gmail \u2014 Datalabs"
-        }
-      }
+      "notes": "Bind the 'Gmail \u2014 Datalabs' Gmail credential to this node before use.",
+      "notesInFlow": true
     },
     {
       "parameters": {

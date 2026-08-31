@@ -3013,6 +3013,85 @@
         820
       ],
       "name": "list_lost_leads"
+    },
+    {
+      "parameters": {
+        "description": "Who may be drafted outreach right now, and who may not and why. Returns the sender block, the unsubscribe line and each prospect's own tagged link. Never draft to anyone who is not in the eligible list.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "phase14ListDraftableProspects",
+          "mode": "list",
+          "cachedResultName": "85 - TOOL - list_draftable_prospects"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Validate and Normalise').first().json.sessionId }}",
+            "brand": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('brand', `oddtoe or datalabs.`, 'string') }}",
+            "campaignId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('campaignId', `Leave empty unless the user is working a named campaign.`, 'string') }}",
+            "listName": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('listName', `Leave empty unless the user names a list.`, 'string') }}",
+            "limit": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('limit', `A number as text. Leave empty for the daily cap.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "campaignId",
+              "displayName": "campaignId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "listName",
+              "displayName": "listName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "limit",
+              "displayName": "limit",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        700
+      ],
+      "name": "list_draftable_prospects"
     }
   ],
   "pinData": {},
@@ -3622,6 +3701,17 @@
       ]
     },
     "list_lost_leads": {
+      "ai_tool": [
+        [
+          {
+            "node": "Business Development Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "list_draftable_prospects": {
       "ai_tool": [
         [
           {
