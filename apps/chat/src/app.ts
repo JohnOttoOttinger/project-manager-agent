@@ -3220,6 +3220,9 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 tier: prospectText(fields.tier, 40) || undefined,
                 status: validateProspectStatus(fields.status),
                 notes: prospectText(fields.notes, 1000) || undefined,
+                flagReason: typeof fields.flagReason === "string"
+                  ? prospectText(fields.flagReason, 300)
+                  : undefined,
               },
             };
           });

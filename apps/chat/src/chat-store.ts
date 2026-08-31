@@ -527,6 +527,7 @@ export interface ProspectUpdateInput {
     tier?: string | undefined;
     status?: ProspectStatus | undefined;
     notes?: string | undefined;
+    flagReason?: string | undefined;
     hook?: string | undefined;
     hookEvidence?: string | undefined;
     followUpDue?: string | undefined;
@@ -2746,6 +2747,7 @@ export class ChatStore {
           tier: "tier",
           status: "status",
           notes: "notes",
+          flagReason: "flag_reason",
           hook: "hook",
           hookEvidence: "hook_evidence",
           followUpDue: "follow_up_due",
