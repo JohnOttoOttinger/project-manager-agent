@@ -2823,6 +2823,176 @@ h2 { text-transform: uppercase; }
   border-color: #7a3f3f;
 }
 
+/* ---- BD lists ---- */
+
+.bd-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin: 0 0 0.6rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #55632f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #232a20;
+  font-size: 0.85rem;
+  color: #d3e0b8;
+}
+
+.bd-filter__clear {
+  background: none;
+  border: none;
+  color: #ddccb1;
+  font: inherit;
+  font-size: 0.8rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bd-listcard { margin-bottom: 0.8rem; }
+
+.bd-listcard__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.bd-listcard__title {
+  margin: 0;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: #f0ece0;
+}
+
+.bd-listcard__count {
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: #a89f88;
+  white-space: nowrap;
+}
+
+.bd-listbar {
+  display: flex;
+  height: 0.5rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #2c312e;
+  margin-bottom: 0.6rem;
+}
+
+.bd-listbar--empty { opacity: 0.4; }
+.bd-listbar__seg { display: block; min-width: 3px; }
+.bd-listbar__seg--imported { background: #6c7268; }
+.bd-listbar__seg--needs_review { background: #a5713f; }
+.bd-listbar__seg--enriched { background: #8a8f6a; }
+.bd-listbar__seg--emailed { background: #4d7285; }
+.bd-listbar__seg--opened { background: #7d9a4a; }
+.bd-listbar__seg--followed_up { background: #7d5f7d; }
+.bd-listbar__seg--replied { background: #c4b45a; }
+.bd-listbar__seg--closed { background: #3c403c; }
+
+.bd-liststats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  font-size: 0.84rem;
+  margin-bottom: 0.5rem;
+}
+
+.bd-liststat strong { font-size: 1rem; margin-right: 0.15rem; }
+.bd-liststat--good { color: #cfe2c4; }
+.bd-liststat--warn { color: #e8c9a1; }
+.bd-liststat--muted { color: #7d8377; }
+
+.bd-listcard__note {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: #cbc4b2;
+  line-height: 1.4;
+}
+
+.bd-listcard__when {
+  margin: 0 0 0.7rem;
+  font-size: 0.78rem;
+  color: #7d8377;
+}
+
+.bd-listcard__descrow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.bd-listcard__desc {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #cbc4b2;
+  line-height: 1.45;
+}
+
+.bd-listcard__desc--empty { color: #6f7468; font-style: italic; }
+
+.bd-listcard__edit {
+  background: none;
+  border: none;
+  color: #ddccb1;
+  font: inherit;
+  font-size: 0.78rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.bd-listcard__descwrap {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 0.7rem;
+}
+
+.bd-listcard__descedit {
+  flex: 1;
+  background: #232826;
+  border: 1px solid #3c403c;
+  border-radius: calc(var(--radius) - 4px);
+  color: #f0ece0;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.4rem 0.5rem;
+  resize: vertical;
+}
+
+.bd-listmeta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.15rem 0.7rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+}
+
+.bd-listmeta dt {
+  margin: 0;
+  color: #7d8377;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  align-self: center;
+}
+
+.bd-listmeta dd { margin: 0; color: #a89f88; }
+
+.bd-listcard__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 /* ---- BD prospect dialogs ---- */
 
 .prospect-dialog .paste-dialog__card,

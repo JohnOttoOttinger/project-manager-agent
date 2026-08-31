@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -371,6 +371,14 @@ export interface DraftValidation {
   approved: boolean;
   reasons: string[];
   warnings: string[];
+}
+
+export interface ProspectListRecord {
+  brand: string;
+  listName: string;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export class OutreachNotConfiguredError extends Error {}
@@ -1529,6 +1537,22 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 10) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE prospect_lists (
+            brand TEXT NOT NULL,
+            list_name TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            PRIMARY KEY (brand, list_name)
+          ) STRICT;
+
+          PRAGMA user_version = 10;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1542,6 +1566,7 @@ export class ChatStore {
     this.database.prepare("SELECT job_id FROM enrichment_jobs LIMIT 1").all();
     this.database.prepare("SELECT suppression_id FROM suppressions LIMIT 1").all();
     this.database.prepare("SELECT brand FROM outreach_settings LIMIT 1").all();
+    this.database.prepare("SELECT list_name FROM prospect_lists LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -3385,6 +3410,47 @@ export class ChatStore {
       });
     }
     return results;
+  }
+
+  listProspectListMeta(brand: string): ProspectListRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM prospect_lists WHERE brand = ? ORDER BY list_name ASC`,
+      )
+      .all(brand) as unknown as Array<{
+      brand: string;
+      list_name: string;
+      description: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+    return rows.map((row) => ({
+      brand: row.brand,
+      listName: row.list_name,
+      description: row.description,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  saveProspectListMeta(
+    brand: string,
+    listName: string,
+    description: string,
+  ): ProspectListRecord {
+    const now = nowIso();
+    this.database
+      .prepare(
+        `INSERT INTO prospect_lists (brand, list_name, description, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(brand, list_name) DO UPDATE SET
+           description = excluded.description,
+           updated_at = excluded.updated_at`,
+      )
+      .run(brand, listName, description.trim(), now, now);
+    return this.listProspectListMeta(brand).find(
+      (record) => record.listName === listName,
+    )!;
   }
 
   countDraftedToday(brand: string): number {

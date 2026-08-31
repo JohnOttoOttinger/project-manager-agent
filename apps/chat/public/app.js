@@ -1691,6 +1691,9 @@
   ];
 
   let bdDraggedProspectId = null;
+  // Set from the Lists tab so "Show on board" opens the board scoped to one
+  // list. Empty means every list.
+  let bdListFilter = "";
   // Set by renderBdPipelineTab so the dialogs can refresh the board they
   // were opened from without re-rendering the whole stage.
   let bdReload = () => {};
@@ -1730,6 +1733,28 @@
     }
     return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
   }
+
+  function bdStamp(value) {
+    if (typeof value !== "string" || value === "") {
+      return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleString(undefined, {
+      day: "numeric", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit",
+    });
+  }
+
+  // Where a list's rows actually came from. `source` is free text on the
+  // prospect, so report what is there rather than mapping it to a guess.
+  const BD_SOURCE_LABELS = {
+    "synthetic-prototype": "Synthetic test data",
+    manual: "Added by hand",
+    "": "Imported",
+  };
 
   function bdCard(prospect) {
     const card = document.createElement("article");
@@ -1905,6 +1930,23 @@
     actions.append(addButton, importButton, findButton);
     body.append(actions);
 
+    if (bdListFilter !== "") {
+      const filter = document.createElement("div");
+      filter.className = "bd-filter";
+      const label = document.createElement("span");
+      label.textContent = `Showing ${bdListFilter}`;
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "bd-filter__clear";
+      clear.textContent = "Show all lists";
+      clear.addEventListener("click", () => {
+        bdListFilter = "";
+        renderStage();
+      });
+      filter.append(label, clear);
+      body.append(filter);
+    }
+
     const status = document.createElement("p");
     status.className = "bd-board__status";
     status.setAttribute("role", "status");
@@ -1916,8 +1958,11 @@
 
     const load = () => {
       const brand = activeBrand()?.id ?? "oddtoe";
+      const listQuery = bdListFilter === ""
+        ? ""
+        : `&list=${encodeURIComponent(bdListFilter)}`;
       void fetchJson(
-        `/api/prospects?brand=${encodeURIComponent(brand)}&limit=500`,
+        `/api/prospects?brand=${encodeURIComponent(brand)}&limit=500${listQuery}`,
       )
         .then((payload) => {
           holder.replaceChildren();
@@ -2180,13 +2225,13 @@
       });
   }
 
-  function openAddProspectDialog() {
+  function openAddProspectDialog(listName) {
     const dialog = elements.prospectAddDialog;
     if (!dialog) {
       return;
     }
     elements.prospectAddForm.reset();
-    elements.prospectAddList.value = "Manual additions";
+    elements.prospectAddList.value = listName ?? "Manual additions";
     elements.prospectAddStatus.textContent = "";
     dialog.showModal();
     window.setTimeout(() => elements.prospectAddCompany.focus(), 60);
@@ -2215,7 +2260,9 @@
         return;
       }
       elements.prospectAddDialog.close();
-      bdReload();
+      // Re-render the active tab rather than only the board: this dialog is
+      // now reachable from Lists too.
+      renderStage();
     } catch (error) {
       elements.prospectAddStatus.textContent =
         error.message ?? "That prospect could not be saved.";
@@ -2236,28 +2283,351 @@
     body.append(card);
   }
 
+  // ---- Lists ------------------------------------------------------------
+  // A list is a cohort you work as a batch, so the question this screen has
+  // to answer is "which one is worth my time, and what is stopping the rest".
+  // Names alone cannot answer that; counts and the blocking reason can.
+
+  const BD_WORKABLE = ["imported", "needs_review", "enriched"];
+
+  function bdListStats(prospects, suppressed) {
+    const byStatus = {};
+    let ready = 0;
+    let noEmail = 0;
+    let flagged = 0;
+    let noLinkedIn = 0;
+    let suppressedCount = 0;
+    let inFlight = 0;
+    let lastTouched = "";
+    let firstAdded = "";
+    const sources = new Map();
+
+    for (const p of prospects) {
+      byStatus[p.status] = (byStatus[p.status] ?? 0) + 1;
+      if (p.updatedAt > lastTouched) {
+        lastTouched = p.updatedAt;
+      }
+      if (firstAdded === "" || p.createdAt < firstAdded) {
+        firstAdded = p.createdAt;
+      }
+      const sourceKey = p.source ?? "";
+      sources.set(sourceKey, (sources.get(sourceKey) ?? 0) + 1);
+      if (p.status === "needs_review") {
+        flagged += 1;
+      }
+      if (["emailed", "opened", "followed_up"].includes(p.status)) {
+        inFlight += 1;
+      }
+      if (!BD_WORKABLE.includes(p.status) || p.draftId !== "") {
+        continue;
+      }
+      if (p.contactEmail === "") {
+        noEmail += 1;
+        if (p.linkedinCompanyUrl === "") {
+          noLinkedIn += 1;
+        }
+      } else if (suppressed.has(p.contactEmail.trim().toLowerCase())) {
+        suppressedCount += 1;
+      } else {
+        ready += 1;
+      }
+    }
+    return {
+      total: prospects.length, byStatus, ready, noEmail, flagged,
+      noLinkedIn, suppressed: suppressedCount, inFlight, lastTouched,
+      firstAdded, sources,
+    };
+  }
+
+  // A proportional bar beats eight numbers for "how far through is this".
+  function bdStageBar(byStatus, total) {
+    const bar = document.createElement("div");
+    bar.className = "bd-listbar";
+    for (const column of BD_COLUMNS) {
+      const count = byStatus[column.status] ?? 0;
+      if (count === 0) {
+        continue;
+      }
+      const segment = document.createElement("span");
+      segment.className = `bd-listbar__seg bd-listbar__seg--${column.status}`;
+      segment.style.flexGrow = String(count);
+      segment.title = `${count} ${column.label.toLowerCase()}`;
+      bar.append(segment);
+    }
+    if (total === 0) {
+      bar.classList.add("bd-listbar--empty");
+    }
+    return bar;
+  }
+
+  function bdStatLine(stats) {
+    const line = document.createElement("div");
+    line.className = "bd-liststats";
+    const add = (value, label, tone) => {
+      const item = document.createElement("span");
+      item.className = `bd-liststat bd-liststat--${tone}`;
+      const number = document.createElement("strong");
+      number.textContent = String(value);
+      item.append(number, document.createTextNode(` ${label}`));
+      line.append(item);
+    };
+    add(stats.ready, "ready to draft", stats.ready > 0 ? "good" : "muted");
+    add(stats.noEmail, "need a contact", stats.noEmail > 0 ? "warn" : "muted");
+    add(stats.flagged, "flagged", stats.flagged > 0 ? "warn" : "muted");
+    if (stats.inFlight > 0) {
+      add(stats.inFlight, "in flight", "good");
+    }
+    if (stats.suppressed > 0) {
+      add(stats.suppressed, "on do-not-contact", "muted");
+    }
+    return line;
+  }
+
+  function bdBlockerNote(stats) {
+    if (stats.total === 0) {
+      return "This list is empty.";
+    }
+    if (stats.ready === 0 && stats.noEmail > 0) {
+      return stats.noLinkedIn > 0
+        ? `Nothing can be drafted yet. ${stats.noEmail} need a contact, and ${stats.noLinkedIn} of those have no LinkedIn company URL, which enrichment needs first.`
+        : `Nothing can be drafted yet. ${stats.noEmail} need a contact — enrichment can look for them.`;
+    }
+    if (stats.ready === 0) {
+      return "Nothing left to draft in this list.";
+    }
+    if (stats.noEmail > 0) {
+      return `${stats.ready} ready now; ${stats.noEmail} still need a contact before they can be drafted.`;
+    }
+    return `All ${stats.ready} workable prospects have a contact.`;
+  }
+
   function renderBdListsTab(body) {
     body.append(dashLabel("Lists"));
-    const card = dashCard();
-    card.append(dashEmpty("Loading lists…"));
-    body.append(card);
-    void fetchJson(`/api/prospects?brand=${encodeURIComponent(activeBrand()?.id ?? "oddtoe")}`)
-      .then((payload) => {
-        card.replaceChildren();
-        const lists = payload.summary?.listNames ?? [];
-        if (lists.length === 0) {
-          card.append(dashEmpty("No lists imported yet."));
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading lists…"));
+    body.append(holder);
+
+    const brand = activeBrand()?.id ?? "oddtoe";
+    void Promise.all([
+      fetchJson(`/api/prospects?brand=${encodeURIComponent(brand)}&limit=500`),
+      fetchJson(`/api/suppressions?brand=${encodeURIComponent(brand)}`)
+        .catch(() => ({ suppressions: [] })),
+      fetchJson(`/api/prospects/lists?brand=${encodeURIComponent(brand)}`)
+        .catch(() => ({ lists: [] })),
+    ])
+      .then(([payload, suppressionPayload, listPayload]) => {
+        const meta = new Map(
+          (listPayload.lists ?? []).map((l) => [l.listName, l]),
+        );
+        holder.replaceChildren();
+        const prospects = Array.isArray(payload.prospects)
+          ? payload.prospects
+          : [];
+        const suppressed = new Set(
+          (suppressionPayload.suppressions ?? []).map((s) => s.emailKey),
+        );
+        if (prospects.length === 0) {
+          holder.append(
+            dashEmpty(
+              "No lists yet. Import one through chat, or add a prospect on the board.",
+            ),
+          );
           return;
         }
-        for (const listName of lists) {
-          const row = document.createElement("p");
-          row.style.margin = "0.3rem 0";
-          row.textContent = listName;
-          card.append(row);
+
+        const byList = new Map();
+        for (const prospect of prospects) {
+          if (!byList.has(prospect.listName)) {
+            byList.set(prospect.listName, []);
+          }
+          byList.get(prospect.listName).push(prospect);
         }
+
+        const names = [...byList.keys()].sort();
+        for (const listName of names) {
+          const rows = byList.get(listName);
+          const stats = bdListStats(rows, suppressed);
+          const card = dashCard();
+          card.className = "dash-card bd-listcard";
+
+          const head = document.createElement("div");
+          head.className = "bd-listcard__head";
+          const title = document.createElement("h3");
+          title.className = "bd-listcard__title";
+          title.textContent = listName;
+          head.append(title);
+          // Synthetic rows must be obvious; a test list read as real would be
+          // a genuinely bad mistake.
+          if (rows.every((r) => r.source === "synthetic-prototype")) {
+            const badge = document.createElement("span");
+            badge.className = "stage-chip stage-chip--flag";
+            badge.textContent = "Synthetic — test data";
+            head.append(badge);
+          }
+          const count = document.createElement("span");
+          count.className = "bd-listcard__count";
+          count.textContent = `${stats.total} ${stats.total === 1 ? "prospect" : "prospects"}`;
+          head.append(count);
+          card.append(head);
+
+          // Description: stored per list, editable in place. Nothing else
+          // records what a list is for or why it exists.
+          const description = document.createElement("p");
+          description.className = "bd-listcard__desc";
+          const savedDescription = meta.get(listName)?.description ?? "";
+          description.textContent = savedDescription === ""
+            ? "No description yet."
+            : savedDescription;
+          if (savedDescription === "") {
+            description.classList.add("bd-listcard__desc--empty");
+          }
+          const editDescription = document.createElement("button");
+          editDescription.type = "button";
+          editDescription.className = "bd-listcard__edit";
+          editDescription.textContent = savedDescription === "" ? "Add" : "Edit";
+          editDescription.addEventListener("click", () => {
+            const field = document.createElement("textarea");
+            field.className = "bd-listcard__descedit";
+            field.maxLength = 600;
+            field.rows = 2;
+            field.value = savedDescription;
+            const save = document.createElement("button");
+            save.type = "button";
+            save.className = "secondary-button";
+            save.textContent = "Save";
+            save.addEventListener("click", () => {
+              save.disabled = true;
+              void fetchJson("/api/prospects/lists", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  brand, listName, description: field.value,
+                }),
+              })
+                .then(() => renderStage())
+                .catch(() => {
+                  save.disabled = false;
+                  save.textContent = "Could not save";
+                });
+            });
+            const wrap = document.createElement("div");
+            wrap.className = "bd-listcard__descwrap";
+            wrap.append(field, save);
+            descriptionRow.replaceWith(wrap);
+            field.focus();
+          });
+          const descriptionRow = document.createElement("div");
+          descriptionRow.className = "bd-listcard__descrow";
+          descriptionRow.append(description, editDescription);
+          card.append(descriptionRow);
+
+          card.append(bdStageBar(stats.byStatus, stats.total));
+          card.append(bdStatLine(stats));
+
+          const note = document.createElement("p");
+          note.className = "bd-listcard__note";
+          note.textContent = bdBlockerNote(stats);
+          card.append(note);
+
+          const provenance = document.createElement("dl");
+          provenance.className = "bd-listmeta";
+          const metaRow = (label, value) => {
+            if (value === "") {
+              return;
+            }
+            const name = document.createElement("dt");
+            name.textContent = label;
+            const detail = document.createElement("dd");
+            detail.textContent = value;
+            provenance.append(name, detail);
+          };
+          const sourceText = [...stats.sources.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .map(([key, n]) => `${BD_SOURCE_LABELS[key] ?? key} (${n})`)
+            .join(" · ");
+          metaRow("Source", sourceText);
+          metaRow("First added", bdStamp(stats.firstAdded));
+          metaRow("Last changed", bdStamp(stats.lastTouched));
+          const listMeta = meta.get(listName);
+          if (listMeta) {
+            metaRow("Description saved", bdStamp(listMeta.updatedAt));
+          }
+          card.append(provenance);
+
+          const actions = document.createElement("div");
+          actions.className = "bd-listcard__actions";
+
+          const show = document.createElement("button");
+          show.type = "button";
+          show.className = "secondary-button";
+          show.textContent = "Show on board";
+          show.addEventListener("click", () => {
+            bdListFilter = listName;
+            activeTabId = "bd-pipeline";
+            renderStage();
+          });
+          actions.append(show);
+
+          const addTo = document.createElement("button");
+          addTo.type = "button";
+          addTo.className = "secondary-button";
+          addTo.textContent = "Add a prospect";
+          addTo.addEventListener("click", () => {
+            openAddProspectDialog(listName);
+          });
+          actions.append(addTo);
+
+          const importMore = document.createElement("button");
+          importMore.type = "button";
+          importMore.className = "secondary-button";
+          importMore.textContent = "Import more";
+          importMore.addEventListener("click", () => {
+            openChatWithPrompt(
+              `Import more prospects into the existing list "${listName}". Here are the rows:`,
+            );
+          });
+          actions.append(importMore);
+
+          if (stats.noEmail > 0) {
+            const find = document.createElement("button");
+            find.type = "button";
+            find.className = "secondary-button";
+            find.textContent = `Find ${stats.noEmail} contact${stats.noEmail === 1 ? "" : "s"}`;
+            find.addEventListener("click", () => {
+              openChatWithPrompt(
+                `Enrich the prospects in "${listName}" that still have no contact email, and tell me which ones can't be enriched yet and why.`,
+              );
+            });
+            actions.append(find);
+          }
+
+          if (stats.ready > 0) {
+            const draft = document.createElement("button");
+            draft.type = "button";
+            draft.className = "secondary-button";
+            draft.textContent = `Draft ${stats.ready} email${stats.ready === 1 ? "" : "s"}`;
+            draft.addEventListener("click", () => {
+              openChatWithPrompt(
+                `Draft outreach for the prospects in "${listName}" that are ready. Show me who is eligible and who is skipped before you write anything.`,
+              );
+            });
+            actions.append(draft);
+          }
+
+          card.append(actions);
+          holder.append(card);
+        }
+
+        holder.append(
+          dashNote(
+            "Ready-to-draft counts the whole list; a drafting run is still capped at the daily send limit.",
+          ),
+        );
       })
       .catch(() => {
-        card.replaceChildren(dashEmpty("The prospect store is not reachable."));
+        holder.replaceChildren(
+          dashEmpty("The prospect store is not reachable."),
+        );
       });
   }
 

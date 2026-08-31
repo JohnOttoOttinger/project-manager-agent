@@ -3654,6 +3654,69 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
         }
         return;
       }
+      if (url.pathname === "/api/prospects/lists") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              lists: chatStore.listProspectListMeta(brand),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "list payload",
+            );
+            const brand = validateBrandSlug(body.brand);
+            const listName = prospectText(body.listName, 120);
+            if (listName === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Which list is this description for?",
+              );
+            }
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              list: chatStore.saveProspectListMeta(
+                brand,
+                listName,
+                prospectText(body.description, 600),
+              ),
+            });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read or save list details", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The list details could not be reached.",
+              ),
+            );
+          }
+        }
+        return;
+      }
       if (url.pathname === "/api/prospects/status") {
         try {
           if (request.method !== "POST") {
