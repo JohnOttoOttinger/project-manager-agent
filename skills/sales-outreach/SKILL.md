@@ -19,7 +19,7 @@ When the user works on outbound prospecting — an agency list, a venue list, an
 
 The rule that governs everything here: **you draft, the user sends.** A Gmail draft is created in the user's own mailbox and sits there until they read it and press send themselves. Never say an email was sent.
 
-1. Call `list_draftable_prospects` with the brand. It returns `eligible` (who may be drafted), `skipped` (who may not, each with a reason), the sender block, the unsubscribe line, and each eligible prospect's own `outreachUrl`.
+1. Call `list_draftable_prospects` with the brand, and with `campaignId` when the user is working a named push — the campaign sets the `utm_campaign` on every link and carries the offer, and without it clicks cannot be attributed to that push. It returns `eligible` (who may be drafted), `skipped` (who may not, each with a reason), the sender block, the unsubscribe line, and each eligible prospect's own `outreachUrl`.
 2. **Only ever draft to someone in `eligible`.** If a prospect you expected is in `skipped`, read the reason out. Do not work around it — the reasons are suppressions, missing addresses, the daily cap, and prospects already drafted to.
 3. If `eligible` is empty, say so plainly with the skip reasons and stop. The commonest reason is no contact email, which enrichment fills.
 4. Compose one email per prospect. Every body must contain, verbatim:
