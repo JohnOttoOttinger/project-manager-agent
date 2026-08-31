@@ -3092,6 +3092,75 @@
         700
       ],
       "name": "list_draftable_prospects"
+    },
+    {
+      "parameters": {
+        "description": "Create Gmail DRAFTS for prospects already confirmed eligible. The store re-checks every draft first and refuses any that omits the opt-out line or sender name. Nothing is ever sent; the user reviews and sends each draft.",
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "value": "phase14CreateOutreachDrafts",
+          "mode": "list",
+          "cachedResultName": "86 - TOOL - create_outreach_drafts"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $('Validate and Normalise').first().json.sessionId }}",
+            "brand": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('brand', `oddtoe or datalabs. Decides which mailbox the drafts land in.`, 'string') }}",
+            "campaignId": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('campaignId', `Leave empty unless working a named campaign.`, 'string') }}",
+            "drafts": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('drafts', `A JSON array of {prospectId, to, subject, body, hook, hookEvidence}. Every body must contain the unsubscribe line, the sender name and that prospect's own outreachUrl verbatim.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "brand",
+              "displayName": "brand",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "campaignId",
+              "displayName": "campaignId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "drafts",
+              "displayName": "drafts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1620,
+        700
+      ],
+      "name": "create_outreach_drafts"
     }
   ],
   "pinData": {},
@@ -3712,6 +3781,17 @@
       ]
     },
     "list_draftable_prospects": {
+      "ai_tool": [
+        [
+          {
+            "node": "Business Development Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_outreach_drafts": {
       "ai_tool": [
         [
           {

@@ -133,11 +133,30 @@
     },
     {
       "parameters": {
-        "language": "javaScript",
-        "jsCode": "const brand = $json.brand;\nreturn brand === 'oddtoe' ? [[ { json: $json } ], []] : [[], [ { json: $json } ]];"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "86000000-0000-4000-8000-000000000010",
+              "leftValue": "={{ $json.brand }}",
+              "rightValue": "oddtoe",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
       "position": [
         680,
         0
@@ -161,8 +180,12 @@
         -100
       ],
       "name": "Gmail Draft \u2014 Oddtoe",
-      "notes": "Bind the 'Gmail \u2014 Oddtoe' Gmail credential to this node before use.",
-      "notesInFlow": true
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wr24KJ2zSbi81NBq",
+          "name": "Gmail \u2014 Oddtoe"
+        }
+      }
     },
     {
       "parameters": {
@@ -181,8 +204,12 @@
         100
       ],
       "name": "Gmail Draft \u2014 Datalabs",
-      "notes": "Bind the 'Gmail \u2014 Datalabs' Gmail credential to this node before use.",
-      "notesInFlow": true
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "aSzCAPSykHzuf6VL",
+          "name": "Gmail \u2014 Datalabs"
+        }
+      }
     },
     {
       "parameters": {
