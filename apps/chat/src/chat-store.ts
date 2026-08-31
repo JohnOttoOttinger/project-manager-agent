@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -402,6 +402,44 @@ export interface PreparedDraftRecord {
   state: DraftState;
   createdAt: string;
   updatedAt: string;
+}
+
+export const OPPORTUNITY_STATUSES = [
+  "researching", "shortlisted", "preparing", "submitted",
+  "accepted", "declined", "passed", "missed",
+] as const;
+export type OpportunityStatus = (typeof OPPORTUNITY_STATUSES)[number];
+
+export const OPPORTUNITY_KINDS = [
+  "press", "market", "prize", "opencall", "register", "scouting",
+] as const;
+export type OpportunityKind = (typeof OPPORTUNITY_KINDS)[number];
+
+export interface OpportunityRecord {
+  opportunityId: string; brand: string; sourceId: string; name: string;
+  organiser: string; kind: OpportunityKind; city: string; country: string;
+  url: string; eventStart: string; eventEnd: string; pressDeadline: string;
+  submissionDeadline: string; contact: string; relevance: string;
+  nextAction: string; status: OpportunityStatus; verified: string;
+  notes: string; createdAt: string; updatedAt: string;
+}
+
+export const MEDIA_STATUSES = [
+  "sourced", "qualified", "drafted", "sent", "outcome",
+] as const;
+export type MediaStatus = (typeof MEDIA_STATUSES)[number];
+
+export const MEDIA_SEGMENTS = [
+  "podcast", "youtube", "journalist", "pr_agency",
+] as const;
+export type MediaSegment = (typeof MEDIA_SEGMENTS)[number];
+
+export interface MediaContactRecord {
+  mediaId: string; brand: string; sourceId: string; segment: MediaSegment;
+  outlet: string; person: string; role: string; url: string; email: string;
+  contactPage: string; linkedin: string; hook: string; whyFit: string;
+  evidenceUrl: string; relevance: string; status: MediaStatus;
+  outcome: string; notes: string; createdAt: string; updatedAt: string;
 }
 
 export class OutreachNotConfiguredError extends Error {}
@@ -1603,6 +1641,77 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 12) {
+      this.transaction(() => {
+        this.database.exec(`
+          -- Deadline-driven opportunities: festivals, markets, prizes, open
+          -- calls, registers. Deadlines are TEXT because the source data
+          -- legitimately carries "TO VERIFY" as well as ISO dates, and a
+          -- date we have not read on the organiser's own page must not be
+          -- laundered into one that looks confirmed.
+          CREATE TABLE opportunities (
+            opportunity_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            source_id TEXT NOT NULL DEFAULT '',
+            name TEXT NOT NULL,
+            organiser TEXT NOT NULL DEFAULT '',
+            kind TEXT NOT NULL DEFAULT 'press'
+              CHECK (kind IN ('press','market','prize','opencall','register','scouting')),
+            city TEXT NOT NULL DEFAULT '',
+            country TEXT NOT NULL DEFAULT '',
+            url TEXT NOT NULL DEFAULT '',
+            event_start TEXT NOT NULL DEFAULT '',
+            event_end TEXT NOT NULL DEFAULT '',
+            press_deadline TEXT NOT NULL DEFAULT '',
+            submission_deadline TEXT NOT NULL DEFAULT '',
+            contact TEXT NOT NULL DEFAULT '',
+            relevance TEXT NOT NULL DEFAULT '',
+            next_action TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'researching'
+              CHECK (status IN ('researching','shortlisted','preparing','submitted','accepted','declined','passed','missed')),
+            verified TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(brand, name)
+          ) STRICT;
+
+          CREATE INDEX opportunities_brand_status
+          ON opportunities(brand, status, updated_at DESC);
+
+          CREATE TABLE media_contacts (
+            media_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            source_id TEXT NOT NULL DEFAULT '',
+            segment TEXT NOT NULL DEFAULT 'journalist'
+              CHECK (segment IN ('podcast','youtube','journalist','pr_agency')),
+            outlet TEXT NOT NULL,
+            person TEXT NOT NULL DEFAULT '',
+            role TEXT NOT NULL DEFAULT '',
+            url TEXT NOT NULL DEFAULT '',
+            email TEXT NOT NULL DEFAULT '',
+            contact_page TEXT NOT NULL DEFAULT '',
+            linkedin TEXT NOT NULL DEFAULT '',
+            hook TEXT NOT NULL DEFAULT '',
+            why_fit TEXT NOT NULL DEFAULT '',
+            evidence_url TEXT NOT NULL DEFAULT '',
+            relevance TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'sourced'
+              CHECK (status IN ('sourced','qualified','drafted','sent','outcome')),
+            outcome TEXT NOT NULL DEFAULT '',
+            notes TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(brand, outlet, person)
+          ) STRICT;
+
+          CREATE INDEX media_contacts_brand_status
+          ON media_contacts(brand, status, updated_at DESC);
+
+          PRAGMA user_version = 12;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1618,6 +1727,8 @@ export class ChatStore {
     this.database.prepare("SELECT brand FROM outreach_settings LIMIT 1").all();
     this.database.prepare("SELECT list_name FROM prospect_lists LIMIT 1").all();
     this.database.prepare("SELECT draft_row_id FROM outreach_drafts LIMIT 1").all();
+    this.database.prepare("SELECT opportunity_id FROM opportunities LIMIT 1").all();
+    this.database.prepare("SELECT media_id FROM media_contacts LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -3634,6 +3745,160 @@ export class ChatStore {
       )
       .run(brand, prospectId);
     return result.changes > 0;
+  }
+
+  // ---- Festivals and press ----------------------------------------------
+
+  upsertOpportunities(
+    brand: string,
+    rows: ReadonlyArray<Partial<OpportunityRecord> & { name: string }>,
+  ): number {
+    const now = nowIso();
+    let written = 0;
+    this.transaction(() => {
+      const statement = this.database.prepare(
+        `INSERT INTO opportunities (
+           opportunity_id, brand, source_id, name, organiser, kind, city,
+           country, url, event_start, event_end, press_deadline,
+           submission_deadline, contact, relevance, next_action, status,
+           verified, notes, created_at, updated_at
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         ON CONFLICT(brand, name) DO UPDATE SET
+           organiser = excluded.organiser, kind = excluded.kind,
+           city = excluded.city, country = excluded.country,
+           url = excluded.url, event_start = excluded.event_start,
+           event_end = excluded.event_end,
+           press_deadline = excluded.press_deadline,
+           submission_deadline = excluded.submission_deadline,
+           contact = excluded.contact, relevance = excluded.relevance,
+           next_action = excluded.next_action, verified = excluded.verified,
+           notes = excluded.notes, updated_at = excluded.updated_at`,
+      );
+      for (const row of rows) {
+        statement.run(
+          randomUUID(), brand, row.sourceId ?? "", row.name,
+          row.organiser ?? "", row.kind ?? "press", row.city ?? "",
+          row.country ?? "", row.url ?? "", row.eventStart ?? "",
+          row.eventEnd ?? "", row.pressDeadline ?? "",
+          row.submissionDeadline ?? "", row.contact ?? "",
+          row.relevance ?? "", row.nextAction ?? "",
+          row.status ?? "researching", row.verified ?? "", row.notes ?? "",
+          now, now,
+        );
+        written += 1;
+      }
+    });
+    return written;
+  }
+
+  listOpportunities(brand: string): OpportunityRecord[] {
+    const rows = this.database
+      .prepare(`SELECT * FROM opportunities WHERE brand = ? ORDER BY name ASC`)
+      .all(brand) as unknown as Array<Record<string, string>>;
+    return rows.map((row) => ({
+      opportunityId: row.opportunity_id!, brand: row.brand!,
+      sourceId: row.source_id!, name: row.name!, organiser: row.organiser!,
+      kind: row.kind as OpportunityKind, city: row.city!,
+      country: row.country!, url: row.url!, eventStart: row.event_start!,
+      eventEnd: row.event_end!, pressDeadline: row.press_deadline!,
+      submissionDeadline: row.submission_deadline!, contact: row.contact!,
+      relevance: row.relevance!, nextAction: row.next_action!,
+      status: row.status as OpportunityStatus, verified: row.verified!,
+      notes: row.notes!, createdAt: row.created_at!, updatedAt: row.updated_at!,
+    }));
+  }
+
+  setOpportunityStatus(
+    opportunityId: string,
+    status: OpportunityStatus,
+  ): OpportunityRecord | undefined {
+    this.database
+      .prepare(
+        `UPDATE opportunities SET status = ?, updated_at = ? WHERE opportunity_id = ?`,
+      )
+      .run(status, nowIso(), opportunityId);
+    const row = this.database
+      .prepare(`SELECT brand FROM opportunities WHERE opportunity_id = ?`)
+      .get(opportunityId) as { brand: string } | undefined;
+    if (row === undefined) {
+      return undefined;
+    }
+    return this.listOpportunities(row.brand).find(
+      (o) => o.opportunityId === opportunityId,
+    );
+  }
+
+  upsertMediaContacts(
+    brand: string,
+    rows: ReadonlyArray<Partial<MediaContactRecord> & { outlet: string }>,
+  ): number {
+    const now = nowIso();
+    let written = 0;
+    this.transaction(() => {
+      const statement = this.database.prepare(
+        `INSERT INTO media_contacts (
+           media_id, brand, source_id, segment, outlet, person, role, url,
+           email, contact_page, linkedin, hook, why_fit, evidence_url,
+           relevance, status, outcome, notes, created_at, updated_at
+         ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         ON CONFLICT(brand, outlet, person) DO UPDATE SET
+           segment = excluded.segment, role = excluded.role,
+           url = excluded.url, email = excluded.email,
+           contact_page = excluded.contact_page, linkedin = excluded.linkedin,
+           hook = excluded.hook, why_fit = excluded.why_fit,
+           evidence_url = excluded.evidence_url,
+           relevance = excluded.relevance, notes = excluded.notes,
+           updated_at = excluded.updated_at`,
+      );
+      for (const row of rows) {
+        statement.run(
+          randomUUID(), brand, row.sourceId ?? "", row.segment ?? "journalist",
+          row.outlet, row.person ?? "", row.role ?? "", row.url ?? "",
+          row.email ?? "", row.contactPage ?? "", row.linkedin ?? "",
+          row.hook ?? "", row.whyFit ?? "", row.evidenceUrl ?? "",
+          row.relevance ?? "", row.status ?? "sourced", row.outcome ?? "",
+          row.notes ?? "", now, now,
+        );
+        written += 1;
+      }
+    });
+    return written;
+  }
+
+  listMediaContacts(brand: string): MediaContactRecord[] {
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM media_contacts WHERE brand = ? ORDER BY outlet ASC`,
+      )
+      .all(brand) as unknown as Array<Record<string, string>>;
+    return rows.map((row) => ({
+      mediaId: row.media_id!, brand: row.brand!, sourceId: row.source_id!,
+      segment: row.segment as MediaSegment, outlet: row.outlet!,
+      person: row.person!, role: row.role!, url: row.url!, email: row.email!,
+      contactPage: row.contact_page!, linkedin: row.linkedin!,
+      hook: row.hook!, whyFit: row.why_fit!, evidenceUrl: row.evidence_url!,
+      relevance: row.relevance!, status: row.status as MediaStatus,
+      outcome: row.outcome!, notes: row.notes!,
+      createdAt: row.created_at!, updatedAt: row.updated_at!,
+    }));
+  }
+
+  setMediaStatus(
+    mediaId: string,
+    status: MediaStatus,
+  ): MediaContactRecord | undefined {
+    this.database
+      .prepare(
+        `UPDATE media_contacts SET status = ?, updated_at = ? WHERE media_id = ?`,
+      )
+      .run(status, nowIso(), mediaId);
+    const row = this.database
+      .prepare(`SELECT brand FROM media_contacts WHERE media_id = ?`)
+      .get(mediaId) as { brand: string } | undefined;
+    if (row === undefined) {
+      return undefined;
+    }
+    return this.listMediaContacts(row.brand).find((m) => m.mediaId === mediaId);
   }
 
   countDraftedToday(brand: string): number {

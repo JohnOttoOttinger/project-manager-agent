@@ -2823,6 +2823,94 @@ h2 { text-transform: uppercase; }
   border-color: #7a3f3f;
 }
 
+/* ---- BD modes, festivals and press ---- */
+
+.bd-modes {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.22rem;
+  border: 1px solid #32362f;
+  border-radius: 999px;
+  background: #1b1f1d;
+  margin-bottom: 0.9rem;
+}
+
+.bd-mode {
+  background: none;
+  border: none;
+  border-radius: 999px;
+  color: #a89f88;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.32rem 1rem 0.36rem;
+  cursor: pointer;
+}
+
+.bd-mode:hover { color: #f0ece0; }
+
+.bd-mode--on {
+  background: #ddccb1;
+  color: #1b1f1d;
+}
+
+.bd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.7rem;
+}
+
+.bd-chip {
+  background: #232826;
+  border: 1px solid #3c403c;
+  border-radius: 999px;
+  color: #cbc4b2;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.65rem;
+  cursor: pointer;
+}
+
+.bd-chip:hover { border-color: #8a8f6a; }
+.bd-chip--on { background: #33382f; border-color: #8a8f6a; color: #cfe2c4; }
+
+.bd-oppcard { margin-bottom: 0.7rem; }
+
+.bd-deadlines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.bd-deadline {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.55rem 0.19rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+/* A confirmed, upcoming date. */
+.bd-deadline--date { background: #26333a; color: #b8d4de; border-color: #3d5560; }
+/* Read on nobody's page yet — must not look like a date. */
+.bd-deadline--unverified { background: #4a3527; color: #e8c9a1; border-color: #6b4a2f; }
+.bd-deadline--past { background: #3a2626; color: #e0a8a8; border-color: #6b3f3f; }
+.bd-deadline--event { background: #2c312e; color: #cbc4b2; border-color: #3c403c; }
+/* Ordered on this date only because no deadline is confirmed. */
+.bd-deadline--inferred { background: #2f3a26; color: #d3e0b8; border-color: #55632f; }
+
+.bd-oppcard__next {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  color: #a89f88;
+  line-height: 1.4;
+}
+
+.bd-listcard__actions a.bd-listcard__edit { text-decoration: underline; }
+
 /* ---- BD draft & review ---- */
 
 .bd-back {

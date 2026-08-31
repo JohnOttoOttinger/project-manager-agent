@@ -1563,6 +1563,14 @@
     if (activeView === "pipeline") {
       return [{ id: "board", label: "Board" }];
     }
+    if (activeAgentId === "business-development" && bdModesAvailable()) {
+      if (bdMode === "festivals") {
+        return [{ id: "bd-deadlines", label: "Deadlines" }];
+      }
+      if (bdMode === "press") {
+        return [{ id: "bd-press", label: "Contacts" }];
+      }
+    }
     return SECTION_TABS[activeAgentId] ?? DEFAULT_TABS;
   }
 
@@ -1697,6 +1705,22 @@
   // When set, the stage shows the compose screen instead of a tab body.
   // { listName } scopes which prospects are offered.
   let bdDraftContext = null;
+  // Three modes, because the three audiences are structurally different:
+  // agencies are a commercial pipeline, festivals are deadlines, press is a
+  // relationship. Oddtoe only for now — Datalabs has no festival or press
+  // motion, so it stays on agencies.
+  let bdMode = "agencies";
+  let bdStreamFilter = "all";
+
+  const BD_MODES = [
+    { id: "agencies", label: "Agencies" },
+    { id: "festivals", label: "Festivals" },
+    { id: "press", label: "Press" },
+  ];
+
+  function bdModesAvailable() {
+    return (activeBrand()?.id ?? "oddtoe") === "oddtoe";
+  }
   // Set by renderBdPipelineTab so the dialogs can refresh the board they
   // were opened from without re-rendering the whole stage.
   let bdReload = () => {};
@@ -2965,6 +2989,493 @@
       });
   }
 
+  // ---- Mode toggle, Festivals and Press ---------------------------------
+
+  function renderBdModeToggle() {
+    const wrap = document.createElement("div");
+    wrap.className = "bd-modes";
+    wrap.setAttribute("role", "tablist");
+    wrap.setAttribute("aria-label", "Business development audience");
+    for (const mode of BD_MODES) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "bd-mode";
+      button.setAttribute("role", "tab");
+      button.setAttribute("aria-selected", String(mode.id === bdMode));
+      if (mode.id === bdMode) {
+        button.classList.add("bd-mode--on");
+      }
+      button.textContent = mode.label;
+      button.addEventListener("click", () => {
+        if (mode.id === bdMode) {
+          return;
+        }
+        bdMode = mode.id;
+        bdDraftContext = null;
+        bdStreamFilter = "all";
+        activeTabId = "";
+        renderStage();
+      });
+      wrap.append(button);
+    }
+    return wrap;
+  }
+
+  // The research blurbs were written for a web page and carry markup and
+  // HTML entities. Rendered with textContent they show as literal tags, so
+  // strip them rather than trusting the source to be plain text.
+  function bdPlainText(value) {
+    return (value ?? "")
+      .replace(/<[^>]*>/g, "")
+      .replaceAll("&mdash;", "—")
+      .replaceAll("&ndash;", "–")
+      .replaceAll("&amp;", "&")
+      .replaceAll("&nbsp;", " ")
+      .replaceAll("&quot;", '"')
+      .replaceAll("&#39;", "'")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  const BD_KIND_LABELS = {
+    press: "Press accreditation", market: "Market pitch", prize: "Prize",
+    opencall: "Open call", register: "Register / EOI", scouting: "Scouting",
+  };
+
+  const BD_OPP_STATUSES = [
+    "researching", "shortlisted", "preparing", "submitted",
+    "accepted", "declined", "passed", "missed",
+  ];
+
+  const BD_MEDIA_STATUSES = ["sourced", "qualified", "drafted", "sent", "outcome"];
+
+  // A deadline is only a date if someone read it on the organiser's page.
+  // "TO VERIFY" is a real and common value in the source data and must not
+  // be rendered as though it were a confirmed date.
+  function bdDeadline(value) {
+    const raw = (value ?? "").trim();
+    if (raw === "") {
+      return { kind: "none", text: "—", days: null };
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+      return { kind: "unverified", text: raw, days: null };
+    }
+    const days = Math.round(
+      (new Date(`${raw}T00:00:00Z`).getTime() - Date.now()) / 86_400_000,
+    );
+    return { kind: days < 0 ? "past" : "date", text: raw, days };
+  }
+
+  // Order by the soonest date we actually have. A confirmed deadline wins;
+  // failing that the event date, because press deadlines typically close two
+  // to three months before an event, so the event date is a usable proxy for
+  // urgency. The card still says which of the two it is — an inferred
+  // urgency must never read as a confirmed deadline.
+  function bdSoonest(opportunity) {
+    const deadlines = [
+      bdDeadline(opportunity.pressDeadline),
+      bdDeadline(opportunity.submissionDeadline),
+    ].filter((d) => d.days !== null);
+    if (deadlines.length > 0) {
+      return { days: Math.min(...deadlines.map((d) => d.days)), basis: "deadline" };
+    }
+    const event = bdDeadline(opportunity.eventStart);
+    if (event.days !== null) {
+      return { days: event.days, basis: "event" };
+    }
+    return null;
+  }
+
+  function bdSoonestDays(opportunity) {
+    return bdSoonest(opportunity)?.days ?? null;
+  }
+
+  function bdFilterChips(counts, active, onPick) {
+    const row = document.createElement("div");
+    row.className = "bd-chips";
+    const total = [...counts.values()].reduce((a, b) => a + b, 0);
+    const make = (id, label, count) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "bd-chip";
+      if (id === active) {
+        chip.classList.add("bd-chip--on");
+      }
+      chip.textContent = `${label} ${count}`;
+      chip.addEventListener("click", () => onPick(id));
+      row.append(chip);
+    };
+    make("all", "All", total);
+    for (const [key, count] of [...counts.entries()].sort((a, b) => b[1] - a[1])) {
+      make(key, BD_KIND_LABELS[key] ?? key.replaceAll("_", " "), count);
+    }
+    return row;
+  }
+
+  function renderBdFestivalsTab(body) {
+    body.append(dashLabel("Deadlines"));
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading opportunities…"));
+    body.append(holder);
+
+    const brand = activeBrand()?.id ?? "oddtoe";
+    void fetchJson(`/api/opportunities?brand=${encodeURIComponent(brand)}`)
+      .then((payload) => {
+        holder.replaceChildren();
+        const all = payload.opportunities ?? [];
+        if (all.length === 0) {
+          holder.append(
+            dashEmpty("No opportunities yet. Seed them with scripts/bd-seed-streams.mjs, or add one through chat."),
+          );
+          return;
+        }
+
+        const counts = new Map();
+        for (const o of all) {
+          counts.set(o.kind, (counts.get(o.kind) ?? 0) + 1);
+        }
+        holder.append(
+          bdFilterChips(counts, bdStreamFilter, (id) => {
+            bdStreamFilter = id;
+            renderStage();
+          }),
+        );
+
+        const rows = bdStreamFilter === "all"
+          ? all
+          : all.filter((o) => o.kind === bdStreamFilter);
+
+        // The honest headline: most deadlines in the source data are not yet
+        // confirmed, and that is the actual next job.
+        const unverified = rows.filter(
+          (o) =>
+            bdDeadline(o.pressDeadline).kind === "unverified" ||
+            bdDeadline(o.submissionDeadline).kind === "unverified",
+        ).length;
+        const summary = document.createElement("p");
+        summary.className = "bd-listcard__note";
+        const byEvent = rows.filter((o) => bdSoonest(o)?.basis === "event").length;
+        summary.textContent = [
+          `${rows.length} shown.`,
+          unverified > 0
+            ? `${unverified} have a deadline that still says "TO VERIFY" — read it on the organiser's page before trusting it.`
+            : "",
+          byEvent > 0
+            ? `${byEvent} are ordered by event date because no deadline is confirmed; press deadlines usually close two to three months earlier, so treat those as sooner than they look.`
+            : "",
+        ].filter(Boolean).join(" ");
+        holder.append(summary);
+
+        const buckets = [
+          ["Closing within 30 days", (d) => d !== null && d >= 0 && d <= 30],
+          ["Within 90 days", (d) => d !== null && d > 30 && d <= 90],
+          ["Later", (d) => d !== null && d > 90],
+          ["Already passed", (d) => d !== null && d < 0],
+          ["No date at all", (d) => d === null],
+        ];
+
+        for (const [title, test] of buckets) {
+          const inBucket = rows.filter((o) => test(bdSoonestDays(o)));
+          if (inBucket.length === 0) {
+            continue;
+          }
+          const section = bdSection(`${title} (${inBucket.length})`);
+          inBucket.sort((a, b) => {
+            const da = bdSoonestDays(a);
+            const db = bdSoonestDays(b);
+            if (da === null && db === null) {
+              return a.name.localeCompare(b.name);
+            }
+            if (da === null) { return 1; }
+            if (db === null) { return -1; }
+            return da - db;
+          });
+          for (const o of inBucket) {
+            section.append(bdOpportunityCard(o, brand));
+          }
+          holder.append(section);
+        }
+      })
+      .catch(() => {
+        holder.replaceChildren(dashEmpty("The store is not reachable."));
+      });
+  }
+
+  // Invented rows carry a demo- source id. They must be obvious: your real
+  // festival research is verified against organiser pages, and a made-up
+  // entry that looked real could send you chasing something that does not
+  // exist.
+  function bdDemoBadge(sourceId) {
+    if (!(sourceId ?? "").startsWith("demo-")) {
+      return null;
+    }
+    const chip = document.createElement("span");
+    chip.className = "stage-chip stage-chip--flag";
+    chip.textContent = "Demo";
+    chip.title = "Invented row, added to fill out the interface. Not a real organisation.";
+    return chip;
+  }
+
+  function bdOpportunityCard(opportunity, brand) {
+    const card = dashCard();
+    card.className = "dash-card bd-oppcard";
+
+    const head = document.createElement("div");
+    head.className = "bd-listcard__head";
+    const title = document.createElement("h3");
+    title.className = "bd-listcard__title";
+    title.textContent = opportunity.name;
+    head.append(title);
+    const kind = document.createElement("span");
+    kind.className = "stage-chip stage-chip--tier";
+    kind.textContent = BD_KIND_LABELS[opportunity.kind] ?? opportunity.kind;
+    head.append(kind);
+    const demo = bdDemoBadge(opportunity.sourceId);
+    if (demo) {
+      head.append(demo);
+    }
+    const where = document.createElement("span");
+    where.className = "bd-listcard__count";
+    where.textContent = [opportunity.city, opportunity.country]
+      .filter(Boolean).join(", ");
+    head.append(where);
+    card.append(head);
+
+    const deadlines = document.createElement("div");
+    deadlines.className = "bd-deadlines";
+    const addDeadline = (label, value) => {
+      const d = bdDeadline(value);
+      if (d.kind === "none") {
+        return;
+      }
+      const item = document.createElement("span");
+      item.className = `bd-deadline bd-deadline--${d.kind}`;
+      const suffix = d.days === null
+        ? ""
+        : d.days < 0
+          ? ` · ${Math.abs(d.days)} days ago`
+          : ` · in ${d.days} days`;
+      item.textContent = `${label}: ${d.text}${suffix}`;
+      deadlines.append(item);
+    };
+    addDeadline("Press", opportunity.pressDeadline);
+    addDeadline("Submission", opportunity.submissionDeadline);
+    if (opportunity.eventStart !== "") {
+      const dates = document.createElement("span");
+      const soonest = bdSoonest(opportunity);
+      const inferred = soonest?.basis === "event";
+      dates.className = `bd-deadline bd-deadline--${inferred ? "inferred" : "event"}`;
+      const days = inferred && soonest.days >= 0 ? ` · in ${soonest.days} days` : "";
+      dates.textContent = `Event: ${opportunity.eventStart}${opportunity.eventEnd ? ` → ${opportunity.eventEnd}` : ""}${days}`;
+      dates.title = inferred
+        ? "Sorted on this date because no deadline is confirmed. The real deadline is almost certainly earlier."
+        : "";
+      deadlines.append(dates);
+    }
+    if (deadlines.childElementCount > 0) {
+      card.append(deadlines);
+    }
+
+    const relevance = bdPlainText(opportunity.relevance);
+    if (relevance !== "") {
+      const why = document.createElement("p");
+      why.className = "bd-listcard__note";
+      why.textContent = relevance.length > 240
+        ? `${relevance.slice(0, 240)}…`
+        : relevance;
+      why.title = relevance;
+      card.append(why);
+    }
+    if (opportunity.nextAction !== "") {
+      const next = document.createElement("p");
+      next.className = "bd-oppcard__next";
+      next.textContent = `Next: ${opportunity.nextAction}`;
+      card.append(next);
+    }
+
+    const actions = document.createElement("div");
+    actions.className = "bd-listcard__actions";
+    const select = document.createElement("select");
+    select.className = "prospect-move__select";
+    select.setAttribute("aria-label", `Status for ${opportunity.name}`);
+    for (const status of BD_OPP_STATUSES) {
+      const option = document.createElement("option");
+      option.value = status;
+      option.textContent = status;
+      option.selected = status === opportunity.status;
+      select.append(option);
+    }
+    select.addEventListener("change", () => {
+      void fetchJson("/api/opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          opportunityId: opportunity.opportunityId, status: select.value,
+        }),
+      }).then(() => renderStage());
+    });
+    actions.append(select);
+
+    if (opportunity.url !== "") {
+      const link = document.createElement("a");
+      link.href = opportunity.url;
+      link.target = "_blank";
+      link.rel = "noreferrer noopener";
+      link.className = "bd-listcard__edit";
+      link.textContent = "Organiser page";
+      actions.append(link);
+    }
+    const ask = document.createElement("button");
+    ask.type = "button";
+    ask.className = "bd-listcard__edit";
+    ask.textContent = "Work on this in chat";
+    ask.addEventListener("click", () => {
+      openChatWithPrompt(
+        `Verify the deadline for ${opportunity.name} on the organiser's own page, then tell me what applying involves.`,
+      );
+    });
+    actions.append(ask);
+    card.append(actions);
+    return card;
+  }
+
+  function renderBdPressTab(body) {
+    body.append(dashLabel("Press contacts"));
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading contacts…"));
+    body.append(holder);
+
+    const brand = activeBrand()?.id ?? "oddtoe";
+    void fetchJson(`/api/media-contacts?brand=${encodeURIComponent(brand)}`)
+      .then((payload) => {
+        holder.replaceChildren();
+        const all = payload.contacts ?? [];
+        if (all.length === 0) {
+          holder.append(dashEmpty("No press contacts yet."));
+          return;
+        }
+        const counts = new Map();
+        for (const c of all) {
+          counts.set(c.segment, (counts.get(c.segment) ?? 0) + 1);
+        }
+        holder.append(
+          bdFilterChips(counts, bdStreamFilter, (id) => {
+            bdStreamFilter = id;
+            renderStage();
+          }),
+        );
+        const rows = bdStreamFilter === "all"
+          ? all
+          : all.filter((c) => c.segment === bdStreamFilter);
+
+        for (const status of BD_MEDIA_STATUSES) {
+          const inStatus = rows.filter((c) => c.status === status);
+          if (inStatus.length === 0) {
+            continue;
+          }
+          const section = bdSection(`${status} (${inStatus.length})`);
+          for (const contact of inStatus) {
+            section.append(bdMediaCard(contact));
+          }
+          holder.append(section);
+        }
+      })
+      .catch(() => {
+        holder.replaceChildren(dashEmpty("The store is not reachable."));
+      });
+  }
+
+  function bdMediaCard(contact) {
+    const card = dashCard();
+    card.className = "dash-card bd-oppcard";
+    const head = document.createElement("div");
+    head.className = "bd-listcard__head";
+    const title = document.createElement("h3");
+    title.className = "bd-listcard__title";
+    title.textContent = contact.outlet;
+    head.append(title);
+    const seg = document.createElement("span");
+    seg.className = "stage-chip stage-chip--tier";
+    seg.textContent = contact.segment.replaceAll("_", " ");
+    head.append(seg);
+    const demoChip = bdDemoBadge(contact.sourceId);
+    if (demoChip) {
+      head.append(demoChip);
+    }
+    const who = document.createElement("span");
+    who.className = "bd-listcard__count";
+    who.textContent = [contact.person, contact.role].filter(Boolean).join(" · ") || "no named contact yet";
+    head.append(who);
+    card.append(head);
+
+    if (contact.hook !== "") {
+      const hook = document.createElement("p");
+      hook.className = "bd-listcard__note";
+      hook.textContent = `Hook: ${bdPlainText(contact.hook)}`;
+      card.append(hook);
+    }
+    const whyFit = bdPlainText(contact.whyFit);
+    if (whyFit !== "") {
+      const fit = document.createElement("p");
+      fit.className = "bd-oppcard__next";
+      fit.textContent = whyFit.length > 220 ? `${whyFit.slice(0, 220)}…` : whyFit;
+      fit.title = whyFit;
+      card.append(fit);
+    }
+
+    if (contact.outcome !== "") {
+      const outcome = document.createElement("p");
+      outcome.className = "bd-listcard__note";
+      outcome.textContent = `Outcome: ${bdPlainText(contact.outcome)}`;
+      card.append(outcome);
+    }
+
+    const reach = document.createElement("p");
+    reach.className = "bd-oppcard__next";
+    reach.textContent = contact.email !== ""
+      ? `Email: ${contact.email}`
+      : contact.contactPage !== ""
+        ? "No direct email — via the outlet's contact page"
+        : "No route to them recorded yet";
+    card.append(reach);
+
+    const actions = document.createElement("div");
+    actions.className = "bd-listcard__actions";
+    const select = document.createElement("select");
+    select.className = "prospect-move__select";
+    select.setAttribute("aria-label", `Status for ${contact.outlet}`);
+    for (const status of BD_MEDIA_STATUSES) {
+      const option = document.createElement("option");
+      option.value = status;
+      option.textContent = status;
+      option.selected = status === contact.status;
+      select.append(option);
+    }
+    select.addEventListener("change", () => {
+      void fetchJson("/api/media-contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaId: contact.mediaId, status: select.value }),
+      }).then(() => renderStage());
+    });
+    actions.append(select);
+    for (const [label, href] of [
+      ["Outlet", contact.url], ["Contact page", contact.contactPage],
+      ["Evidence", contact.evidenceUrl],
+    ]) {
+      if (href === "") { continue; }
+      const link = document.createElement("a");
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noreferrer noopener";
+      link.className = "bd-listcard__edit";
+      link.textContent = label;
+      actions.append(link);
+    }
+    card.append(actions);
+    return card;
+  }
+
   // ---- Lists ------------------------------------------------------------
   // A list is a cohort you work as a batch, so the question this screen has
   // to answer is "which one is worth my time, and what is stopping the rest".
@@ -3589,8 +4100,15 @@
       renderPipelineBoard(body);
     } else {
       elements.stageTitle.textContent = displayAgentName();
+      if (activeAgentId === "business-development" && bdModesAvailable()) {
+        body.append(renderBdModeToggle());
+      }
       if (activeAgentId === "business-development" && bdDraftContext !== null) {
         renderBdDraftScreen(body);
+      } else if (activeTabId === "bd-deadlines") {
+        renderBdFestivalsTab(body);
+      } else if (activeTabId === "bd-press") {
+        renderBdPressTab(body);
       } else if (activeTabId === "bd-pipeline") {
         renderBdPipelineTab(body);
       } else if (activeTabId === "bd-outreach") {

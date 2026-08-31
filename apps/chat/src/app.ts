@@ -40,9 +40,13 @@ import {
   type PaidComponentStatus,
   type ProspectConfidence,
   DRAFT_STATES,
+  MEDIA_STATUSES,
+  OPPORTUNITY_STATUSES,
   OutreachNotConfiguredError,
   type CampaignBrief,
   type DraftState,
+  type MediaStatus,
+  type OpportunityStatus,
   type DraftToValidate,
   type ProspectRowInput,
   type ProspectStatus,
@@ -3503,6 +3507,128 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 "PROSPECT_STORE_ERROR",
                 "Those drafts could not be saved.",
               ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/opportunities") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              opportunities: chatStore.listOpportunities(brand),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "opportunity status payload",
+            );
+            const opportunityId = prospectText(body.opportunityId, 64);
+            const rawStatus = prospectText(body.status, 20);
+            if (
+              opportunityId === "" ||
+              !OPPORTUNITY_STATUSES.includes(rawStatus as OpportunityStatus)
+            ) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                `Moving an opportunity needs an id and one of: ${OPPORTUNITY_STATUSES.join(", ")}.`,
+              );
+            }
+            const updated = chatStore.setOpportunityStatus(
+              opportunityId,
+              rawStatus as OpportunityStatus,
+            );
+            if (updated === undefined) {
+              throw new PublicError(
+                404,
+                "PROSPECT_NOT_FOUND",
+                "That opportunity is no longer in the store.",
+              );
+            }
+            sendJson(response, 200, { schemaVersion: 1, opportunity: updated });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            { error: { code: "INVALID_REQUEST", message: "That method is not supported." } },
+            { Allow: "GET, POST" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read or update opportunities", error);
+            sendError(
+              response,
+              new PublicError(500, "PROSPECT_STORE_ERROR", "The opportunities could not be reached."),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/media-contacts") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              contacts: chatStore.listMediaContacts(brand),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "media status payload",
+            );
+            const mediaId = prospectText(body.mediaId, 64);
+            const rawStatus = prospectText(body.status, 20);
+            if (
+              mediaId === "" ||
+              !MEDIA_STATUSES.includes(rawStatus as MediaStatus)
+            ) {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                `Moving a media contact needs an id and one of: ${MEDIA_STATUSES.join(", ")}.`,
+              );
+            }
+            const updated = chatStore.setMediaStatus(
+              mediaId,
+              rawStatus as MediaStatus,
+            );
+            if (updated === undefined) {
+              throw new PublicError(
+                404,
+                "PROSPECT_NOT_FOUND",
+                "That media contact is no longer in the store.",
+              );
+            }
+            sendJson(response, 200, { schemaVersion: 1, contact: updated });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            { error: { code: "INVALID_REQUEST", message: "That method is not supported." } },
+            { Allow: "GET, POST" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read or update media contacts", error);
+            sendError(
+              response,
+              new PublicError(500, "PROSPECT_STORE_ERROR", "The media contacts could not be reached."),
             );
           }
         }
