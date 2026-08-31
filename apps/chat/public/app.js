@@ -1705,12 +1705,16 @@
   // When set, the stage shows the compose screen instead of a tab body.
   // { listName } scopes which prospects are offered.
   let bdDraftContext = null;
+  // Non-null puts the stage into a workflow screen: "import", "settings" or
+  // "enrich".
+  let bdScreen = null;
   // Three modes, because the three audiences are structurally different:
   // agencies are a commercial pipeline, festivals are deadlines, press is a
   // relationship. Oddtoe only for now — Datalabs has no festival or press
   // motion, so it stays on agencies.
   let bdMode = "agencies";
   let bdStreamFilter = "all";
+  let bdImportList = "";
 
   const BD_MODES = [
     { id: "agencies", label: "Agencies" },
@@ -1941,9 +1945,8 @@
     importButton.type = "button";
     importButton.textContent = "Import a list";
     importButton.addEventListener("click", () => {
-      openChatWithPrompt(
-        "I want to import a prospect list. Here are the rows:",
-      );
+      bdScreen = "import";
+      renderStage();
     });
     const findButton = document.createElement("button");
     findButton.className = "secondary-button";
@@ -2367,9 +2370,8 @@
           setUp.className = "secondary-button";
           setUp.textContent = "Set this up in chat";
           setUp.addEventListener("click", () => {
-            openChatWithPrompt(
-              `Set up outreach for ${brand}: sender name, sender contact, unsubscribe line, daily cap and follow-up interval.`,
-            );
+            bdScreen = "settings";
+            renderStage();
           });
           blocked.append(setUp);
           holder.append(blocked);
@@ -2455,9 +2457,8 @@
         change.className = "secondary-button";
         change.textContent = "Change these";
         change.addEventListener("click", () => {
-          openChatWithPrompt(
-            `Change the outreach settings for ${brand}. Current daily cap is ${settings.dailyCap} and follow-up is ${settings.followUpDays} days.`,
-          );
+          bdScreen = "settings";
+          renderStage();
         });
         setup.append(change);
         holder.append(setup);
@@ -2989,6 +2990,590 @@
       });
   }
 
+  // ---- Import, Settings, Enrichment -------------------------------------
+
+  function bdBackLink(body, label = "← Back to Business Development") {
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "bd-back";
+    back.textContent = label;
+    back.addEventListener("click", () => {
+      bdScreen = null;
+      bdImportList = "";
+      renderStage();
+    });
+    body.append(back);
+  }
+
+  // Each mode imports a different shape, so the header map and the required
+  // column differ. Anything unmapped is reported rather than dropped.
+  const BD_IMPORT_SHAPES = {
+    agencies: {
+      title: "Import companies",
+      required: "company",
+      endpoint: "/api/prospects",
+      needsList: true,
+      map: {
+        company: "company", companyname: "company", agency: "company", organisation: "company",
+        region: "region", location: "region", city: "region",
+        tier: "tier", source: "source",
+        website: "website", site: "website", url: "website",
+        linkedincompanyurl: "linkedinCompanyUrl", companylinkedin: "linkedinCompanyUrl",
+        contactname: "contactName", contact: "contactName", name: "contactName",
+        contactemail: "contactEmail", email: "contactEmail",
+        linkedinurl: "linkedinUrl", linkedin: "linkedinUrl",
+        status: "status", notes: "notes", note: "notes", comments: "notes",
+      },
+    },
+    festivals: {
+      title: "Import opportunities",
+      required: "name",
+      endpoint: "/api/opportunities/import",
+      needsList: false,
+      map: {
+        name: "name", festival: "name", event: "name", opportunity: "name",
+        organiser: "organiser", organizer: "organiser", host: "organiser",
+        kind: "kind", type: "kind", stream: "kind",
+        city: "city", country: "country",
+        url: "url", website: "url", link: "url",
+        start: "eventStart", eventstart: "eventStart", startdate: "eventStart",
+        end: "eventEnd", eventend: "eventEnd", enddate: "eventEnd",
+        pressdeadline: "pressDeadline", submissiondeadline: "submissionDeadline",
+        deadline: "submissionDeadline",
+        contact: "contact", presscontact: "contact",
+        relevance: "relevance", focus: "relevance", blurb: "relevance",
+        nextaction: "nextAction", notes: "notes", note: "notes",
+      },
+    },
+    press: {
+      title: "Import press contacts",
+      required: "outlet",
+      endpoint: "/api/media-contacts/import",
+      needsList: false,
+      map: {
+        outlet: "outlet", publication: "outlet", masthead: "outlet", show: "outlet",
+        segment: "segment", kind: "segment", type: "segment",
+        person: "person", name: "person", contact: "person", journalist: "person",
+        role: "role", title: "role",
+        url: "url", website: "url", link: "url",
+        email: "email", contactpage: "contactPage",
+        linkedin: "linkedin", hook: "hook", angle: "hook",
+        whyfit: "whyFit", why: "whyFit", relevance: "whyFit",
+        notes: "notes", note: "notes",
+      },
+    },
+  };
+
+  function bdParseDelimited(text) {
+    const firstLine = text.split("\n", 1)[0] ?? "";
+    const tabs = (firstLine.match(/\t/g) ?? []).length;
+    const commas = (firstLine.match(/,/g) ?? []).length;
+    const delimiter = tabs > 0 && tabs >= commas ? "\t" : ",";
+    const rows = [];
+    let row = [];
+    let field = "";
+    let quoted = false;
+    for (let i = 0; i < text.length; i += 1) {
+      const ch = text[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 1; } else { quoted = false; }
+        } else { field += ch; }
+      } else if (ch === '"') { quoted = true; }
+      else if (ch === delimiter) { row.push(field); field = ""; }
+      else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+      else if (ch !== "\r") { field += ch; }
+    }
+    if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+    return rows.filter((line) => line.some((cell) => cell.trim() !== ""));
+  }
+
+  function renderBdImportScreen(body) {
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const shape = BD_IMPORT_SHAPES[bdMode] ?? BD_IMPORT_SHAPES.agencies;
+    bdBackLink(body);
+    body.append(dashLabel(shape.title));
+
+    const intro = document.createElement("p");
+    intro.className = "bd-listcard__note";
+    intro.textContent = `Paste rows or choose a file. The first row must be a header. A ${shape.required} column is required; everything else is optional and anything unrecognised is reported rather than silently dropped.`;
+    body.append(intro);
+
+    const card = dashCard();
+
+    let listField = null;
+    if (shape.needsList) {
+      const label = document.createElement("label");
+      label.className = "bd-importlabel";
+      label.textContent = "List name";
+      listField = document.createElement("input");
+      listField.className = "bd-tplfield";
+      listField.maxLength = 120;
+      listField.value = bdImportList || `Imported ${new Date().toISOString().slice(0, 10)}`;
+      card.append(label, listField);
+    }
+
+    const fileLabel = document.createElement("label");
+    fileLabel.className = "bd-importlabel";
+    fileLabel.textContent = "Choose a CSV or TSV file";
+    const file = document.createElement("input");
+    file.type = "file";
+    file.accept = ".csv,.tsv,.txt,text/csv,text/plain";
+    file.className = "bd-importfile";
+
+    const pasteLabel = document.createElement("label");
+    pasteLabel.className = "bd-importlabel";
+    pasteLabel.textContent = "…or paste the rows";
+    const paste = document.createElement("textarea");
+    paste.className = "bd-tplfield bd-tplfield--body";
+    paste.rows = 8;
+    paste.placeholder = `${shape.required},…\n`;
+
+    card.append(fileLabel, file, pasteLabel, paste);
+
+    const preview = document.createElement("div");
+    preview.className = "bd-importpreview";
+    const status = document.createElement("p");
+    status.className = "bd-draftbar__status";
+    status.setAttribute("role", "status");
+
+    const actions = document.createElement("div");
+    actions.className = "bd-listcard__actions";
+    const check = document.createElement("button");
+    check.type = "button";
+    check.className = "secondary-button";
+    check.textContent = "Preview";
+    const commit = document.createElement("button");
+    commit.type = "button";
+    commit.className = "send-button";
+    commit.textContent = "Import";
+    commit.disabled = true;
+    actions.append(check, commit);
+    card.append(actions, status, preview);
+    body.append(card);
+
+    let parsed = null;
+
+    file.addEventListener("change", () => {
+      const chosen = file.files?.[0];
+      if (!chosen) { return; }
+      const reader = new FileReader();
+      reader.onload = () => {
+        paste.value = String(reader.result ?? "");
+        status.textContent = `Loaded ${chosen.name}.`;
+      };
+      reader.readAsText(chosen);
+    });
+
+    check.addEventListener("click", () => {
+      preview.replaceChildren();
+      commit.disabled = true;
+      const table = bdParseDelimited(paste.value);
+      if (table.length < 2) {
+        status.textContent = "Needs a header row and at least one row of data.";
+        return;
+      }
+      const header = table[0].map((cell) =>
+        shape.map[cell.trim().toLowerCase().replace(/[^a-z0-9]/g, "")] ?? null,
+      );
+      const unknown = table[0].filter((cell, i) => header[i] === null && cell.trim() !== "");
+      if (!header.includes(shape.required)) {
+        status.textContent = `No ${shape.required} column found. Rename a column to "${shape.required}" and preview again.`;
+        return;
+      }
+      const rows = [];
+      let skipped = 0;
+      for (const cells of table.slice(1)) {
+        const record = {};
+        header.forEach((field, i) => {
+          const value = (cells[i] ?? "").trim();
+          if (field && value !== "") { record[field] = value; }
+        });
+        if (!record[shape.required]) { skipped += 1; continue; }
+        rows.push(record);
+      }
+      parsed = rows;
+
+      const mapped = document.createElement("p");
+      mapped.className = "bd-listcard__note";
+      mapped.textContent = `${rows.length} rows ready${skipped > 0 ? `, ${skipped} skipped for having no ${shape.required}` : ""}. Columns matched: ${[...new Set(header.filter(Boolean))].join(", ")}.`;
+      preview.append(mapped);
+      if (unknown.length > 0) {
+        const ignored = document.createElement("p");
+        ignored.className = "bd-oppcard__next";
+        ignored.textContent = `Ignored ${unknown.length} unrecognised column(s): ${unknown.join(", ")}.`;
+        preview.append(ignored);
+      }
+
+      const wrap = document.createElement("div");
+      wrap.className = "dash-table-wrap";
+      const grid = document.createElement("table");
+      grid.className = "dash-table";
+      const head = document.createElement("thead");
+      const headRow = document.createElement("tr");
+      const columns = [...new Set(header.filter(Boolean))].slice(0, 6);
+      for (const column of columns) {
+        const th = document.createElement("th");
+        th.textContent = column;
+        headRow.append(th);
+      }
+      head.append(headRow);
+      const tbody = document.createElement("tbody");
+      for (const record of rows.slice(0, 8)) {
+        const tr = document.createElement("tr");
+        for (const column of columns) {
+          const td = document.createElement("td");
+          const value = record[column] ?? "";
+          td.textContent = value.length > 60 ? `${value.slice(0, 60)}…` : value;
+          tr.append(td);
+        }
+        tbody.append(tr);
+      }
+      grid.append(head, tbody);
+      wrap.append(grid);
+      preview.append(wrap);
+      if (rows.length > 8) {
+        const more = document.createElement("p");
+        more.className = "bd-oppcard__note";
+        more.textContent = `Showing the first 8 of ${rows.length}.`;
+        preview.append(more);
+      }
+      status.textContent = "Looks readable. Import when you're happy.";
+      commit.disabled = rows.length === 0;
+    });
+
+    commit.addEventListener("click", () => {
+      if (!parsed || parsed.length === 0) { return; }
+      commit.disabled = true;
+      status.textContent = "Importing…";
+      const payload = shape.needsList
+        ? { brand, listName: listField.value.trim(), rows: parsed }
+        : { brand, rows: parsed };
+      void fetchJson(shape.endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+        .then((result) => {
+          const inserted = result.result?.inserted ?? result.written ?? parsed.length;
+          const duplicates = result.result?.duplicates ?? 0;
+          status.textContent = `Imported ${inserted}${duplicates > 0 ? `, ${duplicates} already there and left alone` : ""}.`;
+          const done = document.createElement("button");
+          done.type = "button";
+          done.className = "secondary-button";
+          done.textContent = "Back to the board";
+          done.addEventListener("click", () => {
+            bdScreen = null;
+            bdImportList = "";
+            activeTabId = "";
+            renderStage();
+          });
+          preview.replaceChildren(done);
+          if (duplicates > 0 && result.result?.duplicateCompanies?.length) {
+            const names = document.createElement("p");
+            names.className = "bd-oppcard__next";
+            names.textContent = `Already present: ${result.result.duplicateCompanies.slice(0, 10).join(", ")}`;
+            preview.append(names);
+          }
+        })
+        .catch((error) => {
+          commit.disabled = false;
+          status.textContent = error.message ?? "That import could not be saved.";
+        });
+    });
+  }
+
+  function bdField(parent, label, value, { hint, kind = "input", maxLength = 300 } = {}) {
+    const wrap = document.createElement("div");
+    wrap.className = "bd-formrow";
+    const name = document.createElement("label");
+    name.className = "bd-importlabel";
+    name.textContent = label;
+    const field = document.createElement(kind === "area" ? "textarea" : "input");
+    field.className = "bd-tplfield";
+    field.maxLength = maxLength;
+    field.value = value ?? "";
+    if (kind === "area") { field.rows = 2; }
+    if (kind === "number") { field.type = "number"; field.min = "1"; }
+    name.setAttribute("for", "");
+    wrap.append(name, field);
+    if (hint) {
+      const note = document.createElement("p");
+      note.className = "bd-oppcard__next";
+      note.textContent = hint;
+      wrap.append(note);
+    }
+    parent.append(wrap);
+    return field;
+  }
+
+  function renderBdSettingsScreen(body) {
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const q = encodeURIComponent(brand);
+    bdBackLink(body);
+    body.append(dashLabel(`Outreach settings · ${activeBrand()?.label ?? brand}`));
+
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading settings…"));
+    body.append(holder);
+
+    void Promise.all([
+      fetchJson(`/api/outreach/settings?brand=${q}`),
+      fetchJson(`/api/outreach/campaign-list?brand=${q}`).catch(() => ({ campaigns: [] })),
+    ]).then(([settingsPayload, campaignPayload]) => {
+      holder.replaceChildren();
+      const s = settingsPayload.settings ?? {
+        senderName: "", senderContact: "", unsubscribeLine: "",
+        dailyCap: 10, followUpDays: 7, guidePageUrl: "",
+      };
+
+      const gate = document.createElement("p");
+      gate.className = "bd-listcard__note";
+      gate.textContent =
+        "Nothing can be drafted for this brand until the sender name, reply address and opt-out line are all set. The store refuses to hand out a single prospect without them, and refuses any draft body that leaves the opt-out line or sender name out.";
+      holder.append(gate);
+
+      const form = dashCard();
+      const senderName = bdField(form, "Sender name", s.senderName, { maxLength: 120, hint: "Appears in the sign-off and must appear verbatim in every draft." });
+      const senderContact = bdField(form, "Reply address", s.senderContact, { maxLength: 200, hint: "Where replies go, and how the recipient can reach a human." });
+      const unsubscribe = bdField(form, "Opt-out line", s.unsubscribeLine, { kind: "area", maxLength: 400, hint: "Must be a real opt-out: anyone who uses it goes on the do-not-contact list and can never be drafted to again." });
+      const cap = bdField(form, "Daily cap", String(s.dailyCap), { kind: "number", hint: "Most drafts prepared in one day. Protects your domain reputation from a volume spike." });
+      const followUp = bdField(form, "Follow-up interval (days)", String(s.followUpDays), { kind: "number", hint: "One follow-up only, this many days after sending." });
+      const guide = bdField(form, "Guide page URL", s.guidePageUrl, { maxLength: 500, hint: "Each draft links here with the prospect's own utm_content. Leave blank and click tracking stays empty for this brand." });
+
+      const preview = document.createElement("pre");
+      preview.className = "bd-footerpreview";
+      const paint = () => {
+        preview.textContent = [
+          "…",
+          "",
+          unsubscribe.value || "[no opt-out line — drafting is blocked]",
+          "",
+          senderName.value || "[no sender name — drafting is blocked]",
+          senderContact.value,
+        ].join("\n");
+      };
+      paint();
+      for (const field of [senderName, senderContact, unsubscribe]) {
+        field.addEventListener("input", paint);
+      }
+      const previewLabel = document.createElement("p");
+      previewLabel.className = "bd-importlabel";
+      previewLabel.textContent = "How every draft will end";
+      form.append(previewLabel, preview);
+
+      const status = document.createElement("p");
+      status.className = "bd-draftbar__status";
+      status.setAttribute("role", "status");
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "send-button";
+      save.textContent = "Save settings";
+      save.addEventListener("click", () => {
+        status.textContent = "Saving…";
+        void fetchJson("/api/outreach/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brand,
+            senderName: senderName.value,
+            senderContact: senderContact.value,
+            unsubscribeLine: unsubscribe.value,
+            dailyCap: Number(cap.value) || undefined,
+            followUpDays: Number(followUp.value) || undefined,
+            guidePageUrl: guide.value,
+          }),
+        })
+          .then(() => { status.textContent = "Saved."; })
+          .catch((error) => { status.textContent = error.message ?? "Could not save."; });
+      });
+      form.append(save, status);
+      holder.append(form);
+
+      // --- Campaigns ---------------------------------------------------
+      const campaigns = campaignPayload.campaigns ?? [];
+      const section = bdSection(`Campaigns (${campaigns.length})`);
+      const why = document.createElement("p");
+      why.className = "bd-listcard__note";
+      why.textContent =
+        "A campaign sets the offer and the utm_campaign tag on every link in a drafting run. Without one, links fall back to a generic tag and clicks cannot be attributed to a particular push.";
+      section.append(why);
+
+      for (const campaign of campaigns) {
+        const row = document.createElement("div");
+        row.className = "bd-dncrow";
+        const name = document.createElement("span");
+        name.className = "bd-dncrow__email";
+        name.textContent = campaign.name;
+        const tag = document.createElement("span");
+        tag.className = "stage-chip stage-chip--tier";
+        tag.textContent = campaign.brief.utmCampaign || "outreach";
+        const when = document.createElement("span");
+        when.className = "bd-dncrow__when";
+        when.textContent = bdStamp(campaign.createdAt);
+        row.append(name, tag, when);
+        section.append(row);
+      }
+
+      const newCampaign = dashCard();
+      const cName = bdField(newCampaign, "New campaign name", "", { maxLength: 120 });
+      const cOffer = bdField(newCampaign, "Offer", "", { kind: "area", maxLength: 1000, hint: "What this push is actually offering. Reaches the drafting screen as context." });
+      const cUtm = bdField(newCampaign, "UTM campaign tag", "", { maxLength: 120, hint: "Lowercase, hyphenated. Appears in every link so GA4 can attribute the clicks." });
+      const cStatus = document.createElement("p");
+      cStatus.className = "bd-draftbar__status";
+      const create = document.createElement("button");
+      create.type = "button";
+      create.className = "secondary-button";
+      create.textContent = "Create campaign";
+      create.addEventListener("click", () => {
+        if (cName.value.trim() === "") {
+          cStatus.textContent = "A campaign needs a name.";
+          return;
+        }
+        cStatus.textContent = "Creating…";
+        void fetchJson("/api/outreach/campaigns", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brand, name: cName.value, offer: cOffer.value,
+            utmCampaign: cUtm.value, guidePageUrl: guide.value,
+          }),
+        })
+          .then(() => renderStage())
+          .catch((error) => { cStatus.textContent = error.message ?? "Could not create."; });
+      });
+      newCampaign.append(create, cStatus);
+      section.append(newCampaign);
+      holder.append(section);
+    }).catch(() => {
+      holder.replaceChildren(dashEmpty("The store is not reachable."));
+    });
+  }
+
+  function renderBdEnrichScreen(body) {
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const q = encodeURIComponent(brand);
+    bdBackLink(body);
+    body.append(dashLabel("Find contacts"));
+
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Working out who can be enriched…"));
+    body.append(holder);
+
+    const listQuery = bdImportList === "" ? "" : `&list=${encodeURIComponent(bdImportList)}`;
+    void fetchJson(`/api/enrichment/quote?brand=${q}${listQuery}`)
+      .then((quote) => {
+        holder.replaceChildren();
+        const eligible = quote.eligible ?? [];
+        const missing = quote.missingUrl ?? [];
+
+        const intro = document.createElement("p");
+        intro.className = "bd-listcard__note";
+        intro.textContent = `Enrichment searches LinkedIn for a named contact and an address at each company. It needs a LinkedIn company URL and an empty contact email. About $${quote.costPerCompanyUsd.toFixed(2)} per company, charged to your Apify credit.`;
+        holder.append(intro);
+
+        if (!quote.configured) {
+          const blocked = dashCard();
+          blocked.append(
+            dashEmpty(
+              "This screen cannot run enrichment yet: the app has no APIFY_TOKEN. Add APIFY_TOKEN=… to the project's .env and restart, and the run button here starts working. Until then you can still see who is eligible and what it would cost.",
+            ),
+          );
+          holder.append(blocked);
+        }
+
+        if (eligible.length === 0) {
+          holder.append(
+            dashEmpty(
+              missing.length > 0
+                ? `Nobody is enrichable. ${missing.length} companies have no LinkedIn company URL, which enrichment needs first.`
+                : "Nobody is enrichable — everyone already has a contact email.",
+            ),
+          );
+        } else {
+          const card = dashCard();
+          const chosen = new Set(eligible.map((row) => row.prospectId));
+          const cost = document.createElement("p");
+          cost.className = "bd-listcard__note";
+          const paintCost = () => {
+            cost.textContent = `${chosen.size} selected · about $${(chosen.size * quote.costPerCompanyUsd).toFixed(2)}`;
+          };
+          for (const row of eligible) {
+            const line = document.createElement("label");
+            line.className = "bd-enrichrow";
+            const box = document.createElement("input");
+            box.type = "checkbox";
+            box.checked = true;
+            box.addEventListener("change", () => {
+              if (box.checked) { chosen.add(row.prospectId); } else { chosen.delete(row.prospectId); }
+              paintCost();
+            });
+            const name = document.createElement("span");
+            name.className = "bd-enrichrow__name";
+            name.textContent = row.company;
+            const url = document.createElement("span");
+            url.className = "bd-enrichrow__url";
+            url.textContent = row.linkedinCompanyUrl;
+            line.append(box, name, url);
+            card.append(line);
+          }
+          paintCost();
+          card.append(cost);
+
+          const status = document.createElement("p");
+          status.className = "bd-draftbar__status";
+          status.setAttribute("role", "status");
+          const run = document.createElement("button");
+          run.type = "button";
+          run.className = "send-button";
+          run.textContent = "Run enrichment";
+          run.disabled = !quote.configured;
+          run.addEventListener("click", () => {
+            run.disabled = true;
+            status.textContent = "Running — this takes up to a minute per batch…";
+            void fetchJson("/api/enrichment/run", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ brand, prospects: [...chosen] }),
+            })
+              .then((result) => {
+                status.textContent = `Done. ${result.written} of ${result.findings.length} got a contact. Cost about $${result.costUsd.toFixed(2)}.`;
+                const results = document.createElement("div");
+                for (const finding of result.findings) {
+                  const line = document.createElement("p");
+                  line.className = finding.contactEmail === ""
+                    ? "bd-oppcard__next"
+                    : "bd-listcard__note";
+                  line.textContent = finding.contactEmail === ""
+                    ? `${finding.company}: nothing found — ${finding.flagReason}`
+                    : `${finding.company}: ${finding.contactName || "(no name)"} ${finding.contactEmail} [${finding.confidence}]${finding.flagReason ? ` — ${finding.flagReason}` : ""}`;
+                  results.append(line);
+                }
+                card.replaceChildren(results, status);
+              })
+              .catch((error) => {
+                run.disabled = false;
+                status.textContent = error.message ?? "The run failed.";
+              });
+          });
+          card.append(run, status);
+          holder.append(card);
+        }
+
+        if (missing.length > 0) {
+          const gap = bdSection(`No LinkedIn company URL (${missing.length})`);
+          const note = document.createElement("p");
+          note.className = "bd-listcard__note";
+          note.textContent = `Enrichment cannot look these up until each has a company page URL: ${missing.slice(0, 20).join(", ")}${missing.length > 20 ? "…" : ""}`;
+          gap.append(note);
+          holder.append(gap);
+        }
+      })
+      .catch(() => {
+        holder.replaceChildren(dashEmpty("The store is not reachable."));
+      });
+  }
+
   // ---- Mode toggle, Festivals and Press ---------------------------------
 
   function renderBdModeToggle() {
@@ -3012,6 +3597,7 @@
         }
         bdMode = mode.id;
         bdDraftContext = null;
+        bdScreen = null;
         bdStreamFilter = "all";
         activeTabId = "";
         renderStage();
@@ -3112,8 +3698,24 @@
     return row;
   }
 
+  function bdImportBar(body, label) {
+    const actions = document.createElement("div");
+    actions.className = "bd-actions";
+    const importButton = document.createElement("button");
+    importButton.type = "button";
+    importButton.className = "secondary-button";
+    importButton.textContent = label;
+    importButton.addEventListener("click", () => {
+      bdScreen = "import";
+      renderStage();
+    });
+    actions.append(importButton);
+    body.append(actions);
+  }
+
   function renderBdFestivalsTab(body) {
     body.append(dashLabel("Deadlines"));
+    bdImportBar(body, "Import opportunities");
     const holder = document.createElement("div");
     holder.append(dashEmpty("Loading opportunities…"));
     body.append(holder);
@@ -3341,6 +3943,7 @@
 
   function renderBdPressTab(body) {
     body.append(dashLabel("Press contacts"));
+    bdImportBar(body, "Import press contacts");
     const holder = document.createElement("div");
     holder.append(dashEmpty("Loading contacts…"));
     body.append(holder);
@@ -3775,9 +4378,9 @@
           importMore.className = "secondary-button";
           importMore.textContent = "Import more";
           importMore.addEventListener("click", () => {
-            openChatWithPrompt(
-              `Import more prospects into the existing list "${listName}". Here are the rows:`,
-            );
+            bdScreen = "import";
+            bdImportList = listName;
+            renderStage();
           });
           actions.append(importMore);
 
@@ -3787,9 +4390,9 @@
             find.className = "secondary-button";
             find.textContent = `Find ${stats.noEmail} contact${stats.noEmail === 1 ? "" : "s"}`;
             find.addEventListener("click", () => {
-              openChatWithPrompt(
-                `Enrich the prospects in "${listName}" that still have no contact email, and tell me which ones can't be enriched yet and why.`,
-              );
+              bdScreen = "enrich";
+              bdImportList = listName;
+              renderStage();
             });
             actions.append(find);
           }
@@ -4103,7 +4706,13 @@
       if (activeAgentId === "business-development" && bdModesAvailable()) {
         body.append(renderBdModeToggle());
       }
-      if (activeAgentId === "business-development" && bdDraftContext !== null) {
+      if (activeAgentId === "business-development" && bdScreen === "import") {
+        renderBdImportScreen(body);
+      } else if (activeAgentId === "business-development" && bdScreen === "settings") {
+        renderBdSettingsScreen(body);
+      } else if (activeAgentId === "business-development" && bdScreen === "enrich") {
+        renderBdEnrichScreen(body);
+      } else if (activeAgentId === "business-development" && bdDraftContext !== null) {
         renderBdDraftScreen(body);
       } else if (activeTabId === "bd-deadlines") {
         renderBdFestivalsTab(body);

@@ -59,6 +59,11 @@ import {
   type StoredAttachment,
 } from "./chat-store.js";
 import {
+  EnrichmentUnavailableError,
+  enrichmentCostUsd,
+  runEnrichment,
+} from "./enrichment.js";
+import {
   createArticleBriefData,
   refreshArticleBriefContext,
   resolveArticleContext,
@@ -393,6 +398,7 @@ type ErrorCode =
   | "MESSAGE_TOO_LONG"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
+  | "ENRICHMENT_UNAVAILABLE"
   | "OUTREACH_NOT_CONFIGURED"
   | "PROSPECT_NOT_FOUND"
   | "PROSPECT_STORE_ERROR"
@@ -3508,6 +3514,212 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 "Those drafts could not be saved.",
               ),
             );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/enrichment/run") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "POST" });
+            return;
+          }
+          const body = businessMemoryObject(await readRequestBody(request), "enrichment request");
+          const brand = validateBrandSlug(body.brand);
+          const ids = businessMemoryObjectArray(
+            Array.isArray(body.prospects) ? body.prospects.map((id) => ({ id })) : [],
+            "prospect ids",
+            50,
+          ).map((row) => prospectText(row.id, 64)).filter((id) => id !== "");
+          if (ids.length === 0) {
+            throw new PublicError(400, "INVALID_REQUEST", "Select at least one company to enrich.");
+          }
+          const eligible = chatStore
+            .listEnrichableProspects(brand, undefined, 200)
+            .eligible.filter((row) => ids.includes(row.prospectId));
+          if (eligible.length === 0) {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "None of those are enrichable — they need a LinkedIn company URL and no contact email yet.",
+            );
+          }
+          const result = await runEnrichment(
+            eligible.map((row) => ({
+              prospectId: row.prospectId,
+              company: row.company,
+              linkedinCompanyUrl: row.linkedinCompanyUrl,
+            })),
+            { token: process.env.APIFY_TOKEN },
+          );
+          // Write findings back through the same update path the rest of the
+          // app uses, so nothing bypasses validation.
+          const updates = result.findings
+            .filter((finding) => finding.contactEmail !== "")
+            .map((finding) => ({
+              company: finding.company,
+              fields: {
+                contactName: finding.contactName || undefined,
+                contactEmail: finding.contactEmail,
+                linkedinUrl: finding.linkedinUrl || undefined,
+                status: (finding.confidence === "high" ? "enriched" : "needs_review") as ProspectStatus,
+                flagReason: finding.flagReason,
+              },
+            }));
+          if (updates.length > 0) {
+            chatStore.updateProspectFields(brand, updates);
+          }
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            runId: result.runId,
+            costUsd: result.costUsd,
+            findings: result.findings,
+            written: updates.length,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof EnrichmentUnavailableError) {
+            sendError(response, new PublicError(400, "ENRICHMENT_UNAVAILABLE", error.message));
+          } else if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Enrichment run failed", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "The enrichment run failed."));
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/enrichment/quote") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "GET" });
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const listName = prospectText(url.searchParams.get("list"), 120) || undefined;
+          const { eligible, missingUrl } = chatStore.listEnrichableProspects(brand, listName, 200);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            configured: typeof process.env.APIFY_TOKEN === "string" && process.env.APIFY_TOKEN !== "",
+            eligible,
+            missingUrl,
+            costPerCompanyUsd: enrichmentCostUsd(1),
+            costAllUsd: enrichmentCostUsd(eligible.length),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not quote enrichment", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "The enrichment quote could not be read."));
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/opportunities/import") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "POST" });
+            return;
+          }
+          const body = businessMemoryObject(await readRequestBody(request), "opportunity import");
+          const brand = validateBrandSlug(body.brand);
+          const rows = businessMemoryObjectArray(body.rows, "opportunity rows", 300);
+          const parsed = rows.map((row) => {
+            const name = prospectText(row.name, 200);
+            if (name === "") {
+              throw new PublicError(400, "INVALID_REQUEST", "Every opportunity needs a name.");
+            }
+            return {
+              name,
+              sourceId: prospectText(row.sourceId, 80),
+              organiser: prospectText(row.organiser, 200),
+              kind: prospectText(row.kind, 20) as never,
+              city: prospectText(row.city, 120),
+              country: prospectText(row.country, 120),
+              url: prospectText(row.url, 500),
+              eventStart: prospectText(row.eventStart, 40),
+              eventEnd: prospectText(row.eventEnd, 40),
+              pressDeadline: prospectText(row.pressDeadline, 40),
+              submissionDeadline: prospectText(row.submissionDeadline, 40),
+              contact: prospectText(row.contact, 254),
+              relevance: prospectText(row.relevance, 2000),
+              nextAction: prospectText(row.nextAction, 500),
+              notes: prospectText(row.notes, 2000),
+            };
+          });
+          const written = chatStore.upsertOpportunities(brand, parsed);
+          sendJson(response, 200, { schemaVersion: 1, written });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not import opportunities", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "Those opportunities could not be saved."));
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/media-contacts/import") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "POST" });
+            return;
+          }
+          const body = businessMemoryObject(await readRequestBody(request), "media import");
+          const brand = validateBrandSlug(body.brand);
+          const rows = businessMemoryObjectArray(body.rows, "media rows", 300);
+          const parsed = rows.map((row) => {
+            const outlet = prospectText(row.outlet, 200);
+            if (outlet === "") {
+              throw new PublicError(400, "INVALID_REQUEST", "Every press contact needs an outlet.");
+            }
+            return {
+              outlet,
+              sourceId: prospectText(row.sourceId, 80),
+              segment: prospectText(row.segment, 20) as never,
+              person: prospectText(row.person, 160),
+              role: prospectText(row.role, 200),
+              url: prospectText(row.url, 500),
+              email: prospectText(row.email, 254),
+              contactPage: prospectText(row.contactPage, 500),
+              linkedin: prospectText(row.linkedin, 500),
+              hook: prospectText(row.hook, 500),
+              whyFit: prospectText(row.whyFit, 2000),
+              notes: prospectText(row.notes, 2000),
+            };
+          });
+          const written = chatStore.upsertMediaContacts(brand, parsed);
+          sendJson(response, 200, { schemaVersion: 1, written });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not import media contacts", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "Those contacts could not be saved."));
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/campaign-list") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "GET" });
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const campaigns = chatStore
+            .listCampaigns(brand)
+            .map((row) => chatStore.getCampaign(row.campaignId))
+            .filter((row) => row !== undefined);
+          sendJson(response, 200, { schemaVersion: 1, campaigns });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not list campaigns", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "The campaigns could not be read."));
           }
         }
         return;
