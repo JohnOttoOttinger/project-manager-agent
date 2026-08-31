@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -440,6 +440,21 @@ export interface MediaContactRecord {
   contactPage: string; linkedin: string; hook: string; whyFit: string;
   evidenceUrl: string; relevance: string; status: MediaStatus;
   outcome: string; notes: string; createdAt: string; updatedAt: string;
+}
+
+export interface SourcingBriefRecord {
+  briefId: string; brand: string; name: string; lookingFor: string;
+  geography: string; signals: string; exclude: string; targetCount: number;
+  listName: string; status: "open" | "closed";
+  createdAt: string; updatedAt: string;
+}
+
+export interface SourcingCandidateRecord {
+  candidateId: string; briefId: string; brand: string; company: string;
+  website: string; linkedinCompanyUrl: string; region: string;
+  whyFit: string; evidenceUrl: string; foundBy: string;
+  state: "proposed" | "accepted" | "rejected";
+  createdAt: string; updatedAt: string;
 }
 
 export class OutreachNotConfiguredError extends Error {}
@@ -1712,6 +1727,53 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 13) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE sourcing_briefs (
+            brief_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            name TEXT NOT NULL,
+            looking_for TEXT NOT NULL DEFAULT '',
+            geography TEXT NOT NULL DEFAULT '',
+            signals TEXT NOT NULL DEFAULT '',
+            exclude TEXT NOT NULL DEFAULT '',
+            target_count INTEGER NOT NULL DEFAULT 10,
+            list_name TEXT NOT NULL DEFAULT '',
+            status TEXT NOT NULL DEFAULT 'open'
+              CHECK (status IN ('open', 'closed')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+          ) STRICT;
+
+          -- Candidates are proposed, never imported straight in. Sourcing is
+          -- a judgement call and an unreviewed list poisons the pipeline.
+          CREATE TABLE sourcing_candidates (
+            candidate_id TEXT PRIMARY KEY,
+            brief_id TEXT NOT NULL
+              REFERENCES sourcing_briefs(brief_id) ON DELETE CASCADE,
+            brand TEXT NOT NULL,
+            company TEXT NOT NULL,
+            website TEXT NOT NULL DEFAULT '',
+            linkedin_company_url TEXT NOT NULL DEFAULT '',
+            region TEXT NOT NULL DEFAULT '',
+            why_fit TEXT NOT NULL DEFAULT '',
+            evidence_url TEXT NOT NULL DEFAULT '',
+            found_by TEXT NOT NULL DEFAULT '',
+            state TEXT NOT NULL DEFAULT 'proposed'
+              CHECK (state IN ('proposed', 'accepted', 'rejected')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(brief_id, company)
+          ) STRICT;
+
+          CREATE INDEX sourcing_candidates_brand_state
+          ON sourcing_candidates(brand, state, updated_at DESC);
+
+          PRAGMA user_version = 13;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1729,6 +1791,8 @@ export class ChatStore {
     this.database.prepare("SELECT draft_row_id FROM outreach_drafts LIMIT 1").all();
     this.database.prepare("SELECT opportunity_id FROM opportunities LIMIT 1").all();
     this.database.prepare("SELECT media_id FROM media_contacts LIMIT 1").all();
+    this.database.prepare("SELECT brief_id FROM sourcing_briefs LIMIT 1").all();
+    this.database.prepare("SELECT candidate_id FROM sourcing_candidates LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -3899,6 +3963,147 @@ export class ChatStore {
       return undefined;
     }
     return this.listMediaContacts(row.brand).find((m) => m.mediaId === mediaId);
+  }
+
+  // ---- Sourcing ----------------------------------------------------------
+
+  saveSourcingBrief(
+    brand: string,
+    input: {
+      briefId?: string | undefined; name: string; lookingFor: string;
+      geography: string; signals: string; exclude: string;
+      targetCount: number; listName: string;
+    },
+  ): SourcingBriefRecord {
+    const now = nowIso();
+    const briefId = input.briefId ?? randomUUID();
+    this.database
+      .prepare(
+        `INSERT INTO sourcing_briefs (brief_id, brand, name, looking_for,
+           geography, signals, exclude, target_count, list_name, status,
+           created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,'open',?,?)
+         ON CONFLICT(brief_id) DO UPDATE SET
+           name=excluded.name, looking_for=excluded.looking_for,
+           geography=excluded.geography, signals=excluded.signals,
+           exclude=excluded.exclude, target_count=excluded.target_count,
+           list_name=excluded.list_name, updated_at=excluded.updated_at`,
+      )
+      .run(briefId, brand, input.name.trim(), input.lookingFor.trim(),
+        input.geography.trim(), input.signals.trim(), input.exclude.trim(),
+        clampWholeNumber(input.targetCount, 10, 1, 200),
+        input.listName.trim(), now, now);
+    return this.listSourcingBriefs(brand).find((b) => b.briefId === briefId)!;
+  }
+
+  listSourcingBriefs(brand: string): SourcingBriefRecord[] {
+    const rows = this.database
+      .prepare(`SELECT * FROM sourcing_briefs WHERE brand = ? ORDER BY updated_at DESC`)
+      .all(brand) as unknown as Array<Record<string, string | number>>;
+    return rows.map((row) => ({
+      briefId: String(row.brief_id), brand: String(row.brand),
+      name: String(row.name), lookingFor: String(row.looking_for),
+      geography: String(row.geography), signals: String(row.signals),
+      exclude: String(row.exclude), targetCount: Number(row.target_count),
+      listName: String(row.list_name),
+      status: String(row.status) as "open" | "closed",
+      createdAt: String(row.created_at), updatedAt: String(row.updated_at),
+    }));
+  }
+
+  addSourcingCandidates(
+    brand: string,
+    briefId: string,
+    rows: ReadonlyArray<{
+      company: string; website?: string | undefined;
+      linkedinCompanyUrl?: string | undefined; region?: string | undefined;
+      whyFit?: string | undefined; evidenceUrl?: string | undefined;
+      foundBy?: string | undefined;
+    }>,
+  ): number {
+    const now = nowIso();
+    let added = 0;
+    this.transaction(() => {
+      const statement = this.database.prepare(
+        `INSERT INTO sourcing_candidates (candidate_id, brief_id, brand,
+           company, website, linkedin_company_url, region, why_fit,
+           evidence_url, found_by, state, created_at, updated_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,'proposed',?,?)
+         ON CONFLICT(brief_id, company) DO UPDATE SET
+           website=excluded.website,
+           linkedin_company_url=excluded.linkedin_company_url,
+           region=excluded.region, why_fit=excluded.why_fit,
+           evidence_url=excluded.evidence_url, updated_at=excluded.updated_at`,
+      );
+      for (const row of rows) {
+        statement.run(randomUUID(), briefId, brand, row.company.trim(),
+          row.website ?? "", row.linkedinCompanyUrl ?? "", row.region ?? "",
+          row.whyFit ?? "", row.evidenceUrl ?? "", row.foundBy ?? "agent",
+          now, now);
+        added += 1;
+      }
+    });
+    return added;
+  }
+
+  listSourcingCandidates(brand: string, briefId?: string): SourcingCandidateRecord[] {
+    const where = briefId === undefined
+      ? "WHERE brand = ?"
+      : "WHERE brand = ? AND brief_id = ?";
+    const parameters = briefId === undefined ? [brand] : [brand, briefId];
+    const rows = this.database
+      .prepare(`SELECT * FROM sourcing_candidates ${where} ORDER BY created_at DESC`)
+      .all(...parameters) as unknown as Array<Record<string, string>>;
+    return rows.map((row) => ({
+      candidateId: row.candidate_id!, briefId: row.brief_id!, brand: row.brand!,
+      company: row.company!, website: row.website!,
+      linkedinCompanyUrl: row.linkedin_company_url!, region: row.region!,
+      whyFit: row.why_fit!, evidenceUrl: row.evidence_url!,
+      foundBy: row.found_by!,
+      state: row.state as "proposed" | "accepted" | "rejected",
+      createdAt: row.created_at!, updatedAt: row.updated_at!,
+    }));
+  }
+
+  /**
+   * Accepting a candidate is what turns research into a prospect. The
+   * duplicate rule is the importer's, so a company already on the list is
+   * reported rather than silently doubled.
+   */
+  decideSourcingCandidate(
+    brand: string,
+    candidateId: string,
+    decision: "accepted" | "rejected",
+    listName: string,
+  ): { outcome: "accepted" | "rejected" | "duplicate" | "not_found"; company: string } {
+    const row = this.database
+      .prepare(`SELECT * FROM sourcing_candidates WHERE candidate_id = ? AND brand = ?`)
+      .get(candidateId, brand) as unknown as Record<string, string> | undefined;
+    if (row === undefined) {
+      return { outcome: "not_found", company: "" };
+    }
+    const now = nowIso();
+    if (decision === "rejected") {
+      this.database
+        .prepare(`UPDATE sourcing_candidates SET state='rejected', updated_at=? WHERE candidate_id=?`)
+        .run(now, candidateId);
+      return { outcome: "rejected", company: row.company! };
+    }
+    const added = this.addProspect(brand, listName, {
+      company: row.company!,
+      website: row.website! || undefined,
+      linkedinCompanyUrl: row.linkedin_company_url! || undefined,
+      region: row.region! || undefined,
+      source: "sourced",
+      notes: row.why_fit! || undefined,
+    });
+    this.database
+      .prepare(`UPDATE sourcing_candidates SET state='accepted', updated_at=? WHERE candidate_id=?`)
+      .run(now, candidateId);
+    return {
+      outcome: added.outcome === "duplicate" ? "duplicate" : "accepted",
+      company: row.company!,
+    };
   }
 
   countDraftedToday(brand: string): number {

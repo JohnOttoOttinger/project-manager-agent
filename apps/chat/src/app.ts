@@ -3590,6 +3590,105 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
         }
         return;
       }
+      if (url.pathname === "/api/sourcing/briefs") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              briefs: chatStore.listSourcingBriefs(brand),
+              candidates: chatStore.listSourcingCandidates(brand),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(await readRequestBody(request), "sourcing brief");
+            const brand = validateBrandSlug(body.brand);
+            const name = prospectText(body.name, 120);
+            if (name === "") {
+              throw new PublicError(400, "INVALID_REQUEST", "Give the brief a short name.");
+            }
+            const brief = chatStore.saveSourcingBrief(brand, {
+              briefId: prospectText(body.briefId, 64) || undefined,
+              name,
+              lookingFor: prospectText(body.lookingFor, 2000),
+              geography: prospectText(body.geography, 300),
+              signals: prospectText(body.signals, 1000),
+              exclude: prospectText(body.exclude, 1000),
+              targetCount: Number(body.targetCount) || 10,
+              listName: prospectText(body.listName, 120),
+            });
+            sendJson(response, 200, { schemaVersion: 1, brief });
+            return;
+          }
+          sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "GET, POST" });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not read or save sourcing briefs", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "The sourcing briefs could not be reached."));
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/sourcing/candidates") {
+        try {
+          if (request.method === "POST") {
+            const body = businessMemoryObject(await readRequestBody(request), "sourcing candidates");
+            const brand = validateBrandSlug(body.brand);
+            const briefId = prospectText(body.briefId, 64);
+            if (briefId === "") {
+              throw new PublicError(400, "INVALID_REQUEST", "Which brief are these candidates for?");
+            }
+            const rows = businessMemoryObjectArray(body.candidates, "candidates", 200).map((row) => {
+              const company = prospectText(row.company, 200);
+              if (company === "") {
+                throw new PublicError(400, "INVALID_REQUEST", "Every candidate needs a company name.");
+              }
+              return {
+                company,
+                website: prospectText(row.website, 500),
+                linkedinCompanyUrl: prospectText(row.linkedinCompanyUrl, 500),
+                region: prospectText(row.region, 120),
+                whyFit: prospectText(row.whyFit, 1000),
+                evidenceUrl: prospectText(row.evidenceUrl, 500),
+                foundBy: prospectText(row.foundBy, 60) || "agent",
+              };
+            });
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              added: chatStore.addSourcingCandidates(brand, briefId, rows),
+            });
+            return;
+          }
+          if (request.method === "PATCH") {
+            const body = businessMemoryObject(await readRequestBody(request), "candidate decision");
+            const brand = validateBrandSlug(body.brand);
+            const candidateId = prospectText(body.candidateId, 64);
+            const decision = prospectText(body.decision, 20);
+            const listName = prospectText(body.listName, 120) || "Sourced";
+            if (candidateId === "" || (decision !== "accepted" && decision !== "rejected")) {
+              throw new PublicError(400, "INVALID_REQUEST", "A decision must be accepted or rejected.");
+            }
+            const result = chatStore.decideSourcingCandidate(brand, candidateId, decision, listName);
+            if (result.outcome === "not_found") {
+              throw new PublicError(404, "PROSPECT_NOT_FOUND", "That candidate is no longer in the store.");
+            }
+            sendJson(response, 200, { schemaVersion: 1, ...result });
+            return;
+          }
+          sendJson(response, 405, { error: { code: "INVALID_REQUEST", message: "That method is not supported." } }, { Allow: "POST, PATCH" });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) { sendError(response, error); }
+          else {
+            options.logError?.("Could not record sourcing candidates", error);
+            sendError(response, new PublicError(500, "PROSPECT_STORE_ERROR", "Those candidates could not be saved."));
+          }
+        }
+        return;
+      }
       if (url.pathname === "/api/enrichment/quote") {
         try {
           if (request.method !== "GET") {

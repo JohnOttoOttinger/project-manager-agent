@@ -1953,9 +1953,8 @@
     findButton.type = "button";
     findButton.textContent = "Find prospects";
     findButton.addEventListener("click", () => {
-      openChatWithPrompt(
-        "Find me candidate prospects for this brand and propose them for import: ",
-      );
+      bdScreen = "sourcing";
+      renderStage();
     });
     actions.append(addButton, importButton, findButton);
     body.append(actions);
@@ -3574,6 +3573,255 @@
       });
   }
 
+  // ---- Find prospects ---------------------------------------------------
+  // Sourcing is a judgement, not a scrape — deciding whether a company is a
+  // fit is the whole job. So this screen is the brief plus a review queue:
+  // the research is handed to the agent, and what comes back is accepted or
+  // rejected here rather than landing straight in the pipeline.
+
+  function renderBdSourcingScreen(body) {
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const q = encodeURIComponent(brand);
+    bdBackLink(body);
+    body.append(dashLabel("Find prospects"));
+
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading briefs…"));
+    body.append(holder);
+
+    void fetchJson(`/api/sourcing/briefs?brand=${q}`)
+      .then((payload) => {
+        holder.replaceChildren();
+        const briefs = payload.briefs ?? [];
+        const candidates = payload.candidates ?? [];
+
+        const intro = document.createElement("p");
+        intro.className = "bd-listcard__note";
+        intro.textContent =
+          "Write a brief describing who you want, hand it to the agent to research, then accept or reject what it proposes. Nothing reaches the pipeline until you say so — an unreviewed list of companies is worse than no list.";
+        holder.append(intro);
+
+        // --- Review queue first: it is the thing waiting on you ----------
+        const proposed = candidates.filter((c) => c.state === "proposed");
+        if (proposed.length > 0) {
+          const byBrief = new Map();
+          for (const c of proposed) {
+            if (!byBrief.has(c.briefId)) { byBrief.set(c.briefId, []); }
+            byBrief.get(c.briefId).push(c);
+          }
+          const queue = bdSection(`Waiting for your call (${proposed.length})`);
+          for (const [briefId, rows] of byBrief.entries()) {
+            const brief = briefs.find((b) => b.briefId === briefId);
+            const listName = brief?.listName || "Sourced";
+            const heading = document.createElement("p");
+            heading.className = "bd-flightgroup__title";
+            heading.textContent = `${brief?.name ?? "Unknown brief"} → ${listName}`;
+            queue.append(heading);
+            for (const candidate of rows) {
+              queue.append(bdCandidateCard(candidate, brand, listName));
+            }
+          }
+          holder.append(queue);
+        }
+
+        // --- Existing briefs ---------------------------------------------
+        if (briefs.length > 0) {
+          const section = bdSection(`Briefs (${briefs.length})`);
+          for (const brief of briefs) {
+            const mine = candidates.filter((c) => c.briefId === brief.briefId);
+            const card = dashCard();
+            card.className = "dash-card bd-listcard";
+            const head = document.createElement("div");
+            head.className = "bd-listcard__head";
+            const title = document.createElement("h3");
+            title.className = "bd-listcard__title";
+            title.textContent = brief.name;
+            head.append(title);
+            const count = document.createElement("span");
+            count.className = "bd-listcard__count";
+            const accepted = mine.filter((c) => c.state === "accepted").length;
+            const rejected = mine.filter((c) => c.state === "rejected").length;
+            const waiting = mine.filter((c) => c.state === "proposed").length;
+            count.textContent = `${waiting} waiting · ${accepted} accepted · ${rejected} rejected · target ${brief.targetCount}`;
+            head.append(count);
+            card.append(head);
+
+            const detail = document.createElement("p");
+            detail.className = "bd-listcard__note";
+            detail.textContent = brief.lookingFor || "No description written.";
+            card.append(detail);
+
+            const meta = document.createElement("dl");
+            meta.className = "bd-listmeta";
+            const metaRow = (label, value) => {
+              if (!value) { return; }
+              const dt = document.createElement("dt");
+              dt.textContent = label;
+              const dd = document.createElement("dd");
+              dd.textContent = value;
+              meta.append(dt, dd);
+            };
+            metaRow("Where", brief.geography);
+            metaRow("Signals", brief.signals);
+            metaRow("Exclude", brief.exclude);
+            metaRow("Lands in", brief.listName || "Sourced");
+            metaRow("Updated", bdStamp(brief.updatedAt));
+            card.append(meta);
+
+            const actions = document.createElement("div");
+            actions.className = "bd-listcard__actions";
+            const research = document.createElement("button");
+            research.type = "button";
+            research.className = "secondary-button";
+            research.textContent = `Research ${brief.targetCount} candidates`;
+            research.addEventListener("click", () => {
+              openChatWithPrompt(
+                [
+                  `Research candidates for the sourcing brief "${brief.name}" (${brand}).`,
+                  ``,
+                  `Looking for: ${brief.lookingFor}`,
+                  brief.geography ? `Where: ${brief.geography}` : "",
+                  brief.signals ? `Signals that mark a good fit: ${brief.signals}` : "",
+                  brief.exclude ? `Exclude: ${brief.exclude}` : "",
+                  `Target: ${brief.targetCount} companies.`,
+                  ``,
+                  `For each one give the company name, website, LinkedIn company URL, region, one sentence on why it fits, and the URL you verified it from. Do not invent companies or URLs — anything you cannot verify, leave blank and say so.`,
+                  `Then POST them to http://127.0.0.1:3000/api/sourcing/candidates with {"brand":"${brand}","briefId":"${brief.briefId}","candidates":[…]} so they land in the review queue. Do not import them as prospects; I review them myself.`,
+                ].filter(Boolean).join("\n"),
+              );
+            });
+            actions.append(research);
+            card.append(actions);
+            section.append(card);
+          }
+          holder.append(section);
+        }
+
+        // --- New brief ----------------------------------------------------
+        const form = bdSection(briefs.length > 0 ? "New brief" : "Write your first brief");
+        const card = dashCard();
+        const name = bdField(card, "Brief name", "", { maxLength: 120, hint: "Something you'll recognise later, like \"Sydney experiential agencies\"." });
+        const lookingFor = bdField(card, "Who you're looking for", "", { kind: "area", maxLength: 2000, hint: "The kind of company, what they do, roughly what size." });
+        const geography = bdField(card, "Where", "", { maxLength: 300, hint: "Cities, countries, or a region. Leave blank for anywhere." });
+        const signals = bdField(card, "Signals of a good fit", "", { kind: "area", maxLength: 1000, hint: "What tells you one is worth approaching — the work they show, the clients they name, an office near you." });
+        const exclude = bdField(card, "Exclude", "", { kind: "area", maxLength: 1000, hint: "Anything to keep out: competitors, companies too small to commission, anyone already on the board." });
+        const targetCount = bdField(card, "How many", "10", { kind: "number" });
+        const listName = bdField(card, "Accepted ones land in this list", "Sourced", { maxLength: 120 });
+
+        const status = document.createElement("p");
+        status.className = "bd-draftbar__status";
+        status.setAttribute("role", "status");
+        const save = document.createElement("button");
+        save.type = "button";
+        save.className = "send-button";
+        save.textContent = "Save brief";
+        save.addEventListener("click", () => {
+          if (name.value.trim() === "") {
+            status.textContent = "Give the brief a name.";
+            return;
+          }
+          status.textContent = "Saving…";
+          void fetchJson("/api/sourcing/briefs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              brand, name: name.value, lookingFor: lookingFor.value,
+              geography: geography.value, signals: signals.value,
+              exclude: exclude.value, targetCount: Number(targetCount.value) || 10,
+              listName: listName.value,
+            }),
+          })
+            .then(() => renderStage())
+            .catch((error) => { status.textContent = error.message ?? "Could not save."; });
+        });
+        card.append(save, status);
+        form.append(card);
+        holder.append(form);
+      })
+      .catch(() => {
+        holder.replaceChildren(dashEmpty("The store is not reachable."));
+      });
+  }
+
+  function bdCandidateCard(candidate, brand, listName) {
+    const card = dashCard();
+    card.className = "dash-card bd-oppcard";
+    const head = document.createElement("div");
+    head.className = "bd-listcard__head";
+    const title = document.createElement("h3");
+    title.className = "bd-listcard__title";
+    title.textContent = candidate.company;
+    head.append(title);
+    if (candidate.region !== "") {
+      const region = document.createElement("span");
+      region.className = "bd-listcard__count";
+      region.textContent = candidate.region;
+      head.append(region);
+    }
+    card.append(head);
+
+    if (candidate.whyFit !== "") {
+      const why = document.createElement("p");
+      why.className = "bd-listcard__note";
+      why.textContent = bdPlainText(candidate.whyFit);
+      card.append(why);
+    }
+
+    // No verified source is a reason to look harder, not a reason to hide it.
+    const provenance = document.createElement("p");
+    provenance.className = "bd-oppcard__next";
+    provenance.textContent = candidate.evidenceUrl === ""
+      ? `Found by ${candidate.foundBy} · no source URL given — check before accepting`
+      : `Found by ${candidate.foundBy} · verified from ${candidate.evidenceUrl}`;
+    card.append(provenance);
+
+    const actions = document.createElement("div");
+    actions.className = "bd-listcard__actions";
+    const status = document.createElement("span");
+    status.className = "bd-draftbar__status";
+
+    const decide = (decision) => {
+      status.textContent = decision === "accepted" ? "Adding…" : "Rejecting…";
+      void fetchJson("/api/sourcing/candidates", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brand, candidateId: candidate.candidateId, decision, listName }),
+      })
+        .then((result) => {
+          if (result.outcome === "duplicate") {
+            status.textContent = `${result.company} was already on that list.`;
+            return;
+          }
+          renderStage();
+        })
+        .catch((error) => { status.textContent = error.message ?? "Could not save that."; });
+    };
+
+    const accept = document.createElement("button");
+    accept.type = "button";
+    accept.className = "secondary-button";
+    accept.textContent = `Add to ${listName}`;
+    accept.addEventListener("click", () => decide("accepted"));
+    const reject = document.createElement("button");
+    reject.type = "button";
+    reject.className = "bd-listcard__edit";
+    reject.textContent = "Not a fit";
+    reject.addEventListener("click", () => decide("rejected"));
+    actions.append(accept, reject);
+    for (const [label, href] of [["Website", candidate.website], ["LinkedIn", candidate.linkedinCompanyUrl], ["Source", candidate.evidenceUrl]]) {
+      if (!href) { continue; }
+      const link = document.createElement("a");
+      link.href = href;
+      link.target = "_blank";
+      link.rel = "noreferrer noopener";
+      link.className = "bd-listcard__edit";
+      link.textContent = label;
+      actions.append(link);
+    }
+    card.append(actions, status);
+    return card;
+  }
+
   // ---- Mode toggle, Festivals and Press ---------------------------------
 
   function renderBdModeToggle() {
@@ -4712,6 +4960,8 @@
         renderBdSettingsScreen(body);
       } else if (activeAgentId === "business-development" && bdScreen === "enrich") {
         renderBdEnrichScreen(body);
+      } else if (activeAgentId === "business-development" && bdScreen === "sourcing") {
+        renderBdSourcingScreen(body);
       } else if (activeAgentId === "business-development" && bdDraftContext !== null) {
         renderBdDraftScreen(body);
       } else if (activeTabId === "bd-deadlines") {
