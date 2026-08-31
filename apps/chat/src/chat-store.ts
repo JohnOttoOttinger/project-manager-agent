@@ -2967,6 +2967,48 @@ export class ChatStore {
   }
 
   /**
+   * Recent outreach activity across one brand. The per-prospect timeline
+   * answers "what happened to this company"; this answers "what has been
+   * happening at all", which is what the Outreach screen needs.
+   */
+  listRecentOutreachEvents(
+    brand: string,
+    limit = 25,
+  ): Array<OutreachEventRecord & { company: string; listName: string }> {
+    const boundedLimit = Math.max(1, Math.min(limit, 200));
+    const rows = this.database
+      .prepare(
+        `SELECT e.event_id, e.prospect_id, e.campaign_id, e.event_type,
+                e.detail, e.occurred_at, p.company, p.list_name
+         FROM outreach_events e
+         JOIN prospects p ON p.prospect_id = e.prospect_id
+         WHERE p.brand = ?
+         ORDER BY e.occurred_at DESC
+         LIMIT ?`,
+      )
+      .all(brand, boundedLimit) as unknown as Array<{
+      event_id: string;
+      prospect_id: string;
+      campaign_id: string | null;
+      event_type: OutreachEventType;
+      detail: string;
+      occurred_at: string;
+      company: string;
+      list_name: string;
+    }>;
+    return rows.map((row) => ({
+      eventId: row.event_id,
+      prospectId: row.prospect_id,
+      campaignId: row.campaign_id ?? undefined,
+      eventType: row.event_type,
+      detail: row.detail,
+      occurredAt: row.occurred_at,
+      company: row.company,
+      listName: row.list_name,
+    }));
+  }
+
+  /**
    * The do-not-contact list. This is what makes the unsubscribe line in every
    * draft a real opt-out rather than decoration: nothing is drafted to an
    * address recorded here.

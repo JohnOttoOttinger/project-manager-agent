@@ -2269,18 +2269,350 @@
     }
   }
 
+  // ---- Outreach ---------------------------------------------------------
+  // The sending operation: how much capacity is left today, whether the
+  // guardrails that gate everything are actually configured, what is in
+  // flight, who must never be contacted, and what has been happening.
+
+  const BD_EVENT_TONE = {
+    imported: "muted", enriched: "good", flagged: "warn", emailed: "good",
+    opened: "good", clicked: "good", followed_up: "good", replied: "good",
+    status_change: "muted",
+  };
+
+  function bdSection(title) {
+    const wrap = document.createElement("section");
+    wrap.className = "bd-section";
+    const heading = document.createElement("h3");
+    heading.className = "bd-section__title";
+    heading.textContent = title;
+    wrap.append(heading);
+    return wrap;
+  }
+
+  function bdKeyValue(label, value, tone) {
+    const row = document.createElement("div");
+    row.className = "bd-kv";
+    const name = document.createElement("dt");
+    name.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = value === "" ? "—" : value;
+    if (tone) {
+      detail.classList.add(`bd-kv--${tone}`);
+    }
+    row.append(name, detail);
+    return row;
+  }
+
   function renderBdOutreachTab(body) {
     body.append(dashLabel("Outreach"));
-    const card = dashCard();
-    card.append(
-      dashEmpty(
-        "Outreach drafting is not built yet (phases 3–5: Mailchimp campaign, tracking, follow-up).",
-      ),
-      dashNote(
-        "The opener asset is live: every agency is featured on the experiential-agencies guide page with UTM-tagged links.",
-      ),
-    );
-    body.append(card);
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Loading outreach…"));
+    body.append(holder);
+
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const q = encodeURIComponent(brand);
+    void Promise.all([
+      fetchJson(`/api/outreach/settings?brand=${q}`),
+      fetchJson(`/api/prospects?brand=${q}&limit=500`),
+      fetchJson(`/api/suppressions?brand=${q}`).catch(() => ({ suppressions: [] })),
+      fetchJson(`/api/outreach/activity?brand=${q}&limit=15`).catch(() => ({ events: [] })),
+    ])
+      .then(([settingsPayload, boardPayload, suppressionPayload, activityPayload]) => {
+        holder.replaceChildren();
+        const configured = settingsPayload.configured === true;
+        const settings = settingsPayload.settings;
+        const prospects = boardPayload.prospects ?? [];
+        const suppressions = suppressionPayload.suppressions ?? [];
+        const suppressedKeys = new Set(suppressions.map((s) => s.emailKey));
+        const events = activityPayload.events ?? [];
+
+        // --- Not configured: nothing else on this screen matters ---------
+        if (!configured) {
+          const blocked = dashCard();
+          blocked.append(
+            dashEmpty(
+              `No outreach settings for ${brand}. Nothing can be drafted until this brand has a sender name, a way to contact the sender, and an unsubscribe line — the store refuses to hand out a single prospect without them.`,
+            ),
+          );
+          const setUp = document.createElement("button");
+          setUp.type = "button";
+          setUp.className = "secondary-button";
+          setUp.textContent = "Set this up in chat";
+          setUp.addEventListener("click", () => {
+            openChatWithPrompt(
+              `Set up outreach for ${brand}: sender name, sender contact, unsubscribe line, daily cap and follow-up interval.`,
+            );
+          });
+          blocked.append(setUp);
+          holder.append(blocked);
+          return;
+        }
+
+        // --- Today's capacity --------------------------------------------
+        const today = new Date().toISOString().slice(0, 10);
+        const draftedToday = prospects.filter(
+          (p) => (p.draftedAt ?? "").slice(0, 10) === today,
+        ).length;
+        const remaining = Math.max(0, settings.dailyCap - draftedToday);
+        const ready = prospects.filter(
+          (p) =>
+            BD_WORKABLE.includes(p.status) &&
+            p.draftId === "" &&
+            p.contactEmail !== "" &&
+            !suppressedKeys.has(p.contactEmail.trim().toLowerCase()),
+        );
+
+        const capacity = bdSection("Today");
+        const stats = document.createElement("div");
+        stats.className = "dash-stats";
+        stats.append(
+          statCard(ready.length, "ready to draft"),
+          statCard(draftedToday, "drafted today"),
+          statCard(remaining, `left of ${settings.dailyCap}`),
+        );
+        capacity.append(stats);
+
+        const meter = document.createElement("div");
+        meter.className = "bd-meter";
+        const fill = document.createElement("span");
+        fill.className = "bd-meter__fill";
+        fill.style.width = `${Math.min(100, (draftedToday / settings.dailyCap) * 100)}%`;
+        meter.append(fill);
+        capacity.append(meter);
+
+        const capacityNote = document.createElement("p");
+        capacityNote.className = "bd-listcard__note";
+        capacityNote.textContent = remaining === 0
+          ? `Today's cap of ${settings.dailyCap} is used up. Nothing further will be drafted until tomorrow.`
+          : ready.length === 0
+            ? "Nobody is ready to draft. Prospects need a contact email and must not be on the do-not-contact list."
+            : `${Math.min(ready.length, remaining)} would be drafted in a run right now — ${ready.length} ready, capped at ${remaining} left today.`;
+        capacity.append(capacityNote);
+
+        if (ready.length > 0 && remaining > 0) {
+          const draft = document.createElement("button");
+          draft.type = "button";
+          draft.className = "secondary-button";
+          draft.textContent = `Draft ${Math.min(ready.length, remaining)} emails`;
+          draft.addEventListener("click", () => {
+            openChatWithPrompt(
+              `Draft outreach for ${brand}. Show me who is eligible and who is skipped, and the drafts, before anything goes to Gmail.`,
+            );
+          });
+          capacity.append(draft);
+        }
+        holder.append(capacity);
+
+        // --- The guardrails that gate everything -------------------------
+        const setup = bdSection("Sending setup");
+        const list = document.createElement("dl");
+        list.className = "bd-kvlist";
+        list.append(
+          bdKeyValue("Sender", settings.senderName),
+          bdKeyValue("Reply to", settings.senderContact),
+          bdKeyValue("Opt-out line", settings.unsubscribeLine),
+          bdKeyValue("Daily cap", `${settings.dailyCap} drafts`),
+          bdKeyValue("Follow-up", `once, after ${settings.followUpDays} days`),
+          bdKeyValue(
+            "Guide page",
+            settings.guidePageUrl === ""
+              ? "not set — click tracking will stay empty for this brand"
+              : settings.guidePageUrl,
+            settings.guidePageUrl === "" ? "warn" : undefined,
+          ),
+          bdKeyValue("Last changed", bdStamp(settings.updatedAt)),
+        );
+        setup.append(list);
+        const change = document.createElement("button");
+        change.type = "button";
+        change.className = "secondary-button";
+        change.textContent = "Change these";
+        change.addEventListener("click", () => {
+          openChatWithPrompt(
+            `Change the outreach settings for ${brand}. Current daily cap is ${settings.dailyCap} and follow-up is ${settings.followUpDays} days.`,
+          );
+        });
+        setup.append(change);
+        holder.append(setup);
+
+        // --- In flight ----------------------------------------------------
+        const drafted = prospects.filter((p) => p.draftId !== "" && p.sentDate === "");
+        const sent = prospects.filter((p) => p.sentDate !== "" && p.status !== "replied" && p.status !== "closed");
+        const dueFollowUp = prospects.filter(
+          (p) => p.followUpDue !== "" && p.followUpDue <= today && p.status !== "replied" && p.status !== "closed",
+        );
+        const replied = prospects.filter((p) => p.status === "replied");
+
+        const flight = bdSection("In flight");
+        const groups = [
+          ["Waiting in Gmail, not sent", drafted, "Drafts you have not sent yet."],
+          ["Sent, no reply yet", sent, "Out of your hands; waiting on them."],
+          ["Follow-up due", dueFollowUp, "Past the follow-up date with no reply."],
+          ["Replied — hand to Sales", replied, "BD is finished with these."],
+        ];
+        let anyFlight = false;
+        for (const [title, rows, blurb] of groups) {
+          if (rows.length === 0) {
+            continue;
+          }
+          anyFlight = true;
+          const group = document.createElement("div");
+          group.className = "bd-flightgroup";
+          const heading = document.createElement("p");
+          heading.className = "bd-flightgroup__title";
+          heading.textContent = `${title} (${rows.length})`;
+          const note = document.createElement("p");
+          note.className = "bd-flightgroup__note";
+          note.textContent = blurb;
+          group.append(heading, note);
+          const names = document.createElement("div");
+          names.className = "bd-flightgroup__names";
+          for (const row of rows.slice(0, 12)) {
+            const chip = document.createElement("button");
+            chip.type = "button";
+            chip.className = "bd-namechip";
+            chip.textContent = row.company;
+            chip.addEventListener("click", () => openProspectDialog(row.prospectId));
+            names.append(chip);
+          }
+          if (rows.length > 12) {
+            const more = document.createElement("span");
+            more.className = "bd-flightgroup__more";
+            more.textContent = `+${rows.length - 12} more`;
+            names.append(more);
+          }
+          group.append(names);
+          flight.append(group);
+        }
+        if (!anyFlight) {
+          flight.append(
+            dashEmpty("Nothing in flight. No drafts waiting, nothing sent, no follow-ups due."),
+          );
+        }
+        holder.append(flight);
+
+        // --- Do-not-contact -----------------------------------------------
+        const dnc = bdSection(`Do-not-contact (${suppressions.length})`);
+        const dncNote = document.createElement("p");
+        dncNote.className = "bd-listcard__note";
+        dncNote.textContent =
+          "Checked before every draft and again before anything reaches Gmail. This is what makes the opt-out line real rather than decorative.";
+        dnc.append(dncNote);
+
+        if (suppressions.length > 0) {
+          const table = document.createElement("div");
+          table.className = "bd-dnclist";
+          for (const entry of suppressions) {
+            const row = document.createElement("div");
+            row.className = "bd-dncrow";
+            const email = document.createElement("span");
+            email.className = "bd-dncrow__email";
+            email.textContent = entry.emailKey;
+            const reason = document.createElement("span");
+            reason.className = "stage-chip stage-chip--closed";
+            reason.textContent = entry.reason;
+            const when = document.createElement("span");
+            when.className = "bd-dncrow__when";
+            when.textContent = bdStamp(entry.createdAt);
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "bd-listcard__edit";
+            remove.textContent = "Remove";
+            remove.addEventListener("click", () => {
+              remove.disabled = true;
+              void fetchJson(
+                `/api/suppressions?brand=${q}&email=${encodeURIComponent(entry.emailKey)}`,
+                { method: "DELETE" },
+              )
+                .then(() => renderStage())
+                .catch(() => {
+                  remove.disabled = false;
+                  remove.textContent = "Could not remove";
+                });
+            });
+            row.append(email, reason, when, remove);
+            table.append(row);
+          }
+          dnc.append(table);
+        }
+
+        const addForm = document.createElement("form");
+        addForm.className = "bd-dncform";
+        const emailField = document.createElement("input");
+        emailField.type = "email";
+        emailField.required = true;
+        emailField.maxLength = 254;
+        emailField.placeholder = "someone@example.com";
+        emailField.setAttribute("aria-label", "Email to never contact");
+        const reasonField = document.createElement("select");
+        reasonField.setAttribute("aria-label", "Reason");
+        for (const [value, label] of [
+          ["unsubscribed", "Unsubscribed"], ["asked", "Asked to stop"],
+          ["bounced", "Bounced"], ["manual", "Manual"],
+        ]) {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          reasonField.append(option);
+        }
+        const addButton = document.createElement("button");
+        addButton.type = "submit";
+        addButton.className = "secondary-button";
+        addButton.textContent = "Never contact";
+        const addStatus = document.createElement("p");
+        addStatus.className = "prospect-add__status";
+        addStatus.setAttribute("role", "status");
+        addForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          addStatus.textContent = "Saving…";
+          void fetchJson("/api/suppressions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              brand, email: emailField.value, reason: reasonField.value,
+              detail: "Added from the Outreach screen",
+            }),
+          })
+            .then(() => renderStage())
+            .catch((error) => {
+              addStatus.textContent = error.message ?? "Could not save that.";
+            });
+        });
+        addForm.append(emailField, reasonField, addButton);
+        dnc.append(addForm, addStatus);
+        holder.append(dnc);
+
+        // --- Recent activity ----------------------------------------------
+        const activity = bdSection("Recent activity");
+        if (events.length === 0) {
+          activity.append(dashEmpty("Nothing recorded yet."));
+        } else {
+          const feed = document.createElement("ul");
+          feed.className = "bd-feed";
+          for (const event of events) {
+            const item = document.createElement("li");
+            const when = document.createElement("span");
+            when.className = "bd-feed__when";
+            when.textContent = bdStamp(event.occurredAt);
+            const kind = document.createElement("span");
+            kind.className = `bd-feed__kind bd-liststat--${BD_EVENT_TONE[event.eventType] ?? "muted"}`;
+            kind.textContent = BD_EVENT_LABELS[event.eventType] ?? event.eventType;
+            const what = document.createElement("span");
+            what.className = "bd-feed__what";
+            what.textContent = `${event.company} — ${event.detail}`;
+            item.append(when, kind, what);
+            feed.append(item);
+          }
+          activity.append(feed);
+        }
+        holder.append(activity);
+      })
+      .catch(() => {
+        holder.replaceChildren(
+          dashEmpty("The prospect store is not reachable. Restart the local app and reload."),
+        );
+      });
   }
 
   // ---- Lists ------------------------------------------------------------

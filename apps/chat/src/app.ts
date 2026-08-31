@@ -3390,6 +3390,51 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
         }
         return;
       }
+      if (url.pathname === "/api/outreach/activity") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const limit = optionalWholeNumber(
+            url.searchParams.get("limit") === null
+              ? undefined
+              : Number(url.searchParams.get("limit")),
+            "limit",
+          );
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            events: chatStore.listRecentOutreachEvents(brand, limit ?? 25),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read outreach activity", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The outreach activity could not be read.",
+              ),
+            );
+          }
+        }
+        return;
+      }
       if (url.pathname === "/api/outreach/campaigns") {
         try {
           if (request.method !== "POST") {
