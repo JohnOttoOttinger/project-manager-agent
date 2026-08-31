@@ -44,8 +44,21 @@ rm -f "$TMP"
 say "✅ Token saved (${#TOKEN} characters, starts \"$(printf '%s' "$TOKEN" | cut -c1-6)…\")."
 say ""
 say "Restarting the app — this takes a minute or two…"
+# The app only reads .env at startup, so it MUST actually stop. stop.command
+# has been seen to leave the server running, after which start.command reports
+# "healthy" about the old process and the new token is silently ignored.
+OLD_PID="$(pgrep -f 'apps/chat/dist/server.js' | head -1 || true)"
 "${PROJECT_ROOT}/stop.command" >/dev/null 2>&1 || true
+sleep 2
+if pgrep -f 'apps/chat/dist/server.js' >/dev/null 2>&1; then
+  pkill -f 'apps/chat/dist/server.js' >/dev/null 2>&1 || true
+  sleep 2
+fi
 "${PROJECT_ROOT}/start.command" || fail "The app did not restart cleanly. Run ./start.command yourself to see why."
+NEW_PID="$(pgrep -f 'apps/chat/dist/server.js' | head -1 || true)"
+if [ -n "$OLD_PID" ] && [ "$OLD_PID" = "$NEW_PID" ]; then
+  fail "The app did not actually restart, so it is still running without the token. Run ./stop.command then ./start.command yourself."
+fi
 
 say ""
 if curl -fsS --max-time 8 "http://localhost:3000/api/enrichment/quote?brand=oddtoe" 2>/dev/null | grep -q '"configured":true'; then
