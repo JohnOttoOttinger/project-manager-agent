@@ -359,6 +359,20 @@ export interface RecordedDraftResult {
   followUpDue: string;
 }
 
+export interface DraftToValidate {
+  prospectId: string;
+  subject: string;
+  body: string;
+}
+
+export interface DraftValidation {
+  prospectId: string;
+  company: string;
+  approved: boolean;
+  reasons: string[];
+  warnings: string[];
+}
+
 export class OutreachNotConfiguredError extends Error {}
 
 export const OUTREACH_EVENT_TYPES = [
@@ -618,6 +632,24 @@ function enrichmentJobFromRow(row: EnrichmentJobRow): EnrichmentJobRecord {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/**
+ * Whitespace- and quote-insensitive containment. A composed email may wrap
+ * the unsubscribe line differently or use typographic quotes; that should
+ * not read as the line being absent.
+ */
+function containsNormalised(haystack: string, needle: string): boolean {
+  const normalise = (value: string) =>
+    value
+      .replace(/[\u2018\u2019\u201a\u201b]/g, "'")
+      .replace(/[\u201c\u201d\u201e\u201f]/g, '"')
+      .replace(/[\u2010-\u2015]/g, "-")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+  const trimmed = normalise(needle);
+  return trimmed === "" ? true : normalise(haystack).includes(trimmed);
 }
 
 function clampWholeNumber(
@@ -3259,6 +3291,98 @@ export class ChatStore {
       draftedToday,
       remainingToday,
     };
+  }
+
+  /**
+   * The last gate before a draft is created in Gmail. Deterministic and
+   * server-side, so the unsubscribe line cannot go missing because a model
+   * decided the email read better without it.
+   */
+  validateDrafts(
+    brand: string,
+    drafts: readonly DraftToValidate[],
+  ): DraftValidation[] {
+    const settings = this.getOutreachSettings(brand);
+    if (settings === undefined) {
+      throw new OutreachNotConfiguredError(
+        `No outreach settings for ${brand}. Set the sender name, contact and unsubscribe line before drafting anything.`,
+      );
+    }
+    const remaining = Math.max(
+      0,
+      settings.dailyCap - this.countDraftedToday(brand),
+    );
+    const results: DraftValidation[] = [];
+    let approvedSoFar = 0;
+
+    for (const draft of drafts) {
+      const reasons: string[] = [];
+      const warnings: string[] = [];
+      const prospect = this.getProspect(draft.prospectId);
+
+      if (prospect === undefined || prospect.brand !== brand) {
+        results.push({
+          prospectId: draft.prospectId,
+          company: "",
+          approved: false,
+          reasons: ["that prospect is not on this brand's board"],
+          warnings: [],
+        });
+        continue;
+      }
+      if (!["imported", "needs_review", "enriched"].includes(prospect.status)) {
+        reasons.push(`already ${prospect.status.replaceAll("_", " ")}`);
+      }
+      if (prospect.draftId !== "") {
+        reasons.push("a draft already exists for this prospect");
+      }
+      if (prospect.contactEmail === "") {
+        reasons.push("no contact email");
+      } else if (
+        this.suppressedEmails(brand, [prospect.contactEmail]).size > 0
+      ) {
+        reasons.push("on the do-not-contact list");
+      }
+      if (draft.subject.trim() === "") {
+        reasons.push("no subject line");
+      }
+      if (!containsNormalised(draft.body, settings.unsubscribeLine)) {
+        reasons.push("the unsubscribe line is missing from the body");
+      }
+      if (!containsNormalised(draft.body, settings.senderName)) {
+        reasons.push("the sender is not identified in the body");
+      }
+      if (
+        settings.guidePageUrl !== "" &&
+        !draft.body.includes(`utm_content=${prospect.prospectId}`)
+      ) {
+        warnings.push(
+          "the body has no guide-page link tagged for this prospect, so a click will not be attributable",
+        );
+      }
+      if (prospect.status === "needs_review") {
+        warnings.push(
+          `enrichment flagged this contact${prospect.flagReason ? `: ${prospect.flagReason}` : ""}`,
+        );
+      }
+      if (reasons.length === 0 && approvedSoFar >= remaining) {
+        reasons.push(
+          `over today's cap of ${settings.dailyCap} (${remaining} left when this run started)`,
+        );
+      }
+      const approved = reasons.length === 0;
+      if (approved) {
+        approvedSoFar += 1;
+      }
+      results.push({
+        prospectId: draft.prospectId,
+        company: prospect.company,
+        approved,
+        reasons,
+        warnings,
+      });
+    }
+    return results;
   }
 
   countDraftedToday(brand: string): number {

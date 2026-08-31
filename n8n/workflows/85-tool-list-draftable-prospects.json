@@ -1,0 +1,352 @@
+{
+  "name": "85 - TOOL - list_draftable_prospects",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Who may be drafted to\\n\\nReturns the prospects that pass every guardrail in the local store \u2014 not suppressed, has an email, not already drafted, within today's cap \u2014 plus the sender block and unsubscribe line the email must carry, and each prospect's own UTM-tagged guide-page link.\\n\\nJust as important, it returns everyone who was EXCLUDED and why. Report those; never draft to a prospect that is not in `eligible`.",
+        "height": 360,
+        "width": 460
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -660,
+        -320
+      ],
+      "name": "Read tool explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "brand",
+              "type": "string"
+            },
+            {
+              "name": "listName",
+              "type": "string"
+            },
+            {
+              "name": "limit",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -520,
+        80
+      ],
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst brand = typeof $json.brand === 'string' ? $json.brand.trim().toLowerCase() : '';\nconst listName = typeof $json.listName === 'string' ? $json.listName.trim() : '';\nconst rawLimit = typeof $json.limit === 'string' ? $json.limit.trim() : '';\nconst uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet error = null;\nif (!uuid.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'This tool needs a valid conversation session.' };\n} else if (brand !== 'oddtoe' && brand !== 'datalabs') {\n  error = { code: 'INVALID_BRAND', message: 'Say which brand to draft for: oddtoe or datalabs.' };\n} else if (rawLimit !== '' && !/^[0-9]{1,3}$/.test(rawLimit)) {\n  error = { code: 'INVALID_LIMIT', message: 'The limit must be a whole number of prospects.' };\n}\nreturn { json: { valid: error === null, sessionId, brand, listName, limit: rawLimit,\n  proposedInput: { brand, listName, limit: rawLimit },\n  ...(error ? { response: { ok: false, error } } : {}) } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        80
+      ],
+      "name": "Validate Draftable Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "80000000-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -40,
+        80
+      ],
+      "name": "Input Is Valid?"
+    },
+    {
+      "parameters": {
+        "url": "={{ 'http://127.0.0.1:3000/api/prospects/draftable?brand=' + encodeURIComponent($('Validate Draftable Input').item.json.brand) + ($('Validate Draftable Input').item.json.listName !== '' ? '&list=' + encodeURIComponent($('Validate Draftable Input').item.json.listName) : '') + ($('Validate Draftable Input').item.json.limit !== '' ? '&limit=' + encodeURIComponent($('Validate Draftable Input').item.json.limit) : '') }}",
+        "options": {
+          "timeout": 10000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        220,
+        0
+      ],
+      "name": "Read Draftable"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const input = $('Validate Draftable Input').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1) {\n  const message = typeof body?.error?.message === 'string' ? body.error.message\n    : 'The prospect store did not answer.';\n  const code = body?.error?.code === 'OUTREACH_NOT_CONFIGURED'\n    ? 'OUTREACH_NOT_CONFIGURED' : 'DRAFTABLE_UNAVAILABLE';\n  return [{ json: { ...input, response: { ok: false, error: { code, message } } } }];\n}\nconst eligible = (body.eligible ?? []).map((entry) => ({\n  prospectId: entry.prospect.prospectId,\n  company: entry.prospect.company,\n  contactName: entry.prospect.contactName,\n  contactEmail: entry.prospect.contactEmail,\n  website: entry.prospect.website,\n  region: entry.prospect.region,\n  tier: entry.prospect.tier,\n  status: entry.prospect.status,\n  notes: entry.prospect.notes,\n  outreachUrl: entry.outreachUrl,\n  warning: entry.warning\n}));\nreturn [{ json: { ...input, response: { ok: true,\n  brand: body.brand,\n  sender: { name: body.settings.senderName, contact: body.settings.senderContact },\n  unsubscribeLine: body.settings.unsubscribeLine,\n  campaign: body.campaign ? { campaignId: body.campaign.campaignId, name: body.campaign.name,\n    offer: body.campaign.brief.offer } : null,\n  dailyCap: body.dailyCap, draftedToday: body.draftedToday, remainingToday: body.remainingToday,\n  eligible, eligibleCount: eligible.length,\n  skipped: body.skipped, skippedCount: (body.skipped ?? []).length,\n  guidance: eligible.length === 0\n    ? 'Nobody is draftable right now. Read the skipped list aloud with its reasons; do not draft anyone who is not in eligible.'\n    : 'Compose one email per eligible prospect. Every body MUST contain the unsubscribe line and the sender name verbatim, and the prospect\\'s own outreachUrl. Then call create_outreach_drafts. Never email anyone who is not in this eligible list.'\n} } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "name": "Shape Draftable Result"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn { json: { occurredAt: new Date().toISOString(),\n  sessionId: String($json.sessionId ?? ''), requestId: '',\n  toolName: 'list_draftable_prospects',\n  proposedInput: JSON.stringify($json.proposedInput ?? {}),\n  result: JSON.stringify(response), error, response } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        740,
+        80
+      ],
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        1000,
+        80
+      ],
+      "name": "Write Tool Audit"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1260,
+        80
+      ],
+      "name": "Return Tool Result"
+    }
+  ],
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Draftable Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Draftable Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read Draftable",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Draftable": {
+      "main": [
+        [
+          {
+            "node": "Shape Draftable Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Draftable Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "",
+  "meta": {
+    "instanceId": ""
+  },
+  "pinData": {},
+  "tags": [],
+  "versionId": ""
+}

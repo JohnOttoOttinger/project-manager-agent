@@ -1,0 +1,541 @@
+{
+  "name": "86 - TOOL - create_outreach_drafts",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Create Gmail drafts for approved prospects\\n\\nThree gates, in order:\\n1. The local store checks every draft \u2014 suppression, daily cap, already-drafted, and that the body carries the unsubscribe line and the sender name verbatim. Anything that fails is returned with reasons and never reaches Gmail.\\n2. Gmail creates a DRAFT. Nothing is ever sent; the user reviews and sends each one.\\n3. The board is updated and the follow-up date set.\\n\\nBrand chooses the mailbox: Oddtoe drafts go to the Oddtoe account, Datalabs to otto@datalabsagency.com. Both Gmail nodes need their credential bound in the n8n UI.",
+        "height": 420,
+        "width": 480
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -680,
+        -380
+      ],
+      "name": "Read tool explanation"
+    },
+    {
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "sessionId",
+              "type": "string"
+            },
+            {
+              "name": "brand",
+              "type": "string"
+            },
+            {
+              "name": "campaignId",
+              "type": "string"
+            },
+            {
+              "name": "drafts",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -540,
+        80
+      ],
+      "name": "Tool Input"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const sessionId = typeof $json.sessionId === 'string' ? $json.sessionId.trim() : '';\nconst brand = typeof $json.brand === 'string' ? $json.brand.trim().toLowerCase() : '';\nconst campaignId = typeof $json.campaignId === 'string' ? $json.campaignId.trim() : '';\nconst uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;\nlet drafts = [];\nlet error = null;\nif (!uuid.test(sessionId)) {\n  error = { code: 'INVALID_SESSION', message: 'This tool needs a valid conversation session.' };\n} else if (brand !== 'oddtoe' && brand !== 'datalabs') {\n  error = { code: 'INVALID_BRAND', message: 'Say which brand these drafts are for: oddtoe or datalabs.' };\n} else {\n  try {\n    const parsed = typeof $json.drafts === 'string' ? JSON.parse($json.drafts) : $json.drafts;\n    if (!Array.isArray(parsed) || parsed.length === 0) {\n      error = { code: 'NO_DRAFTS', message: 'Pass a JSON array of drafts, each with prospectId, to, subject and body.' };\n    } else if (parsed.length > 25) {\n      error = { code: 'TOO_MANY', message: 'Draft at most 25 at a time.' };\n    } else {\n      drafts = parsed.map((d) => ({\n        prospectId: String(d.prospectId ?? '').trim(),\n        to: String(d.to ?? '').trim(),\n        subject: String(d.subject ?? '').trim(),\n        body: String(d.body ?? ''),\n        hook: String(d.hook ?? '').trim(),\n        hookEvidence: String(d.hookEvidence ?? '').trim()\n      }));\n      const bad = drafts.find((d) => !d.prospectId || !d.to || !d.subject || !d.body);\n      if (bad) error = { code: 'INCOMPLETE_DRAFT', message: 'Every draft needs prospectId, to, subject and body.' };\n    }\n  } catch {\n    error = { code: 'INVALID_DRAFTS', message: 'The drafts value was not valid JSON.' };\n  }\n}\nreturn { json: { valid: error === null, sessionId, brand, campaignId, drafts,\n  proposedInput: { brand, campaignId, count: drafts.length,\n    companies: drafts.map((d) => d.prospectId) },\n  ...(error ? { response: { ok: false, error } } : {}) } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -300,
+        80
+      ],
+      "name": "Validate Draft Input"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "86000000-0000-4000-8000-000000000004",
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -60,
+        80
+      ],
+      "name": "Input Is Valid?"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3000/api/outreach/validate-drafts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ brand: $json.brand, drafts: $json.drafts.map((d) => ({ prospectId: d.prospectId, subject: d.subject, body: d.body })) }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        200,
+        0
+      ],
+      "name": "Check Drafts"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const input = $('Validate Draft Input').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1) {\n  const message = typeof body?.error?.message === 'string' ? body.error.message\n    : 'The prospect store could not check these drafts.';\n  const code = body?.error?.code === 'OUTREACH_NOT_CONFIGURED'\n    ? 'OUTREACH_NOT_CONFIGURED' : 'VALIDATION_UNAVAILABLE';\n  return [{ json: { ...input, halt: true,\n    response: { ok: false, error: { code, message } } } }];\n}\nconst byId = new Map(body.results.map((r) => [r.prospectId, r]));\nconst approved = input.drafts.filter((d) => byId.get(d.prospectId)?.approved === true);\nconst rejected = body.results.filter((r) => !r.approved)\n  .map((r) => ({ company: r.company, prospectId: r.prospectId, reasons: r.reasons }));\nconst warnings = body.results.filter((r) => r.approved && r.warnings.length > 0)\n  .map((r) => ({ company: r.company, warnings: r.warnings }));\nif (approved.length === 0) {\n  return [{ json: { ...input, halt: true, rejected, warnings, response: { ok: false,\n    error: { code: 'ALL_DRAFTS_REJECTED',\n      message: 'None of those drafts passed the outreach checks. Read the reasons out and fix them before trying again.' },\n    rejected } } }];\n}\nreturn approved.map((d) => ({ json: { ...d, brand: input.brand, sessionId: input.sessionId,\n  campaignId: input.campaignId, rejected, warnings, halt: false } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "name": "Split Approved Drafts"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const brand = $json.brand;\nreturn brand === 'oddtoe' ? [[ { json: $json } ], []] : [[], [ { json: $json } ]];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        0
+      ],
+      "name": "Route By Brand"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "sendTo": "={{ $json.to }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        920,
+        -100
+      ],
+      "name": "Gmail Draft \u2014 Oddtoe",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_IN_N8N_UI",
+          "name": "Gmail \u2014 Oddtoe"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "={{ $json.subject }}",
+        "emailType": "text",
+        "message": "={{ $json.body }}",
+        "options": {
+          "sendTo": "={{ $json.to }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        920,
+        100
+      ],
+      "name": "Gmail Draft \u2014 Datalabs",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_IN_N8N_UI",
+          "name": "Gmail \u2014 Datalabs"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const approved = $('Split Approved Drafts').all().map((i) => i.json).filter((j) => !j.halt);\nconst created = $input.all().map((i) => i.json);\nconst drafts = approved.map((d, index) => {\n  const made = created[index] ?? {};\n  const draftId = String(made.id ?? made.draftId ?? made.message?.id ?? '');\n  return { prospectId: d.prospectId, draftId, hook: d.hook, hookEvidence: d.hookEvidence };\n}).filter((d) => d.draftId !== '');\nconst first = approved[0] ?? {};\nreturn [{ json: { brand: first.brand, campaignId: first.campaignId,\n  sessionId: first.sessionId, drafts,\n  rejected: first.rejected ?? [], warnings: first.warnings ?? [],\n  createdCount: drafts.length, attempted: approved.length } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1160,
+        0
+      ],
+      "name": "Collect Draft Ids"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://127.0.0.1:3000/api/prospects/drafts",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ brand: $json.brand, campaignId: $json.campaignId || undefined, drafts: $json.drafts }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1400,
+        0
+      ],
+      "name": "Record Drafts"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const collected = $('Collect Draft Ids').first().json;\nconst body = $json;\nif (body?.schemaVersion !== 1) {\n  return [{ json: { ...collected, response: { ok: false, error: {\n    code: 'RECORD_FAILED',\n    message: 'Gmail drafts were created but the board could not be updated. Do not send them yet; say so and check the local app.' } } } }];\n}\nconst recorded = body.results.filter((r) => r.outcome === 'recorded');\nconst blocked = body.results.filter((r) => r.outcome !== 'recorded');\nreturn [{ json: { ...collected, response: { ok: true,\n  createdCount: recorded.length,\n  created: recorded.map((r) => ({ company: r.company, followUpDue: r.followUpDue })),\n  blocked: blocked.map((r) => ({ company: r.company, outcome: r.outcome })),\n  rejected: collected.rejected, warnings: collected.warnings,\n  summary: body.summary,\n  guidance: 'The drafts are in Gmail and the cards moved to Emailed. Nothing has been sent \u2014 the user reviews and sends each one. Read out anything in rejected, blocked or warnings.'\n} } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1640,
+        0
+      ],
+      "name": "Shape Draft Result"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const response = $json.response;\nconst error = response?.ok === false ? String(response.error?.message ?? 'Tool failed') : '';\nreturn { json: { occurredAt: new Date().toISOString(),\n  sessionId: String($json.sessionId ?? ''), requestId: '',\n  toolName: 'create_outreach_drafts',\n  proposedInput: JSON.stringify($json.proposedInput ?? { count: $json.attempted ?? 0 }),\n  result: JSON.stringify(response), error, response } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1880,
+        80
+      ],
+      "name": "Prepare Audit"
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "tool_audit",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "occurredAt": "={{ $json.occurredAt }}",
+            "sessionId": "={{ $json.sessionId }}",
+            "requestId": "={{ $json.requestId }}",
+            "toolName": "={{ $json.toolName }}",
+            "proposedInput": "={{ $json.proposedInput }}",
+            "result": "={{ $json.result }}",
+            "error": "={{ $json.error }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "occurredAt",
+              "displayName": "occurredAt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "date"
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "requestId",
+              "displayName": "requestId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "toolName",
+              "displayName": "toolName",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "proposedInput",
+              "displayName": "proposedInput",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "result",
+              "displayName": "result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        2120,
+        80
+      ],
+      "name": "Write Tool Audit"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const prepared = $('Prepare Audit').item.json;\nconst response = { ...prepared.response };\nif (!Number.isInteger($json.id)) {\n  response.auditWarning = 'The tool result could not be written to the local audit table.';\n}\nreturn { json: response };",
+        "mode": "runOnceForEachItem"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2360,
+        80
+      ],
+      "name": "Return Tool Result"
+    }
+  ],
+  "connections": {
+    "Tool Input": {
+      "main": [
+        [
+          {
+            "node": "Validate Draft Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Draft Input": {
+      "main": [
+        [
+          {
+            "node": "Input Is Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input Is Valid?": {
+      "main": [
+        [
+          {
+            "node": "Check Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Drafts": {
+      "main": [
+        [
+          {
+            "node": "Split Approved Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Approved Drafts": {
+      "main": [
+        [
+          {
+            "node": "Route By Brand",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route By Brand": {
+      "main": [
+        [
+          {
+            "node": "Gmail Draft \u2014 Oddtoe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gmail Draft \u2014 Datalabs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Draft \u2014 Oddtoe": {
+      "main": [
+        [
+          {
+            "node": "Collect Draft Ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail Draft \u2014 Datalabs": {
+      "main": [
+        [
+          {
+            "node": "Collect Draft Ids",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Draft Ids": {
+      "main": [
+        [
+          {
+            "node": "Record Drafts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Drafts": {
+      "main": [
+        [
+          {
+            "node": "Shape Draft Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Draft Result": {
+      "main": [
+        [
+          {
+            "node": "Prepare Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Audit": {
+      "main": [
+        [
+          {
+            "node": "Write Tool Audit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Tool Audit": {
+      "main": [
+        [
+          {
+            "node": "Return Tool Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "id": "",
+  "meta": {
+    "instanceId": ""
+  },
+  "pinData": {},
+  "tags": [],
+  "versionId": ""
+}

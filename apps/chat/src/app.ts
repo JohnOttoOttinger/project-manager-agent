@@ -41,6 +41,7 @@ import {
   type ProspectConfidence,
   OutreachNotConfiguredError,
   type CampaignBrief,
+  type DraftToValidate,
   type ProspectRowInput,
   type ProspectStatus,
   type RecordedDraftInput,
@@ -3495,6 +3496,77 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "PROSPECT_STORE_ERROR",
                 "The draftable prospects could not be read.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/validate-drafts") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "draft validation payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const rawDrafts = businessMemoryObjectArray(
+            body.drafts,
+            "drafts to validate",
+            200,
+          );
+          const drafts: DraftToValidate[] = rawDrafts.map((candidate) => {
+            const prospectId = prospectText(candidate.prospectId, 64);
+            if (prospectId === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Every draft needs a prospect id.",
+              );
+            }
+            return {
+              prospectId,
+              subject: prospectText(candidate.subject, 300),
+              body: prospectText(candidate.body, 20_000),
+            };
+          });
+          const results = chatStore.validateDrafts(brand, drafts);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            results,
+            approved: results.filter((result) => result.approved).length,
+            rejected: results.filter((result) => !result.approved).length,
+          });
+          return;
+        } catch (error) {
+          if (error instanceof OutreachNotConfiguredError) {
+            sendError(
+              response,
+              new PublicError(400, "OUTREACH_NOT_CONFIGURED", error.message),
+            );
+          } else if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not validate drafts", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those drafts could not be checked.",
               ),
             );
           }

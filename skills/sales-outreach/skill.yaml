@@ -1,5 +1,5 @@
 id: sales-outreach
-agent: sales
+agent: business-development
 name: Sales Outreach Pipeline
-version: 1.0.0
-description: Keep a local prospect list through the outreach lifecycle - import a list, report the pipeline, and later enrich, draft campaigns, and follow up - with every outbound step drafted for the user to send themselves.
+version: 2.0.0
+description: Keep a local prospect list through the outreach lifecycle - import a list, report the pipeline, enrich contacts, and draft one-to-one outreach emails into Gmail - with every outbound step drafted for the user to review and send themselves.

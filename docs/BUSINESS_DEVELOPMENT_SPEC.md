@@ -251,6 +251,7 @@ builder (D16). In order:
 
 | # | Item | Why it matters |
 | --- | --- | --- |
+| B0 | **Two Gmail credentials in n8n** — the live blocker | Otto chose to put drafting inside the app (§11), which needs n8n to hold Gmail OAuth. Its credential store currently has Anthropic, DataForSEO, Apify (×2) and the Xero Capture Bridge — no Gmail. Create two credentials named exactly `Gmail — Oddtoe` (oddtoe@oddtoe.com) and `Gmail — Datalabs` (otto@datalabsagency.com), then bind them to the two Gmail nodes in workflow 86. OAuth needs Otto's own sign-in; it cannot be scripted. |
 | B1 | Oddtoe Gmail account reachable as a connector | D12 needs both mailboxes. A Gmail MCP is already attached to the cloud routines (the 5am builder reads Otto's reply threads), so the send path has a working precedent. Confirm the Oddtoe account specifically before step 3 — Oddtoe mail is known to live in Chrome profile u/3, which is a browser session, not a connector. |
 | B2 | Datalabs GA4 — **blocked, not merely unwired** | Property 265583155 ("Datalabs Agency - New GA4", account 34087862) refuses `analytics-reader@oddtoe-analytics.iam.gserviceaccount.com` with "This email doesn't match a Google Account", at both property and account level. The service account is valid — it reads Oddtoe property 377681126 fine, and already holds GSC access for both brands. Needs a different auth path: OAuth as Otto, or a service account in a project tied to that GA account. Until then Datalabs cards never reach Clicked. The notify-checkbox theory was tested and disproved; do not retry it. |
 | B3 | Is there a Datalabs equivalent of the experiential-agencies guide page? | The "we featured you" hook exists for Oddtoe. If Datalabs has no such asset, the agent has one fewer angle to choose from for that brand. |
@@ -295,7 +296,17 @@ and the drafting logic can all be built and tested against the Oddtoe path.
    dragged back to an earlier column; and every excluded prospect is
    returned by name with a reason rather than dropped.
 
-   Still to do: the composing half — see §11.
+   `POST /api/outreach/validate-drafts` is the last gate before Gmail sees
+   anything: deterministic, server-side, and it refuses a body that omits
+   the unsubscribe line or the sender name (whitespace- and quote-
+   insensitive, so rewrapping is fine), plus suppression, cap and
+   already-drafted. An untagged guide link warns rather than blocks.
+
+   Agent-facing tools authored: `n8n/workflows/85-tool-list-draftable-prospects.json`
+   and `86-tool-create-outreach-drafts.json`. 86 routes on brand to one of
+   two Gmail nodes so the mailbox follows the brand toggle (D12).
+   `skills/sales-outreach` rewritten for the drafting stage and reassigned
+   from the Sales agent to Business Development, per D1.
 
 4. **Signals** — suppression check, cap, hook selection, UTM
    tagging, Gmail batch draft creation.
@@ -325,11 +336,16 @@ Established 31 Aug 2026 by checking the running instances, not by assumption:
 - **Only a local Claude Code session has both**: the Gmail connector and
   `localhost:3000`.
 
-So the composing half of step 3 is a **skill run from a local Claude Code
-session**, not an n8n tool and not a cloud routine. The session reads
-`/api/prospects/draftable`, composes one email per prospect, creates each
-Gmail draft through the Gmail connector, and posts the draft ids back to
-`/api/prospects/drafts`. The app's board shows the result.
+**Otto's decision (31 Aug): add Gmail to n8n** and keep drafting inside the
+app rather than moving it to a Claude Code session. That makes B0 the live
+blocker — two Gmail credentials, created by Otto, since OAuth needs his own
+sign-in. Everything else for step 3 is built and the workflows are authored
+against those credential names.
+
+The flow inside the app: the BD agent calls `list_draftable_prospects`,
+composes one email per eligible prospect, then calls
+`create_outreach_drafts`, which validates server-side, creates the Gmail
+draft in the brand's mailbox, and records the result on the board.
 
 This also constrains §8: the morning brief cannot be a pure cloud routine
 while the store is local. Either it runs locally on a schedule, or the parts
