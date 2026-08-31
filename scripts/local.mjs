@@ -211,6 +211,9 @@ function config() {
     taskBrokerPort,
     timezone,
     encryptionKey,
+    // Optional. Present only when the user has added it to .env; the chat
+    // app's enrichment screen stays read-only without it.
+    apifyToken: value("APIFY_TOKEN", ""),
   };
 }
 
@@ -262,6 +265,9 @@ function chatEnv(cfg) {
     SKILLS_DIRECTORY: join(projectRoot, "skills"),
     DOCUMENT_WORKER_URL: `http://127.0.0.1:${cfg.documentWorkerPort}`,
     N8N_CHAT_WEBHOOK_URL: `http://127.0.0.1:${cfg.n8nPort}/webhook/chat`,
+    // The chat app receives an explicit allow-list rather than the whole
+    // environment, so anything it needs from .env has to be named here.
+    ...(cfg.apifyToken ? { APIFY_TOKEN: cfg.apifyToken } : {}),
   };
 }
 
