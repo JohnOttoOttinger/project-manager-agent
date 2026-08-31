@@ -2695,6 +2695,253 @@ h2 { text-transform: uppercase; }
   white-space: nowrap;
 }
 
+/* ---- BD board (Business Development pipeline) ---- */
+
+.bd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.7rem;
+}
+
+.bd-board__status {
+  margin: 0 0 0.6rem;
+  min-height: 1.1rem;
+  font-size: 0.82rem;
+  color: #a89f88;
+}
+
+.bd-board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(13rem, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 0.6rem;
+}
+
+.bd-col {
+  border: 1px solid #32362f;
+  border-radius: var(--radius);
+  background: #1b1f1d;
+  padding: 0.7rem 0.6rem 0.75rem;
+  min-height: 9rem;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.bd-col--over {
+  border-color: #8a8f6a;
+  background: #1f2420;
+}
+
+.bd-col__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
+  font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #ddccb1;
+}
+
+.bd-col__count {
+  font-size: 0.78rem;
+  color: #a89f88;
+}
+
+.bd-col__drop {
+  min-height: 3rem;
+}
+
+.bd-col__empty {
+  margin: 0;
+  color: #6f7468;
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 0.6rem 0;
+}
+
+.bd-card {
+  border: 1px solid #32362f;
+  border-radius: calc(var(--radius) - 3px);
+  background-color: #232826;
+  padding: 0.55rem 0.6rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: #f0ece0;
+  line-height: 1.35;
+  cursor: grab;
+  text-align: left;
+  width: 100%;
+}
+
+.bd-card:hover,
+.bd-card:focus-visible {
+  border-color: #8a8f6a;
+  outline: none;
+}
+
+.bd-card--dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.bd-card__company {
+  margin: 0;
+  font-weight: 700;
+}
+
+.bd-card__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: #a89f88;
+}
+
+.bd-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.bd-card__detail {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: #a89f88;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stage-chip--flag {
+  background: #4a2727;
+  color: #f0bcbc;
+  border-color: #7a3f3f;
+}
+
+/* ---- BD prospect dialogs ---- */
+
+.prospect-dialog .paste-dialog__card,
+.prospect-add-dialog .paste-dialog__card {
+  max-width: 34rem;
+}
+
+.prospect-dialog__body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.prospect-detail {
+  margin: 0.7rem 0 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.prospect-detail__row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.prospect-detail dt {
+  margin: 0;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #a89f88;
+}
+
+.prospect-detail dd {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #f0ece0;
+  overflow-wrap: anywhere;
+}
+
+.prospect-detail__empty {
+  color: #6f7468;
+}
+
+.prospect-detail__warning {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #7a3f3f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #2c1f1f;
+  color: #f0bcbc;
+  font-size: 0.84rem;
+}
+
+.prospect-timeline {
+  list-style: none;
+  margin: 0.5rem 0 1rem;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.prospect-timeline li {
+  display: grid;
+  grid-template-columns: 4.5rem 1fr;
+  gap: 0.6rem;
+  font-size: 0.83rem;
+  color: #cbc4b2;
+}
+
+.prospect-timeline__when {
+  color: #a89f88;
+}
+
+.prospect-move {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin: 0.4rem 0 0;
+}
+
+.prospect-move__select,
+.prospect-move__reason {
+  background: #232826;
+  border: 1px solid #3c403c;
+  border-radius: calc(var(--radius) - 4px);
+  color: #f0ece0;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+}
+
+.prospect-move__reason { flex: 1 1 9rem; min-width: 8rem; }
+
+.prospect-move__select:focus-visible,
+.prospect-move__reason:focus-visible {
+  outline: 2px solid #8a8f6a;
+  outline-offset: 1px;
+}
+
+.prospect-add__status {
+  margin: 0.4rem 0 0;
+  min-height: 1.1rem;
+  font-size: 0.83rem;
+  color: #e8c9a1;
+}
+
+@media (max-width: 720px) {
+  .bd-board {
+    grid-auto-columns: minmax(11rem, 1fr);
+  }
+
+  .prospect-detail__row {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+  }
+}
+
 /* ---- Chat drawer ---- */
 
 .chat-scrim {

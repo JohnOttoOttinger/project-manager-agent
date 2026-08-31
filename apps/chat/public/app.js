@@ -104,6 +104,17 @@
     pastedName: document.querySelector("#pasted-name"),
     pastedText: document.querySelector("#pasted-text"),
     pasteForm: document.querySelector("#paste-form"),
+    prospectAddCancel: document.querySelector("#prospect-add-cancel"),
+    prospectAddCompany: document.querySelector("#prospect-add-company"),
+    prospectAddDialog: document.querySelector("#prospect-add-dialog"),
+    prospectAddForm: document.querySelector("#prospect-add-form"),
+    prospectAddList: document.querySelector("#prospect-add-list"),
+    prospectAddStatus: document.querySelector("#prospect-add-status"),
+    prospectDialog: document.querySelector("#prospect-dialog"),
+    prospectDialogBody: document.querySelector("#prospect-dialog-body"),
+    prospectDialogClose: document.querySelector("#prospect-dialog-close"),
+    prospectDialogSubtitle: document.querySelector("#prospect-dialog-subtitle"),
+    prospectDialogTitle: document.querySelector("#prospect-dialog-title"),
     profileAgentName: document.querySelector("#profile-agent-name"),
     profileAvatar: document.querySelector("#profile-avatar"),
     profileAvatarButton: document.querySelector("#profile-avatar-button"),
@@ -1646,119 +1657,569 @@
     }
   }
 
-  async function fetchJson(url) {
-    const response = await fetch(url);
+  async function fetchJson(url, init) {
+    const response = await fetch(url, init);
     if (!response.ok) {
-      throw new Error(`Request failed (${response.status})`);
+      let message = `Request failed (${response.status})`;
+      try {
+        const payload = await response.json();
+        if (payload?.error?.message) {
+          message = payload.error.message;
+        }
+      } catch {
+        // Keep the status-code message when the body is not JSON.
+      }
+      throw new Error(message);
     }
     return response.json();
   }
 
+  // ---- BD board ----------------------------------------------------------
+  // Eight columns, one per stored prospect status. `opened` is labelled
+  // "Clicked" because with Gmail one-to-one drafts there is no open pixel —
+  // the signal is a guide-page click read from GA4. The stored status keeps
+  // its name so nothing downstream has to change.
+  const BD_COLUMNS = [
+    { status: "imported", label: "Imported" },
+    { status: "needs_review", label: "Needs review" },
+    { status: "enriched", label: "Enriched" },
+    { status: "emailed", label: "Emailed" },
+    { status: "opened", label: "Clicked" },
+    { status: "followed_up", label: "Followed up" },
+    { status: "replied", label: "Replied" },
+    { status: "closed", label: "Closed" },
+  ];
+
+  let bdDraggedProspectId = null;
+  // Set by renderBdPipelineTab so the dialogs can refresh the board they
+  // were opened from without re-rendering the whole stage.
+  let bdReload = () => {};
+
+  function bdSubtitleFor(prospect) {
+    switch (prospect.status) {
+      case "needs_review":
+        return prospect.flagReason || "Flagged by enrichment";
+      case "emailed":
+        return prospect.sentDate
+          ? `Sent ${prospect.sentDate}`
+          : prospect.draftedAt
+            ? `Drafted ${bdShortDate(prospect.draftedAt)} — not sent yet`
+            : "Draft prepared";
+      case "opened":
+        return prospect.clickedAt
+          ? `Clicked ${bdShortDate(prospect.clickedAt)}`
+          : "Clicked the guide page";
+      case "followed_up":
+        return prospect.followUpSent
+          ? `Followed up ${prospect.followUpSent}`
+          : "Follow-up sent";
+      case "closed":
+        return prospect.closeReason || "Closed";
+      default:
+        return prospect.contactEmail || prospect.website || "";
+    }
+  }
+
+  function bdShortDate(value) {
+    if (typeof value !== "string" || value === "") {
+      return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  }
+
+  function bdCard(prospect) {
+    const card = document.createElement("article");
+    card.className = "bd-card";
+    card.draggable = true;
+    card.tabIndex = 0;
+    card.dataset.prospectId = prospect.prospectId;
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `${prospect.company} — open details`);
+
+    const company = document.createElement("p");
+    company.className = "bd-card__company";
+    company.textContent = prospect.company ?? "";
+    card.append(company);
+
+    const meta = document.createElement("p");
+    meta.className = "bd-card__meta";
+    meta.textContent = prospect.region || prospect.listName || "";
+    if (meta.textContent !== "") {
+      card.append(meta);
+    }
+
+    const chips = document.createElement("div");
+    chips.className = "bd-card__chips";
+    if (prospect.tier) {
+      const tier = document.createElement("span");
+      tier.className = "stage-chip stage-chip--tier";
+      tier.textContent = `Priority ${prospect.tier}`;
+      chips.append(tier);
+    }
+    if (prospect.status === "needs_review") {
+      const flag = document.createElement("span");
+      flag.className = "stage-chip stage-chip--flag";
+      flag.textContent = "Check contact";
+      chips.append(flag);
+    }
+    if (prospect.contactEmail === "" && prospect.status !== "imported") {
+      const noEmail = document.createElement("span");
+      noEmail.className = "stage-chip stage-chip--flag";
+      noEmail.textContent = "No email";
+      chips.append(noEmail);
+    }
+    if (chips.childElementCount > 0) {
+      card.append(chips);
+    }
+
+    const subtitle = bdSubtitleFor(prospect);
+    if (subtitle !== "") {
+      const detail = document.createElement("p");
+      detail.className = "bd-card__detail";
+      detail.textContent = subtitle;
+      detail.title = subtitle;
+      card.append(detail);
+    }
+
+    card.addEventListener("dragstart", (event) => {
+      bdDraggedProspectId = prospect.prospectId;
+      card.classList.add("bd-card--dragging");
+      event.dataTransfer.effectAllowed = "move";
+      // Firefox will not start a drag without payload on the transfer.
+      event.dataTransfer.setData("text/plain", prospect.prospectId);
+    });
+    card.addEventListener("dragend", () => {
+      bdDraggedProspectId = null;
+      card.classList.remove("bd-card--dragging");
+    });
+    card.addEventListener("click", () => {
+      openProspectDialog(prospect.prospectId);
+    });
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openProspectDialog(prospect.prospectId);
+      }
+    });
+    return card;
+  }
+
+  function bdColumn(column, prospects, onMoved) {
+    const element = document.createElement("section");
+    element.className = "bd-col";
+    element.dataset.status = column.status;
+
+    const heading = document.createElement("h3");
+    heading.className = "bd-col__title";
+    const name = document.createElement("span");
+    name.textContent = column.label;
+    const count = document.createElement("span");
+    count.className = "bd-col__count";
+    count.textContent = String(prospects.length);
+    heading.append(name, count);
+    element.append(heading);
+
+    const drop = document.createElement("div");
+    drop.className = "bd-col__drop";
+    for (const prospect of prospects) {
+      drop.append(bdCard(prospect));
+    }
+    if (prospects.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "bd-col__empty";
+      empty.textContent = "—";
+      drop.append(empty);
+    }
+    element.append(drop);
+
+    element.addEventListener("dragover", (event) => {
+      if (bdDraggedProspectId === null) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      element.classList.add("bd-col--over");
+    });
+    element.addEventListener("dragleave", () => {
+      element.classList.remove("bd-col--over");
+    });
+    element.addEventListener("drop", (event) => {
+      event.preventDefault();
+      element.classList.remove("bd-col--over");
+      const prospectId = bdDraggedProspectId
+        ?? event.dataTransfer.getData("text/plain");
+      bdDraggedProspectId = null;
+      if (!prospectId) {
+        return;
+      }
+      void moveProspect(prospectId, column.status, onMoved);
+    });
+    return element;
+  }
+
+  async function moveProspect(prospectId, status, onMoved) {
+    try {
+      const payload = await fetchJson("/api/prospects/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prospectId, status }),
+      });
+      onMoved(payload);
+    } catch {
+      onMoved(null, "That card could not be moved. Reload and try again.");
+    }
+  }
+
   function renderBdPipelineTab(body) {
     body.append(dashLabel("Prospect pipeline"));
-    const holder = dashCard();
+
+    const actions = document.createElement("div");
+    actions.className = "bd-actions";
+    const addButton = document.createElement("button");
+    addButton.className = "secondary-button";
+    addButton.type = "button";
+    addButton.textContent = "Add a prospect";
+    addButton.addEventListener("click", () => openAddProspectDialog());
+    const importButton = document.createElement("button");
+    importButton.className = "secondary-button";
+    importButton.type = "button";
+    importButton.textContent = "Import a list";
+    importButton.addEventListener("click", () => {
+      openChatWithPrompt(
+        "I want to import a prospect list. Here are the rows:",
+      );
+    });
+    const findButton = document.createElement("button");
+    findButton.className = "secondary-button";
+    findButton.type = "button";
+    findButton.textContent = "Find prospects";
+    findButton.addEventListener("click", () => {
+      openChatWithPrompt(
+        "Find me candidate prospects for this brand and propose them for import: ",
+      );
+    });
+    actions.append(addButton, importButton, findButton);
+    body.append(actions);
+
+    const status = document.createElement("p");
+    status.className = "bd-board__status";
+    status.setAttribute("role", "status");
+    body.append(status);
+
+    const holder = document.createElement("div");
     holder.append(dashEmpty("Loading the prospect store…"));
     body.append(holder);
-    void fetchJson(`/api/prospects?brand=${encodeURIComponent(activeBrand()?.id ?? "oddtoe")}`)
-      .then((payload) => {
-        holder.replaceChildren();
-        const summary = payload.summary ?? {};
-        const byStatus = summary.byStatus ?? {};
-        const stats = document.createElement("div");
-        stats.className = "dash-stats";
-        stats.append(
-          statCard(summary.total ?? 0, "Targets"),
-          statCard(byStatus.enriched ?? 0, "Enriched"),
-          statCard(byStatus.needs_review ?? 0, "Needs review"),
-          statCard(byStatus.emailed ?? 0, "Emailed"),
-          statCard(byStatus.replied ?? 0, "Replied"),
-        );
-        holder.append(stats);
 
-        const prospects = Array.isArray(payload.prospects)
-          ? payload.prospects
-          : [];
-        if (prospects.length === 0) {
+    const load = () => {
+      const brand = activeBrand()?.id ?? "oddtoe";
+      void fetchJson(
+        `/api/prospects?brand=${encodeURIComponent(brand)}&limit=500`,
+      )
+        .then((payload) => {
+          holder.replaceChildren();
+          const prospects = Array.isArray(payload.prospects)
+            ? payload.prospects
+            : [];
+          if (prospects.length === 0) {
+            holder.append(
+              dashEmpty(
+                "No prospects on this brand's board yet. Add one, import a list, or ask the agent to find some.",
+              ),
+            );
+            return;
+          }
+          const board = document.createElement("div");
+          board.className = "bd-board";
+          const onMoved = (payload, message) => {
+            if (message) {
+              status.textContent = message;
+              return;
+            }
+            status.textContent = `${payload.prospect.company} moved to ${payload.prospect.status.replaceAll("_", " ")}.`;
+            load();
+          };
+          for (const column of BD_COLUMNS) {
+            const inColumn = prospects
+              .filter((prospect) => prospect.status === column.status)
+              .sort((first, second) => {
+                const firstTier =
+                  first.tier === "" ? 99 : Number(first.tier) || 98;
+                const secondTier =
+                  second.tier === "" ? 99 : Number(second.tier) || 98;
+                if (firstTier !== secondTier) {
+                  return firstTier - secondTier;
+                }
+                return (first.company ?? "").localeCompare(second.company ?? "");
+              });
+            board.append(bdColumn(column, inColumn, onMoved));
+          }
+          holder.append(board);
           holder.append(
-            dashEmpty(
-              "No prospects yet. Import a list through chat to seed the pipeline.",
+            dashNote(
+              "Drag a card to move it. Clicked is a guide-page click read from GA4, not an email open — Datalabs has no click data until its GA4 property is connected.",
             ),
           );
-          return;
-        }
-        const wrap = document.createElement("div");
-        wrap.className = "dash-table-wrap";
-        const table = document.createElement("table");
-        table.className = "dash-table";
-        const head = document.createElement("thead");
-        const headRow = document.createElement("tr");
-        for (const column of [
-          "Agency",
-          "Region",
-          "Tier",
-          "Stage",
-          "Contact",
-          "Angle",
-        ]) {
-          const th = document.createElement("th");
-          th.textContent = column;
-          headRow.append(th);
-        }
-        head.append(headRow);
-        const tableBody = document.createElement("tbody");
-        const sorted = [...prospects].sort((first, second) => {
-          const firstTier = first.tier === "" ? 99 : Number(first.tier) || 98;
-          const secondTier =
-            second.tier === "" ? 99 : Number(second.tier) || 98;
-          return firstTier - secondTier;
+        })
+        .catch(() => {
+          holder.replaceChildren(
+            dashEmpty(
+              "The prospect store is not reachable. Restart the local app and reload.",
+            ),
+          );
         });
-        for (const prospect of sorted) {
-          const row = document.createElement("tr");
-          const company = document.createElement("td");
-          company.className = "dash-table__company";
-          company.textContent = prospect.company ?? "";
-          const region = document.createElement("td");
-          region.className = "dash-table__muted";
-          region.textContent = prospect.region ?? "";
-          const tier = document.createElement("td");
-          if (prospect.tier) {
-            const chip = document.createElement("span");
-            chip.className = "stage-chip stage-chip--tier";
-            chip.textContent = `Priority ${prospect.tier}`;
-            tier.append(chip);
-          }
-          const stage = document.createElement("td");
-          stage.append(stageChip(prospect.status ?? "imported"));
-          const contact = document.createElement("td");
-          contact.className = "dash-table__muted";
-          contact.textContent = prospect.contactName
-            ? `${prospect.contactName}${prospect.contactEmail ? " · " + prospect.contactEmail : ""}`
-            : "—";
-          const angle = document.createElement("td");
-          angle.className = "dash-table__muted";
-          const notes = prospect.notes ?? "";
-          angle.textContent =
-            notes.length > 90 ? `${notes.slice(0, 90)}…` : notes;
-          angle.title = notes;
-          row.append(company, region, tier, stage, contact, angle);
-          tableBody.append(row);
+    };
+    bdReload = load;
+    load();
+  }
+
+  // ---- BD dialogs --------------------------------------------------------
+
+  const BD_EVENT_LABELS = {
+    imported: "Imported",
+    enriched: "Enriched",
+    flagged: "Flagged",
+    emailed: "Emailed",
+    opened: "Opened",
+    clicked: "Clicked",
+    followed_up: "Followed up",
+    replied: "Replied",
+    status_change: "Moved",
+  };
+
+  function bdDetailRow(label, value) {
+    const row = document.createElement("div");
+    row.className = "prospect-detail__row";
+    const name = document.createElement("dt");
+    name.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = value === "" ? "—" : value;
+    if (value === "") {
+      detail.classList.add("prospect-detail__empty");
+    }
+    row.append(name, detail);
+    return row;
+  }
+
+  function openProspectDialog(prospectId) {
+    const dialog = elements.prospectDialog;
+    if (!dialog) {
+      return;
+    }
+    elements.prospectDialogTitle.textContent = "Loading…";
+    elements.prospectDialogSubtitle.textContent = "";
+    elements.prospectDialogBody.replaceChildren();
+    dialog.showModal();
+
+    void fetchJson(
+      `/api/prospects/events?prospectId=${encodeURIComponent(prospectId)}`,
+    )
+      .then((payload) => {
+        const prospect = payload.prospect;
+        elements.prospectDialogTitle.textContent = prospect.company;
+        elements.prospectDialogSubtitle.textContent = [
+          prospect.listName,
+          prospect.region,
+        ]
+          .filter((part) => part !== "")
+          .join(" · ");
+
+        const body = document.createElement("div");
+
+        const chips = document.createElement("div");
+        chips.className = "bd-card__chips";
+        chips.append(stageChip(prospect.status));
+        if (prospect.tier) {
+          const tier = document.createElement("span");
+          tier.className = "stage-chip stage-chip--tier";
+          tier.textContent = `Priority ${prospect.tier}`;
+          chips.append(tier);
         }
-        table.append(head, tableBody);
-        wrap.append(table);
-        holder.append(wrap);
-        holder.append(
-          dashNote(
-            "Live from the local prospect store. Imports, enrichment, and updates run through chat.",
-          ),
+        body.append(chips);
+
+        if (prospect.status === "needs_review") {
+          const warning = document.createElement("p");
+          warning.className = "prospect-detail__warning";
+          warning.textContent = prospect.flagReason
+            ? `Enrichment flagged this contact: ${prospect.flagReason}. Confirm it before drafting anything.`
+            : "Enrichment flagged this contact. Confirm it before drafting anything.";
+          body.append(warning);
+        }
+
+        const list = document.createElement("dl");
+        list.className = "prospect-detail";
+        list.append(
+          bdDetailRow("Contact", prospect.contactName),
+          bdDetailRow("Email", prospect.contactEmail),
+          bdDetailRow("Website", prospect.website),
+          bdDetailRow("LinkedIn", prospect.linkedinUrl || prospect.linkedinCompanyUrl),
+          bdDetailRow("Source", prospect.source),
+          bdDetailRow("Confidence", prospect.confidence),
+          bdDetailRow("Hook", prospect.hook),
+          bdDetailRow("Hook evidence", prospect.hookEvidence),
+          bdDetailRow("Draft prepared", bdShortDate(prospect.draftedAt)),
+          bdDetailRow("Sent", prospect.sentDate),
+          bdDetailRow("Clicked", bdShortDate(prospect.clickedAt)),
+          bdDetailRow("Follow-up due", prospect.followUpDue),
+          bdDetailRow("Closed because", prospect.closeReason),
+          bdDetailRow("Notes", prospect.notes),
         );
+        body.append(list);
+
+        const timelineLabel = document.createElement("p");
+        timelineLabel.className = "section-label";
+        timelineLabel.textContent = "Timeline";
+        body.append(timelineLabel);
+
+        const events = Array.isArray(payload.events) ? payload.events : [];
+        if (events.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "prospect-detail__empty";
+          empty.textContent = "Nothing recorded yet.";
+          body.append(empty);
+        } else {
+          const timeline = document.createElement("ul");
+          timeline.className = "prospect-timeline";
+          for (const event of events) {
+            const item = document.createElement("li");
+            const when = document.createElement("span");
+            when.className = "prospect-timeline__when";
+            when.textContent = bdShortDate(event.occurredAt);
+            const what = document.createElement("span");
+            what.textContent = `${BD_EVENT_LABELS[event.eventType] ?? event.eventType} — ${event.detail}`;
+            item.append(when, what);
+            timeline.append(item);
+          }
+          body.append(timeline);
+        }
+
+        // Dragging is the fast path, but it is mouse-only and unusable on a
+        // phone across eight columns. This is the same write, reachable from
+        // the keyboard.
+        const moveLabel = document.createElement("p");
+        moveLabel.className = "section-label";
+        moveLabel.textContent = "Move to";
+        const moveRow = document.createElement("div");
+        moveRow.className = "prospect-move";
+        const select = document.createElement("select");
+        select.className = "prospect-move__select";
+        select.setAttribute("aria-label", `Move ${prospect.company} to another column`);
+        for (const column of BD_COLUMNS) {
+          const option = document.createElement("option");
+          option.value = column.status;
+          option.textContent = column.label;
+          option.selected = column.status === prospect.status;
+          select.append(option);
+        }
+        const reason = document.createElement("input");
+        reason.className = "prospect-move__reason";
+        reason.maxLength = 120;
+        reason.placeholder = "Why closed?";
+        reason.setAttribute("aria-label", "Reason for closing");
+        reason.value = prospect.closeReason;
+        reason.hidden = select.value !== "closed";
+        select.addEventListener("change", () => {
+          reason.hidden = select.value !== "closed";
+        });
+        const apply = document.createElement("button");
+        apply.className = "secondary-button";
+        apply.type = "button";
+        apply.textContent = "Move";
+        const moveStatus = document.createElement("p");
+        moveStatus.className = "prospect-add__status";
+        moveStatus.setAttribute("role", "status");
+        apply.addEventListener("click", () => {
+          if (select.value === prospect.status) {
+            moveStatus.textContent = "Already in that column.";
+            return;
+          }
+          moveStatus.textContent = "Moving…";
+          void fetchJson("/api/prospects/status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prospectId: prospect.prospectId,
+              status: select.value,
+              closeReason: select.value === "closed" ? reason.value : "",
+            }),
+          })
+            .then(() => {
+              dialog.close();
+              bdReload();
+            })
+            .catch((error) => {
+              moveStatus.textContent =
+                error.message ?? "That card could not be moved.";
+            });
+        });
+        moveRow.append(select, reason, apply);
+        body.append(moveLabel, moveRow, moveStatus);
+
+        const ask = document.createElement("button");
+        ask.className = "secondary-button";
+        ask.type = "button";
+        ask.textContent = "Work on this in chat";
+        ask.addEventListener("click", () => {
+          dialog.close();
+          openChatWithPrompt(
+            `Tell me where ${prospect.company} stands and what the next move is.`,
+          );
+        });
+        body.append(ask);
+
+        elements.prospectDialogBody.replaceChildren(body);
       })
-      .catch(() => {
-        holder.replaceChildren(
-          dashEmpty(
-            "The prospect store is not reachable. Restart the local app and reload.",
-          ),
+      .catch((error) => {
+        elements.prospectDialogTitle.textContent = "Could not open that card";
+        elements.prospectDialogBody.replaceChildren(
+          dashEmpty(error.message ?? "The prospect store is not reachable."),
         );
       });
+  }
+
+  function openAddProspectDialog() {
+    const dialog = elements.prospectAddDialog;
+    if (!dialog) {
+      return;
+    }
+    elements.prospectAddForm.reset();
+    elements.prospectAddList.value = "Manual additions";
+    elements.prospectAddStatus.textContent = "";
+    dialog.showModal();
+    window.setTimeout(() => elements.prospectAddCompany.focus(), 60);
+  }
+
+  async function submitAddProspect(event) {
+    event.preventDefault();
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const form = new FormData(elements.prospectAddForm);
+    const payload = { brand };
+    for (const [key, value] of form.entries()) {
+      if (typeof value === "string" && value.trim() !== "") {
+        payload[key] = value.trim();
+      }
+    }
+    elements.prospectAddStatus.textContent = "Saving…";
+    try {
+      const result = await fetchJson("/api/prospects/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (result.result.outcome === "duplicate") {
+        elements.prospectAddStatus.textContent =
+          `${result.result.company} is already on that list.`;
+        return;
+      }
+      elements.prospectAddDialog.close();
+      bdReload();
+    } catch (error) {
+      elements.prospectAddStatus.textContent =
+        error.message ?? "That prospect could not be saved.";
+    }
   }
 
   function renderBdOutreachTab(body) {
@@ -2514,6 +2975,15 @@
     elements.pastedText.focus();
   });
 
+  elements.prospectDialogClose?.addEventListener("click", () => {
+    elements.prospectDialog.close();
+  });
+  elements.prospectAddCancel?.addEventListener("click", () => {
+    elements.prospectAddDialog.close();
+  });
+  elements.prospectAddForm?.addEventListener("submit", (event) => {
+    void submitAddProspect(event);
+  });
   elements.pasteCancel.addEventListener("click", () => {
     elements.pasteDialog.close();
   });

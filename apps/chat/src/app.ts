@@ -33,6 +33,7 @@ import {
   ChatStore,
   PROSPECT_CONFIDENCES,
   PROSPECT_STATUSES,
+  SUPPRESSION_REASONS,
   type BusinessMemoryInput,
   type EnrichmentJobStatus,
   type HistoryMessage,
@@ -40,6 +41,7 @@ import {
   type ProspectConfidence,
   type ProspectRowInput,
   type ProspectStatus,
+  type SuppressionReason,
   type SeoArticleJobInput,
   type SeoArticleJobStatus,
   type SeoArticleVersionInput,
@@ -229,6 +231,37 @@ function validateProspectStatus(value: unknown): ProspectStatus | undefined {
   }
   return value as ProspectStatus;
 }
+function requireProspectStatus(value: unknown): ProspectStatus {
+  const status = validateProspectStatus(value);
+  if (status === undefined) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      `Prospect status must be one of: ${PROSPECT_STATUSES.join(", ")}.`,
+    );
+  }
+  return status;
+}
+function validateSuppressionReason(value: unknown): SuppressionReason {
+  if (
+    typeof value !== "string" ||
+    !SUPPRESSION_REASONS.includes(value as SuppressionReason)
+  ) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      `A suppression reason must be one of: ${SUPPRESSION_REASONS.join(", ")}.`,
+    );
+  }
+  return value as SuppressionReason;
+}
+function validateEmailAddress(value: unknown, label: string): string {
+  const email = prospectText(value, 254);
+  if (email.length === 0 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new PublicError(400, "INVALID_REQUEST", label);
+  }
+  return email;
+}
 function validateProspectRows(value: unknown): ProspectRowInput[] {
   if (!Array.isArray(value) || value.length === 0) {
     throw new PublicError(
@@ -333,6 +366,7 @@ type ErrorCode =
   | "MESSAGE_TOO_LONG"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
+  | "PROSPECT_NOT_FOUND"
   | "PROSPECT_STORE_ERROR"
   | "RESEARCH_JOB_NOT_FOUND"
   | "SEO_ARTICLE_ERROR"
@@ -3250,6 +3284,262 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "PROSPECT_STORE_ERROR",
                 "The prospect list is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/status") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "prospect status payload",
+          );
+          const prospectId = prospectText(body.prospectId, 64);
+          if (prospectId.length === 0) {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "Moving a card needs a prospect id.",
+            );
+          }
+          const status = requireProspectStatus(body.status);
+          const closeReason = prospectText(body.closeReason, 120);
+          const prospect = chatStore.setProspectStatus(prospectId, status, {
+            closeReason: closeReason || undefined,
+          });
+          if (prospect === undefined) {
+            throw new PublicError(
+              404,
+              "PROSPECT_NOT_FOUND",
+              "That prospect is no longer in the store.",
+            );
+          }
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            prospect,
+            summary: chatStore.prospectPipelineSummary(prospect.brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not move a prospect", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "That card could not be moved.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/add") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "prospect payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const listName = prospectText(body.listName, 120);
+          const company = prospectText(body.company, 120);
+          if (listName.length === 0 || company.length === 0) {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "A new prospect needs a company name and a list.",
+            );
+          }
+          const result = chatStore.addProspect(brand, listName, {
+            company,
+            region: prospectText(body.region, 120) || undefined,
+            tier: prospectText(body.tier, 40) || undefined,
+            source: prospectText(body.source, 120) || undefined,
+            website: prospectText(body.website, 300) || undefined,
+            contactName: prospectText(body.contactName, 120) || undefined,
+            contactEmail: prospectText(body.contactEmail, 254) || undefined,
+            notes: prospectText(body.notes, 1000) || undefined,
+          });
+          sendJson(response, result.outcome === "added" ? 201 : 200, {
+            schemaVersion: 1,
+            result,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not add a prospect", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "That prospect could not be saved.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/events") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const prospectId = prospectText(
+            url.searchParams.get("prospectId"),
+            64,
+          );
+          if (prospectId.length === 0) {
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "Reading a timeline needs a prospect id.",
+            );
+          }
+          const prospect = chatStore.getProspect(prospectId);
+          if (prospect === undefined) {
+            throw new PublicError(
+              404,
+              "PROSPECT_NOT_FOUND",
+              "That prospect is no longer in the store.",
+            );
+          }
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            prospect,
+            events: chatStore.listOutreachEvents(prospectId),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read a prospect timeline", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "That timeline could not be read.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/suppressions") {
+        try {
+          if (request.method === "GET") {
+            const requestedBrand = url.searchParams.get("brand");
+            const brand = requestedBrand === null
+              ? undefined
+              : validateBrandSlug(requestedBrand);
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              suppressions: chatStore.listSuppressions(brand),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "suppression payload",
+            );
+            const brand = validateBrandSlug(body.brand);
+            const email = validateEmailAddress(
+              body.email,
+              "A do-not-contact entry needs a valid email address.",
+            );
+            const suppression = chatStore.addSuppression({
+              brand,
+              email,
+              companyKey: prospectText(body.company, 120) || undefined,
+              reason: validateSuppressionReason(body.reason),
+              detail: prospectText(body.detail, 500) || undefined,
+            });
+            sendJson(response, 201, { schemaVersion: 1, suppression });
+            return;
+          }
+          if (request.method === "DELETE") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            const email = validateEmailAddress(
+              url.searchParams.get("email"),
+              "Removing a do-not-contact entry needs a valid email address.",
+            );
+            const removed = chatStore.removeSuppression(brand, email);
+            sendJson(response, 200, { schemaVersion: 1, removed });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST, DELETE" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not update the do-not-contact list", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The do-not-contact list could not be reached.",
               ),
             );
           }

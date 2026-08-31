@@ -437,6 +437,72 @@
       </form>
     </dialog>
 
+    <dialog class="paste-dialog prospect-dialog" id="prospect-dialog">
+      <div class="paste-dialog__card">
+        <div>
+          <p class="section-label">Prospect</p>
+          <h2 id="prospect-dialog-title">Prospect</h2>
+          <p id="prospect-dialog-subtitle"></p>
+        </div>
+        <div class="prospect-dialog__body" id="prospect-dialog-body"></div>
+        <div class="paste-dialog__actions">
+          <button class="secondary-button" id="prospect-dialog-close" type="button">
+            Close
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog class="paste-dialog prospect-add-dialog" id="prospect-add-dialog">
+      <form class="paste-dialog__card" id="prospect-add-form">
+        <div>
+          <p class="section-label">Business development</p>
+          <h2>Add a prospect</h2>
+          <p>
+            Goes straight onto the board for the brand you have selected. Use
+            an import for a whole list.
+          </p>
+        </div>
+        <label for="prospect-add-company">Company</label>
+        <input id="prospect-add-company" name="company" maxlength="120" required />
+        <label for="prospect-add-list">List</label>
+        <input
+          id="prospect-add-list"
+          name="listName"
+          maxlength="120"
+          value="Manual additions"
+          required
+        />
+        <label for="prospect-add-website">Website</label>
+        <input id="prospect-add-website" name="website" maxlength="300" />
+        <label for="prospect-add-contact-name">Contact name</label>
+        <input id="prospect-add-contact-name" name="contactName" maxlength="120" />
+        <label for="prospect-add-contact-email">Contact email</label>
+        <input
+          id="prospect-add-contact-email"
+          name="contactEmail"
+          type="email"
+          maxlength="254"
+        />
+        <label for="prospect-add-region">Region</label>
+        <input id="prospect-add-region" name="region" maxlength="120" />
+        <label for="prospect-add-notes">Notes</label>
+        <textarea
+          id="prospect-add-notes"
+          name="notes"
+          maxlength="1000"
+          rows="3"
+        ></textarea>
+        <p class="prospect-add__status" id="prospect-add-status" role="status"></p>
+        <div class="paste-dialog__actions">
+          <button class="secondary-button" id="prospect-add-cancel" type="button">
+            Cancel
+          </button>
+          <button class="send-button" type="submit">Add prospect</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog class="paste-dialog profile-dialog" id="profile-dialog">
       <form class="paste-dialog__card" id="profile-form">
         <div>

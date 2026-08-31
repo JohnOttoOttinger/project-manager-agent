@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -257,6 +257,59 @@ export const PROSPECT_STATUSES = [
 
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number];
 
+export const SUPPRESSION_REASONS = [
+  "unsubscribed",
+  "bounced",
+  "asked",
+  "manual",
+] as const;
+
+export type SuppressionReason = (typeof SUPPRESSION_REASONS)[number];
+
+export interface SuppressionRecord {
+  suppressionId: string;
+  brand: string;
+  emailKey: string;
+  companyKey: string;
+  reason: SuppressionReason;
+  detail: string;
+  createdAt: string;
+}
+
+/** Lowercase and trim an address so suppression matching is case-insensitive. */
+export function suppressionKey(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export const OUTREACH_EVENT_TYPES = [
+  "imported",
+  "enriched",
+  "flagged",
+  "emailed",
+  "opened",
+  "clicked",
+  "followed_up",
+  "replied",
+  "status_change",
+] as const;
+
+export type OutreachEventType = (typeof OUTREACH_EVENT_TYPES)[number];
+
+export interface OutreachEventRecord {
+  eventId: string;
+  prospectId: string;
+  campaignId: string | undefined;
+  eventType: OutreachEventType;
+  detail: string;
+  occurredAt: string;
+}
+
+export interface ProspectAddResult {
+  outcome: "added" | "duplicate";
+  company: string;
+  prospect: ProspectRecord | undefined;
+}
+
 export interface ProspectRowInput {
   rowNumber?: number | undefined;
   company: string;
@@ -298,6 +351,13 @@ export interface ProspectRecord {
   followUpSent: string;
   status: ProspectStatus;
   notes: string;
+  hook: string;
+  hookEvidence: string;
+  draftId: string;
+  draftedAt: string;
+  clickedAt: string;
+  followUpDue: string;
+  closeReason: string;
   campaignId: string | undefined;
   createdAt: string;
   updatedAt: string;
@@ -373,6 +433,10 @@ export interface ProspectUpdateInput {
     tier?: string | undefined;
     status?: ProspectStatus | undefined;
     notes?: string | undefined;
+    hook?: string | undefined;
+    hookEvidence?: string | undefined;
+    followUpDue?: string | undefined;
+    closeReason?: string | undefined;
   };
 }
 
@@ -405,9 +469,26 @@ interface ProspectRow {
   follow_up_sent: string;
   status: ProspectStatus;
   notes: string;
+  hook: string;
+  hook_evidence: string;
+  draft_id: string;
+  drafted_at: string;
+  clicked_at: string;
+  follow_up_due: string;
+  close_reason: string;
   campaign_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+interface SuppressionRow {
+  suppression_id: string;
+  brand: string;
+  email_key: string;
+  company_key: string;
+  reason: SuppressionReason;
+  detail: string;
+  created_at: string;
 }
 
 interface EnrichmentJobRow {
@@ -482,6 +563,13 @@ function prospectFromRow(row: ProspectRow): ProspectRecord {
     followUpSent: row.follow_up_sent,
     status: row.status,
     notes: row.notes,
+    hook: row.hook,
+    hookEvidence: row.hook_evidence,
+    draftId: row.draft_id,
+    draftedAt: row.drafted_at,
+    clickedAt: row.clicked_at,
+    followUpDue: row.follow_up_due,
+    closeReason: row.close_reason,
     campaignId: row.campaign_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -1233,6 +1321,40 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 8) {
+      this.transaction(() => {
+        this.database.exec(`
+          ALTER TABLE prospects ADD COLUMN hook TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN hook_evidence TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN draft_id TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN drafted_at TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN clicked_at TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN follow_up_due TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN close_reason TEXT NOT NULL DEFAULT '';
+
+          CREATE INDEX prospects_follow_up_due
+          ON prospects(brand, follow_up_due)
+          WHERE follow_up_due <> '';
+
+          CREATE TABLE suppressions (
+            suppression_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            email_key TEXT NOT NULL,
+            company_key TEXT NOT NULL DEFAULT '',
+            reason TEXT NOT NULL
+              CHECK (reason IN ('unsubscribed', 'bounced', 'asked', 'manual')),
+            detail TEXT NOT NULL DEFAULT '',
+            created_at TEXT NOT NULL,
+            UNIQUE(brand, email_key)
+          ) STRICT;
+
+          CREATE INDEX suppressions_brand_created
+          ON suppressions(brand, created_at DESC);
+
+          PRAGMA user_version = 8;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1244,6 +1366,7 @@ export class ChatStore {
     this.database.prepare("SELECT campaign_id FROM campaigns LIMIT 1").all();
     this.database.prepare("SELECT event_id FROM outreach_events LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM enrichment_jobs LIMIT 1").all();
+    this.database.prepare("SELECT suppression_id FROM suppressions LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -2449,6 +2572,10 @@ export class ChatStore {
           tier: "tier",
           status: "status",
           notes: "notes",
+          hook: "hook",
+          hookEvidence: "hook_evidence",
+          followUpDue: "follow_up_due",
+          closeReason: "close_reason",
         };
         const assignments: string[] = [];
         const values: Array<string | number> = [];
@@ -2484,6 +2611,256 @@ export class ChatStore {
       }
     });
     return outcomes;
+  }
+
+  getProspect(prospectId: string): ProspectRecord | undefined {
+    const row = this.database
+      .prepare(`SELECT * FROM prospects WHERE prospect_id = ?`)
+      .get(prospectId) as unknown as ProspectRow | undefined;
+    return row === undefined ? undefined : prospectFromRow(row);
+  }
+
+  /**
+   * Add one prospect by hand from the board. Same duplicate rule as an
+   * import — a company already on that brand's list is reported back, never
+   * silently merged.
+   */
+  addProspect(
+    brand: string,
+    listName: string,
+    input: ProspectRowInput,
+  ): ProspectAddResult {
+    const company = input.company.trim();
+    const companyKey = company.toLowerCase();
+    return this.transaction(() => {
+      const existing = this.database
+        .prepare(
+          `SELECT prospect_id FROM prospects
+           WHERE brand = ? AND list_name = ? AND company_key = ?`,
+        )
+        .get(brand, listName, companyKey);
+      if (existing !== undefined) {
+        return { outcome: "duplicate" as const, company, prospect: undefined };
+      }
+      const now = nowIso();
+      const prospectId = randomUUID();
+      this.database
+        .prepare(
+          `INSERT INTO prospects (
+             prospect_id, brand, list_name, company_key, row_number, company,
+             region, tier, source, website, linkedin_company_url,
+             contact_name, contact_email, linkedin_url,
+             pdf_sent, sent_date, opened, follow_up_sent,
+             status, notes, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .run(
+          prospectId,
+          brand,
+          listName,
+          companyKey,
+          null,
+          company,
+          input.region?.trim() ?? "",
+          input.tier?.trim() ?? "",
+          input.source?.trim() ?? "manual",
+          input.website?.trim() ?? "",
+          input.linkedinCompanyUrl?.trim() ?? "",
+          input.contactName?.trim() ?? "",
+          input.contactEmail?.trim() ?? "",
+          input.linkedinUrl?.trim() ?? "",
+          "",
+          "",
+          "",
+          "",
+          input.status ?? "imported",
+          input.notes?.trim() ?? "",
+          now,
+          now,
+        );
+      this.database
+        .prepare(
+          `INSERT INTO outreach_events (
+             event_id, prospect_id, event_type, detail, occurred_at, created_at
+           ) VALUES (?, ?, 'imported', ?, ?, ?)`,
+        )
+        .run(randomUUID(), prospectId, `Added by hand to ${listName}`, now, now);
+      return {
+        outcome: "added" as const,
+        company,
+        prospect: this.getProspect(prospectId),
+      };
+    });
+  }
+
+  /**
+   * Move one card to a new column. A deliberate exception to the app's
+   * proposal-and-confirmation rule: a status change is local, low-consequence
+   * and reversible by dragging back. Every other prospect write keeps the
+   * confirmation phrase.
+   */
+  setProspectStatus(
+    prospectId: string,
+    status: ProspectStatus,
+    options: { closeReason?: string | undefined; detail?: string | undefined } = {},
+  ): ProspectRecord | undefined {
+    return this.transaction(() => {
+      const row = this.database
+        .prepare(`SELECT * FROM prospects WHERE prospect_id = ?`)
+        .get(prospectId) as unknown as ProspectRow | undefined;
+      if (row === undefined) {
+        return undefined;
+      }
+      const now = nowIso();
+      const closeReason = status === "closed"
+        ? (options.closeReason ?? row.close_reason)
+        : "";
+      this.database
+        .prepare(
+          `UPDATE prospects SET status = ?, close_reason = ?, updated_at = ?
+           WHERE prospect_id = ?`,
+        )
+        .run(status, closeReason, now, prospectId);
+      if (status !== row.status) {
+        const detail = options.detail
+          ?? `Status ${row.status} -> ${status} (moved on the board)`;
+        this.database
+          .prepare(
+            `INSERT INTO outreach_events (
+               event_id, prospect_id, campaign_id, event_type, detail,
+               occurred_at, created_at
+             ) VALUES (?, ?, ?, 'status_change', ?, ?, ?)`,
+          )
+          .run(randomUUID(), prospectId, row.campaign_id, detail, now, now);
+      }
+      return this.getProspect(prospectId);
+    });
+  }
+
+  listOutreachEvents(prospectId: string, limit = 50): OutreachEventRecord[] {
+    const boundedLimit = Math.max(1, Math.min(limit, 200));
+    const rows = this.database
+      .prepare(
+        `SELECT event_id, prospect_id, campaign_id, event_type, detail, occurred_at
+         FROM outreach_events
+         WHERE prospect_id = ?
+         ORDER BY occurred_at DESC
+         LIMIT ?`,
+      )
+      .all(prospectId, boundedLimit) as unknown as Array<{
+      event_id: string;
+      prospect_id: string;
+      campaign_id: string | null;
+      event_type: OutreachEventType;
+      detail: string;
+      occurred_at: string;
+    }>;
+    return rows.map((row) => ({
+      eventId: row.event_id,
+      prospectId: row.prospect_id,
+      campaignId: row.campaign_id ?? undefined,
+      eventType: row.event_type,
+      detail: row.detail,
+      occurredAt: row.occurred_at,
+    }));
+  }
+
+  /**
+   * The do-not-contact list. This is what makes the unsubscribe line in every
+   * draft a real opt-out rather than decoration: nothing is drafted to an
+   * address recorded here.
+   */
+  addSuppression(input: {
+    brand: string;
+    email: string;
+    companyKey?: string | undefined;
+    reason: SuppressionReason;
+    detail?: string | undefined;
+  }): SuppressionRecord {
+    const emailKey = suppressionKey(input.email);
+    const now = nowIso();
+    return this.transaction(() => {
+      this.database
+        .prepare(
+          `INSERT INTO suppressions (
+             suppression_id, brand, email_key, company_key, reason, detail, created_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(brand, email_key) DO UPDATE SET
+             reason = excluded.reason,
+             detail = excluded.detail`,
+        )
+        .run(
+          randomUUID(),
+          input.brand,
+          emailKey,
+          input.companyKey?.trim().toLowerCase() ?? "",
+          input.reason,
+          input.detail?.trim() ?? "",
+          now,
+        );
+      const row = this.database
+        .prepare(
+          `SELECT * FROM suppressions WHERE brand = ? AND email_key = ?`,
+        )
+        .get(input.brand, emailKey) as unknown as SuppressionRow;
+      return {
+        suppressionId: row.suppression_id,
+        brand: row.brand,
+        emailKey: row.email_key,
+        companyKey: row.company_key,
+        reason: row.reason,
+        detail: row.detail,
+        createdAt: row.created_at,
+      };
+    });
+  }
+
+  removeSuppression(brand: string, email: string): boolean {
+    const result = this.database
+      .prepare(`DELETE FROM suppressions WHERE brand = ? AND email_key = ?`)
+      .run(brand, suppressionKey(email));
+    return result.changes > 0;
+  }
+
+  listSuppressions(brand?: string): SuppressionRecord[] {
+    const where = brand === undefined ? "" : "WHERE brand = ?";
+    const parameters = brand === undefined ? [] : [brand];
+    const rows = this.database
+      .prepare(
+        `SELECT * FROM suppressions ${where} ORDER BY created_at DESC LIMIT 500`,
+      )
+      .all(...parameters) as unknown as SuppressionRow[];
+    return rows.map((row) => ({
+      suppressionId: row.suppression_id,
+      brand: row.brand,
+      emailKey: row.email_key,
+      companyKey: row.company_key,
+      reason: row.reason,
+      detail: row.detail,
+      createdAt: row.created_at,
+    }));
+  }
+
+  /**
+   * Which of these addresses must not be contacted. Returns the matching
+   * keys so the caller can report every skipped prospect by name rather than
+   * dropping them quietly.
+   */
+  suppressedEmails(brand: string, emails: readonly string[]): Set<string> {
+    const keys = emails
+      .map((email) => suppressionKey(email))
+      .filter((key) => key.length > 0);
+    if (keys.length === 0) {
+      return new Set();
+    }
+    const placeholders = keys.map(() => "?").join(", ");
+    const rows = this.database
+      .prepare(
+        `SELECT email_key FROM suppressions
+         WHERE brand = ? AND email_key IN (${placeholders})`,
+      )
+      .all(brand, ...keys) as unknown as Array<{ email_key: string }>;
+    return new Set(rows.map((row) => row.email_key));
   }
 
   prepareArticleBrief(
