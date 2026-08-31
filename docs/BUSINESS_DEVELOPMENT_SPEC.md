@@ -251,7 +251,7 @@ builder (D16). In order:
 
 | # | Item | Why it matters |
 | --- | --- | --- |
-| B0 | **Two Gmail credentials in n8n** — the live blocker | Otto chose to put drafting inside the app (§11), which needs n8n to hold Gmail OAuth. Its credential store currently has Anthropic, DataForSEO, Apify (×2) and the Xero Capture Bridge — no Gmail. Create two credentials named exactly `Gmail — Oddtoe` (oddtoe@oddtoe.com) and `Gmail — Datalabs` (otto@datalabsagency.com), then bind them to the two Gmail nodes in workflow 86. OAuth needs Otto's own sign-in; it cannot be scripted. |
+| B0 | ~~Two Gmail credentials in n8n~~ — **no longer blocking** | Otto chose to put drafting inside the app (§11), which needs n8n to hold Gmail OAuth. Its credential store currently has Anthropic, DataForSEO, Apify (×2) and the Xero Capture Bridge — no Gmail. Superseded on the same day: drafting moved to a local Claude Code session (§11), which needs no n8n credential. Only relevant again if the n8n path is revived. |
 | B1 | Oddtoe Gmail account reachable as a connector | D12 needs both mailboxes. A Gmail MCP is already attached to the cloud routines (the 5am builder reads Otto's reply threads), so the send path has a working precedent. Confirm the Oddtoe account specifically before step 3 — Oddtoe mail is known to live in Chrome profile u/3, which is a browser session, not a connector. |
 | B2 | Datalabs GA4 — **blocked, not merely unwired** | Property 265583155 ("Datalabs Agency - New GA4", account 34087862) refuses `analytics-reader@oddtoe-analytics.iam.gserviceaccount.com` with "This email doesn't match a Google Account", at both property and account level. The service account is valid — it reads Oddtoe property 377681126 fine, and already holds GSC access for both brands. Needs a different auth path: OAuth as Otto, or a service account in a project tied to that GA account. Until then Datalabs cards never reach Clicked. The notify-checkbox theory was tested and disproved; do not retry it. |
 | B3 | Is there a Datalabs equivalent of the experiential-agencies guide page? | The "we featured you" hook exists for Oddtoe. If Datalabs has no such asset, the agent has one fewer angle to choose from for that brand. |
@@ -336,16 +336,42 @@ Established 31 Aug 2026 by checking the running instances, not by assumption:
 - **Only a local Claude Code session has both**: the Gmail connector and
   `localhost:3000`.
 
-**Otto's decision (31 Aug): add Gmail to n8n** and keep drafting inside the
-app rather than moving it to a Claude Code session. That makes B0 the live
-blocker — two Gmail credentials, created by Otto, since OAuth needs his own
-sign-in. Everything else for step 3 is built and the workflows are authored
-against those credential names.
+**Otto's first decision (31 Aug) was to add Gmail to n8n** and keep drafting
+inside the app. Inspecting the running n8n then turned up three things that
+changed the answer:
 
-The flow inside the app: the BD agent calls `list_draftable_prospects`,
-composes one email per eligible prospect, then calls
-`create_outreach_drafts`, which validates server-side, creates the Gmail
-draft in the brand's mailbox, and records the result on the board.
+- Workflow 00 (`phase3StartHere`) is **unpublished**, so `/webhook/chat`
+  404s and `/api/chat` returns AGENT_UNAVAILABLE. In-app chat is down for
+  *every* agent, and has been since at least 17 Aug (the workflow's last
+  modified date) — this predates any BD work.
+- Its **router has no `business-development` branch**. Outputs are
+  project-manager, sales, marketing, investment, bookkeeping.
+- **No prospect tool is attached to any agent.** 70–77 are live as
+  standalone workflows wired to nothing, so even the Sales agent could not
+  list a prospect.
+
+So "add Gmail to n8n" was not one step but five: publish 00, add a BD agent
+node, add the router branch, attach ten tool workflows, then create and bind
+two Gmail credentials.
+
+**Otto's revised decision: drafting runs from a local Claude Code session.**
+It needs no n8n work at all — the API and board are built and a Gmail
+connector is already available there. The skill is
+`.claude/skills/bd-draft-outreach/SKILL.md`.
+
+Workflows 85 and 86 stay committed but **parked**. 85 works whenever n8n is
+wired; 86 cannot function until Gmail credentials exist, so treat it as
+inert. Note that both match the `MUST_BE_LIVE` pattern in
+`scripts/local.mjs`, so `./import-workflows.command` will publish them — 86
+will then sit in n8n unable to run.
+
+### The mailbox caveat on this path
+
+The Claude Code Gmail connector writes to the single Google account it is
+authorised for. D12 wanted the mailbox to follow the brand toggle; on this
+path that does not hold unless a second connector is added. The skill
+requires naming the destination mailbox before creating anything, so a
+misplaced Oddtoe draft is caught before it is written rather than after.
 
 This also constrains §8: the morning brief cannot be a pure cloud routine
 while the store is local. Either it runs locally on a schedule, or the parts
