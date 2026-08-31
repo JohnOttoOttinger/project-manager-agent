@@ -39,8 +39,10 @@ import {
   type HistoryMessage,
   type PaidComponentStatus,
   type ProspectConfidence,
+  DRAFT_STATES,
   OutreachNotConfiguredError,
   type CampaignBrief,
+  type DraftState,
   type DraftToValidate,
   type ProspectRowInput,
   type ProspectStatus,
@@ -3384,6 +3386,122 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "PROSPECT_STORE_ERROR",
                 "The outreach settings could not be reached.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/prepared") {
+        try {
+          if (request.method === "GET") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            const rawState = url.searchParams.get("state");
+            const state = rawState === null || rawState === ""
+              ? undefined
+              : (() => {
+                  if (!DRAFT_STATES.includes(rawState as DraftState)) {
+                    throw new PublicError(
+                      400,
+                      "INVALID_REQUEST",
+                      `A draft state must be one of: ${DRAFT_STATES.join(", ")}.`,
+                    );
+                  }
+                  return rawState as DraftState;
+                })();
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              drafts: chatStore.listPreparedDrafts(brand, state),
+            });
+            return;
+          }
+          if (request.method === "POST") {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "prepared draft payload",
+            );
+            const brand = validateBrandSlug(body.brand);
+            const campaignId = prospectText(body.campaignId, 64) || undefined;
+            const rawDrafts = businessMemoryObjectArray(
+              body.drafts,
+              "prepared drafts",
+              200,
+            );
+            const drafts = rawDrafts.map((candidate) => {
+              const prospectId = prospectText(candidate.prospectId, 64);
+              if (prospectId === "") {
+                throw new PublicError(
+                  400,
+                  "INVALID_REQUEST",
+                  "Every prepared draft needs a prospect id.",
+                );
+              }
+              const rawState = prospectText(candidate.state, 20);
+              if (rawState !== "" && !DRAFT_STATES.includes(rawState as DraftState)) {
+                throw new PublicError(
+                  400,
+                  "INVALID_REQUEST",
+                  `A draft state must be one of: ${DRAFT_STATES.join(", ")}.`,
+                );
+              }
+              return {
+                prospectId,
+                subject: prospectText(candidate.subject, 300),
+                body: prospectText(candidate.body, 20_000),
+                hook: prospectText(candidate.hook, 200) || undefined,
+                hookEvidence: prospectText(candidate.hookEvidence, 500) || undefined,
+                state: (rawState || undefined) as DraftState | undefined,
+                campaignId,
+              };
+            });
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              drafts: chatStore.savePreparedDrafts(brand, drafts),
+            });
+            return;
+          }
+          if (request.method === "DELETE") {
+            const brand = validateBrandSlug(url.searchParams.get("brand"));
+            const prospectId = prospectText(
+              url.searchParams.get("prospectId"),
+              64,
+            );
+            if (prospectId === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Which draft should be discarded?",
+              );
+            }
+            sendJson(response, 200, {
+              schemaVersion: 1,
+              discarded: chatStore.discardPreparedDraft(brand, prospectId),
+            });
+            return;
+          }
+          sendJson(
+            response,
+            405,
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "That method is not supported.",
+              },
+            },
+            { Allow: "GET, POST, DELETE" },
+          );
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not read or save prepared drafts", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those drafts could not be saved.",
               ),
             );
           }

@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -377,6 +377,29 @@ export interface ProspectListRecord {
   brand: string;
   listName: string;
   description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const DRAFT_STATES = [
+  "composing",
+  "approved",
+  "created",
+  "discarded",
+] as const;
+
+export type DraftState = (typeof DRAFT_STATES)[number];
+
+export interface PreparedDraftRecord {
+  draftRowId: string;
+  brand: string;
+  prospectId: string;
+  campaignId: string | undefined;
+  subject: string;
+  body: string;
+  hook: string;
+  hookEvidence: string;
+  state: DraftState;
   createdAt: string;
   updatedAt: string;
 }
@@ -1553,6 +1576,33 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 11) {
+      this.transaction(() => {
+        this.database.exec(`
+          CREATE TABLE outreach_drafts (
+            draft_row_id TEXT PRIMARY KEY,
+            brand TEXT NOT NULL,
+            prospect_id TEXT NOT NULL
+              REFERENCES prospects(prospect_id) ON DELETE CASCADE,
+            campaign_id TEXT,
+            subject TEXT NOT NULL DEFAULT '',
+            body TEXT NOT NULL DEFAULT '',
+            hook TEXT NOT NULL DEFAULT '',
+            hook_evidence TEXT NOT NULL DEFAULT '',
+            state TEXT NOT NULL DEFAULT 'composing'
+              CHECK (state IN ('composing', 'approved', 'created', 'discarded')),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(prospect_id)
+          ) STRICT;
+
+          CREATE INDEX outreach_drafts_brand_state
+          ON outreach_drafts(brand, state, updated_at DESC);
+
+          PRAGMA user_version = 11;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -1567,6 +1617,7 @@ export class ChatStore {
     this.database.prepare("SELECT suppression_id FROM suppressions LIMIT 1").all();
     this.database.prepare("SELECT brand FROM outreach_settings LIMIT 1").all();
     this.database.prepare("SELECT list_name FROM prospect_lists LIMIT 1").all();
+    this.database.prepare("SELECT draft_row_id FROM outreach_drafts LIMIT 1").all();
   }
 
   private transaction<T>(operation: () => T): T {
@@ -3493,6 +3544,96 @@ export class ChatStore {
     return this.listProspectListMeta(brand).find(
       (record) => record.listName === listName,
     )!;
+  }
+
+  /**
+   * Composed-but-not-yet-created drafts. Kept in the store rather than in
+   * the page so a half-written batch survives a reload or a wander to
+   * another screen — losing ten hand-edited emails would be the worst part
+   * of this flow.
+   */
+  savePreparedDrafts(
+    brand: string,
+    drafts: ReadonlyArray<{
+      prospectId: string;
+      subject: string;
+      body: string;
+      hook?: string | undefined;
+      hookEvidence?: string | undefined;
+      state?: DraftState | undefined;
+      campaignId?: string | undefined;
+    }>,
+  ): PreparedDraftRecord[] {
+    const now = nowIso();
+    this.transaction(() => {
+      const upsert = this.database.prepare(
+        `INSERT INTO outreach_drafts (
+           draft_row_id, brand, prospect_id, campaign_id, subject, body,
+           hook, hook_evidence, state, created_at, updated_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(prospect_id) DO UPDATE SET
+           subject = excluded.subject,
+           body = excluded.body,
+           hook = excluded.hook,
+           hook_evidence = excluded.hook_evidence,
+           state = excluded.state,
+           campaign_id = excluded.campaign_id,
+           updated_at = excluded.updated_at`,
+      );
+      for (const draft of drafts) {
+        upsert.run(
+          randomUUID(),
+          brand,
+          draft.prospectId,
+          draft.campaignId ?? null,
+          draft.subject,
+          draft.body,
+          draft.hook ?? "",
+          draft.hookEvidence ?? "",
+          draft.state ?? "composing",
+          now,
+          now,
+        );
+      }
+    });
+    return this.listPreparedDrafts(brand);
+  }
+
+  listPreparedDrafts(brand: string, state?: DraftState): PreparedDraftRecord[] {
+    const where = state === undefined
+      ? "WHERE brand = ? AND state <> 'discarded'"
+      : "WHERE brand = ? AND state = ?";
+    const parameters = state === undefined ? [brand] : [brand, state];
+    const rows = this.database
+      .prepare(`SELECT * FROM outreach_drafts ${where} ORDER BY updated_at DESC`)
+      .all(...parameters) as unknown as Array<{
+      draft_row_id: string; brand: string; prospect_id: string;
+      campaign_id: string | null; subject: string; body: string;
+      hook: string; hook_evidence: string; state: DraftState;
+      created_at: string; updated_at: string;
+    }>;
+    return rows.map((row) => ({
+      draftRowId: row.draft_row_id,
+      brand: row.brand,
+      prospectId: row.prospect_id,
+      campaignId: row.campaign_id ?? undefined,
+      subject: row.subject,
+      body: row.body,
+      hook: row.hook,
+      hookEvidence: row.hook_evidence,
+      state: row.state,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  }
+
+  discardPreparedDraft(brand: string, prospectId: string): boolean {
+    const result = this.database
+      .prepare(
+        `DELETE FROM outreach_drafts WHERE brand = ? AND prospect_id = ?`,
+      )
+      .run(brand, prospectId);
+    return result.changes > 0;
   }
 
   countDraftedToday(brand: string): number {

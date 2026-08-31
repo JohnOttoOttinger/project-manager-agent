@@ -1694,6 +1694,9 @@
   // Set from the Lists tab so "Show on board" opens the board scoped to one
   // list. Empty means every list.
   let bdListFilter = "";
+  // When set, the stage shows the compose screen instead of a tab body.
+  // { listName } scopes which prospects are offered.
+  let bdDraftContext = null;
   // Set by renderBdPipelineTab so the dialogs can refresh the board they
   // were opened from without re-rendering the whole stage.
   let bdReload = () => {};
@@ -2396,9 +2399,8 @@
           draft.className = "secondary-button";
           draft.textContent = `Draft ${Math.min(ready.length, remaining)} emails`;
           draft.addEventListener("click", () => {
-            openChatWithPrompt(
-              `Draft outreach for ${brand}. Show me who is eligible and who is skipped, and the drafts, before anything goes to Gmail.`,
-            );
+            bdDraftContext = { listName: "" };
+            renderStage();
           });
           capacity.append(draft);
         }
@@ -2611,6 +2613,354 @@
       .catch(() => {
         holder.replaceChildren(
           dashEmpty("The prospect store is not reachable. Restart the local app and reload."),
+        );
+      });
+  }
+
+  // ---- Draft & review ---------------------------------------------------
+  // The act of BD. A template composes a first pass for everyone eligible;
+  // every draft is then editable on its own, because a template that nobody
+  // edits is what makes cold email read like cold email. Validation runs
+  // server-side before anything is marked ready, so a draft the store would
+  // refuse can never be approved here.
+
+  const BD_DEFAULT_TEMPLATE = [
+    "Hi {{first_name}},",
+    "",
+    "I put together a guide to the biggest experiential agencies and {{company}} is in it — here's the entry: {{link}}",
+    "",
+    "We make generative animation and projection content for agencies that would rather not build it in-house. If a brief ever calls for it, I'm easy to reach.",
+    "",
+    "{{unsubscribe}}",
+    "",
+    "{{sender}}",
+    "{{sender_contact}}",
+  ].join("\n");
+
+  const BD_DEFAULT_SUBJECT = "{{company}} is on our agencies guide";
+
+  let bdTemplate = null;
+  let bdSubjectTemplate = null;
+
+  function bdFillTemplate(text, prospect, outreachUrl, settings) {
+    const first = (prospect.contactName || "").trim().split(" ")[0] || "there";
+    return text
+      .replaceAll("{{first_name}}", first)
+      .replaceAll("{{contact_name}}", prospect.contactName || "there")
+      .replaceAll("{{company}}", prospect.company)
+      .replaceAll("{{link}}", outreachUrl)
+      .replaceAll("{{unsubscribe}}", settings.unsubscribeLine)
+      .replaceAll("{{sender}}", settings.senderName)
+      .replaceAll("{{sender_contact}}", settings.senderContact);
+  }
+
+  function bdExitDraft() {
+    bdDraftContext = null;
+    bdTemplate = null;
+    bdSubjectTemplate = null;
+    renderStage();
+  }
+
+  function renderBdDraftScreen(body) {
+    const brand = activeBrand()?.id ?? "oddtoe";
+    const q = encodeURIComponent(brand);
+    const scope = bdDraftContext.listName ?? "";
+
+    const back = document.createElement("button");
+    back.type = "button";
+    back.className = "bd-back";
+    back.textContent = "← Back to Business Development";
+    back.addEventListener("click", bdExitDraft);
+    body.append(back);
+
+    body.append(dashLabel(scope === "" ? "Draft outreach" : `Draft outreach · ${scope}`));
+
+    const holder = document.createElement("div");
+    holder.append(dashEmpty("Working out who is eligible…"));
+    body.append(holder);
+
+    const listQuery = scope === "" ? "" : `&list=${encodeURIComponent(scope)}`;
+    void Promise.all([
+      fetchJson(`/api/prospects/draftable?brand=${q}${listQuery}`),
+      fetchJson(`/api/outreach/prepared?brand=${q}`).catch(() => ({ drafts: [] })),
+    ])
+      .then(([draftable, prepared]) => {
+        holder.replaceChildren();
+        const settings = draftable.settings;
+        const eligible = draftable.eligible ?? [];
+        const saved = new Map(
+          (prepared.drafts ?? []).map((d) => [d.prospectId, d]),
+        );
+
+        if (bdTemplate === null) {
+          bdTemplate = BD_DEFAULT_TEMPLATE;
+          bdSubjectTemplate = BD_DEFAULT_SUBJECT;
+        }
+
+        // --- Header: what this run would do ---------------------------
+        const summary = document.createElement("p");
+        summary.className = "bd-listcard__note";
+        summary.textContent = eligible.length === 0
+          ? `Nobody is eligible right now. ${draftable.skipped.length} prospects were excluded — every one with a reason.`
+          : `${eligible.length} eligible · ${draftable.remainingToday} left of today's cap of ${draftable.dailyCap} · ${draftable.skipped.length} excluded.`;
+        holder.append(summary);
+
+        if (eligible.length === 0) {
+          const why = dashCard();
+          const reasons = new Map();
+          for (const s of draftable.skipped) {
+            reasons.set(s.reason, (reasons.get(s.reason) ?? 0) + 1);
+          }
+          for (const [reason, count] of [...reasons.entries()].sort((a, b) => b[1] - a[1])) {
+            const row = document.createElement("p");
+            row.className = "bd-listcard__note";
+            row.textContent = `${count} — ${reason}`;
+            why.append(row);
+          }
+          holder.append(why);
+          return;
+        }
+
+        // --- Template -------------------------------------------------
+        const tpl = bdSection("Template");
+        const tplNote = document.createElement("p");
+        tplNote.className = "bd-flightgroup__note";
+        tplNote.textContent =
+          "Generates a first pass for everyone below. Tokens: {{first_name}} {{company}} {{link}} {{unsubscribe}} {{sender}} {{sender_contact}}. The opt-out line, sender name and each prospect's own link are required — a draft without them is refused.";
+        tpl.append(tplNote);
+
+        const subjectField = document.createElement("input");
+        subjectField.className = "bd-tplfield";
+        subjectField.value = bdSubjectTemplate;
+        subjectField.setAttribute("aria-label", "Subject template");
+        const bodyField = document.createElement("textarea");
+        bodyField.className = "bd-tplfield bd-tplfield--body";
+        bodyField.rows = 10;
+        bodyField.value = bdTemplate;
+        bodyField.setAttribute("aria-label", "Body template");
+        tpl.append(subjectField, bodyField);
+
+        const apply = document.createElement("button");
+        apply.type = "button";
+        apply.className = "secondary-button";
+        apply.textContent = "Apply to all drafts";
+        apply.addEventListener("click", () => {
+          bdTemplate = bodyField.value;
+          bdSubjectTemplate = subjectField.value;
+          const rows = eligible.map((e) => ({
+            prospectId: e.prospect.prospectId,
+            subject: bdFillTemplate(subjectField.value, e.prospect, e.outreachUrl, settings),
+            body: bdFillTemplate(bodyField.value, e.prospect, e.outreachUrl, settings),
+            hook: "featured on the agencies guide",
+            hookEvidence: "listed on the experiential-agencies guide page",
+            state: "composing",
+          }));
+          apply.disabled = true;
+          apply.textContent = "Applying…";
+          void fetchJson("/api/outreach/prepared", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ brand, drafts: rows }),
+          })
+            .then(() => renderStage())
+            .catch(() => {
+              apply.disabled = false;
+              apply.textContent = "Could not apply";
+            });
+        });
+        tpl.append(apply);
+        holder.append(tpl);
+
+        // --- One card per eligible prospect ---------------------------
+        const drafts = bdSection(`Drafts (${eligible.length})`);
+        const state = new Map();
+
+        for (const entry of eligible) {
+          const prospect = entry.prospect;
+          const existing = saved.get(prospect.prospectId);
+          const card = dashCard();
+          card.className = "dash-card bd-draftcard";
+
+          const head = document.createElement("div");
+          head.className = "bd-listcard__head";
+          const who = document.createElement("h3");
+          who.className = "bd-listcard__title";
+          who.textContent = prospect.company;
+          head.append(who);
+          head.append(stageChip(prospect.status));
+          const to = document.createElement("span");
+          to.className = "bd-listcard__count";
+          to.textContent = `${prospect.contactName || "—"} · ${prospect.contactEmail}`;
+          head.append(to);
+          card.append(head);
+
+          if (entry.warning !== "") {
+            const warn = document.createElement("p");
+            warn.className = "prospect-detail__warning";
+            warn.textContent = entry.warning;
+            card.append(warn);
+          }
+
+          const subject = document.createElement("input");
+          subject.className = "bd-draftfield";
+          subject.setAttribute("aria-label", `Subject for ${prospect.company}`);
+          subject.value = existing?.subject
+            ?? bdFillTemplate(bdSubjectTemplate, prospect, entry.outreachUrl, settings);
+          const bodyBox = document.createElement("textarea");
+          bodyBox.className = "bd-draftfield bd-draftfield--body";
+          bodyBox.rows = 9;
+          bodyBox.setAttribute("aria-label", `Body for ${prospect.company}`);
+          bodyBox.value = existing?.body
+            ?? bdFillTemplate(bdTemplate, prospect, entry.outreachUrl, settings);
+          card.append(subject, bodyBox);
+
+          const verdict = document.createElement("p");
+          verdict.className = "bd-draftverdict";
+          if (existing?.state === "approved") {
+            verdict.textContent = "Ready to create in Gmail.";
+            verdict.classList.add("bd-liststat--good");
+          }
+          card.append(verdict);
+
+          const row = document.createElement("div");
+          row.className = "bd-listcard__actions";
+          const include = document.createElement("label");
+          include.className = "bd-include";
+          const box = document.createElement("input");
+          box.type = "checkbox";
+          box.checked = existing?.state !== "discarded";
+          include.append(box, document.createTextNode(" Include in this run"));
+          row.append(include);
+
+          const discard = document.createElement("button");
+          discard.type = "button";
+          discard.className = "bd-listcard__edit";
+          discard.textContent = "Discard draft";
+          discard.addEventListener("click", () => {
+            void fetchJson(
+              `/api/outreach/prepared?brand=${q}&prospectId=${encodeURIComponent(prospect.prospectId)}`,
+              { method: "DELETE" },
+            ).then(() => renderStage());
+          });
+          row.append(discard);
+          card.append(row);
+
+          state.set(prospect.prospectId, { subject, bodyBox, box, verdict, prospect });
+          drafts.append(card);
+        }
+        holder.append(drafts);
+
+        // --- Save / check / hand off -----------------------------------
+        const bar = document.createElement("div");
+        bar.className = "bd-draftbar";
+        const barStatus = document.createElement("p");
+        barStatus.className = "bd-draftbar__status";
+        barStatus.setAttribute("role", "status");
+
+        const collect = () =>
+          [...state.entries()]
+            .filter(([, ui]) => ui.box.checked)
+            .map(([prospectId, ui]) => ({
+              prospectId,
+              subject: ui.subject.value,
+              body: ui.bodyBox.value,
+              hook: "featured on the agencies guide",
+              hookEvidence: "listed on the experiential-agencies guide page",
+            }));
+
+        const save = document.createElement("button");
+        save.type = "button";
+        save.className = "secondary-button";
+        save.textContent = "Save drafts";
+        save.addEventListener("click", () => {
+          const rows = collect().map((d) => ({ ...d, state: "composing" }));
+          barStatus.textContent = "Saving…";
+          void fetchJson("/api/outreach/prepared", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ brand, drafts: rows }),
+          })
+            .then(() => { barStatus.textContent = `Saved ${rows.length}.`; })
+            .catch((e) => { barStatus.textContent = e.message ?? "Could not save."; });
+        });
+
+        const check = document.createElement("button");
+        check.type = "button";
+        check.className = "secondary-button";
+        check.textContent = "Check against the rules";
+        check.addEventListener("click", () => {
+          const rows = collect();
+          if (rows.length === 0) {
+            barStatus.textContent = "Nothing selected.";
+            return;
+          }
+          barStatus.textContent = "Checking…";
+          void fetchJson("/api/outreach/validate-drafts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ brand, drafts: rows }),
+          })
+            .then((result) => {
+              let approved = 0;
+              for (const r of result.results) {
+                const ui = state.get(r.prospectId);
+                if (!ui) { continue; }
+                ui.verdict.classList.remove("bd-liststat--good", "bd-liststat--warn");
+                if (r.approved) {
+                  approved += 1;
+                  ui.verdict.textContent = r.warnings.length > 0
+                    ? `Passes — but ${r.warnings.join("; ")}`
+                    : "Passes every check.";
+                  ui.verdict.classList.add(r.warnings.length > 0 ? "bd-liststat--warn" : "bd-liststat--good");
+                } else {
+                  ui.verdict.textContent = `Refused: ${r.reasons.join("; ")}`;
+                  ui.verdict.classList.add("bd-liststat--warn");
+                }
+              }
+              barStatus.textContent = `${approved} of ${rows.length} pass. Refused drafts cannot be created.`;
+              // Persist the verdict as state so a reload remembers it.
+              void fetchJson("/api/outreach/prepared", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  brand,
+                  drafts: result.results.filter((r) => r.approved).map((r) => {
+                    const ui = state.get(r.prospectId);
+                    return {
+                      prospectId: r.prospectId,
+                      subject: ui.subject.value,
+                      body: ui.bodyBox.value,
+                      state: "approved",
+                    };
+                  }),
+                }),
+              });
+            })
+            .catch((e) => { barStatus.textContent = e.message ?? "Could not check."; });
+        });
+
+        const hand = document.createElement("button");
+        hand.type = "button";
+        hand.className = "send-button";
+        hand.textContent = "Create in Gmail";
+        hand.addEventListener("click", () => {
+          openChatWithPrompt(
+            `Create the approved outreach drafts for ${brand} in Gmail. They are saved in the store — read them from /api/outreach/prepared?brand=${brand}&state=approved, create each one, then record the Gmail ids.`,
+          );
+        });
+
+        bar.append(save, check, hand);
+        holder.append(bar, barStatus);
+
+        const gmailNote = document.createElement("p");
+        gmailNote.className = "bd-flightgroup__note";
+        gmailNote.textContent =
+          "Nothing is sent from this screen. Creating in Gmail happens through the agent, which has the mailbox connection; you review each draft in Gmail and send it yourself.";
+        holder.append(gmailNote);
+      })
+      .catch((error) => {
+        holder.replaceChildren(
+          dashEmpty(error.message ?? "The prospect store is not reachable."),
         );
       });
   }
@@ -2939,9 +3289,8 @@
             draft.className = "secondary-button";
             draft.textContent = `Draft ${stats.ready} email${stats.ready === 1 ? "" : "s"}`;
             draft.addEventListener("click", () => {
-              openChatWithPrompt(
-                `Draft outreach for the prospects in "${listName}" that are ready. Show me who is eligible and who is skipped before you write anything.`,
-              );
+              bdDraftContext = { listName };
+              renderStage();
             });
             actions.append(draft);
           }
@@ -3240,7 +3589,9 @@
       renderPipelineBoard(body);
     } else {
       elements.stageTitle.textContent = displayAgentName();
-      if (activeTabId === "bd-pipeline") {
+      if (activeAgentId === "business-development" && bdDraftContext !== null) {
+        renderBdDraftScreen(body);
+      } else if (activeTabId === "bd-pipeline") {
         renderBdPipelineTab(body);
       } else if (activeTabId === "bd-outreach") {
         renderBdOutreachTab(body);

@@ -2823,6 +2823,93 @@ h2 { text-transform: uppercase; }
   border-color: #7a3f3f;
 }
 
+/* ---- BD draft & review ---- */
+
+.bd-back {
+  background: none;
+  border: none;
+  color: #ddccb1;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.6rem;
+}
+
+.bd-back:hover { text-decoration: underline; }
+
+.bd-tplfield,
+.bd-draftfield {
+  width: 100%;
+  background: #232826;
+  border: 1px solid #3c403c;
+  border-radius: calc(var(--radius) - 4px);
+  color: #f0ece0;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.45rem 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.bd-tplfield--body,
+.bd-draftfield--body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.bd-tplfield:focus-visible,
+.bd-draftfield:focus-visible {
+  outline: 2px solid #8a8f6a;
+  outline-offset: 1px;
+}
+
+.bd-draftcard { margin-bottom: 0.9rem; }
+
+.bd-draftverdict {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: #a89f88;
+  min-height: 1.05rem;
+}
+
+.bd-include {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.84rem;
+  color: #cbc4b2;
+  cursor: pointer;
+}
+
+.bd-draftbar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.8rem;
+  /* Opaque, not a fade: the bar sits over editable text, and a gradient
+     leaves the words underneath half-readable rather than hidden. */
+  background: #1b1f1d;
+  border: 1px solid #32362f;
+  border-radius: var(--radius);
+  margin-top: 0.6rem;
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.45);
+}
+
+/* Let the last draft scroll clear of the sticky bar. */
+.bd-draftcard:last-of-type { margin-bottom: 4.5rem; }
+
+.bd-draftbar__status {
+  margin: 0 0 0.5rem;
+  min-height: 1.1rem;
+  font-size: 0.84rem;
+  color: #e8c9a1;
+}
+
 /* ---- BD outreach ---- */
 
 .bd-section { margin-bottom: 1.4rem; }
