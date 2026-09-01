@@ -10,7 +10,7 @@ import type {
   ArticleOpportunity,
 } from "./article-brief.js";
 
-const SCHEMA_VERSION = 13;
+const SCHEMA_VERSION = 14;
 const DEFAULT_TITLE = "New conversation";
 const MAX_TITLE_LENGTH = 80;
 const MAX_SEARCH_LENGTH = 200;
@@ -499,6 +499,10 @@ export interface ProspectRowInput {
   contactName?: string | undefined;
   contactEmail?: string | undefined;
   linkedinUrl?: string | undefined;
+  /** How much the address can be trusted. "" means nobody assessed it. */
+  confidence?: ProspectConfidence | "" | undefined;
+  /** Why a human should look before sending, e.g. an off-domain address. */
+  flagReason?: string | undefined;
   pdfSent?: string | undefined;
   sentDate?: string | undefined;
   opened?: string | undefined;
@@ -536,6 +540,9 @@ export interface ProspectRecord {
   clickedAt: string;
   followUpDue: string;
   closeReason: string;
+  sentAt: string;
+  repliedAt: string;
+  followedUpAt: string;
   campaignId: string | undefined;
   createdAt: string;
   updatedAt: string;
@@ -655,6 +662,9 @@ interface ProspectRow {
   clicked_at: string;
   follow_up_due: string;
   close_reason: string;
+  sent_at: string;
+  replied_at: string;
+  followed_up_at: string;
   campaign_id: string | null;
   created_at: string;
   updated_at: string;
@@ -810,10 +820,74 @@ function prospectFromRow(row: ProspectRow): ProspectRecord {
     clickedAt: row.clicked_at,
     followUpDue: row.follow_up_due,
     closeReason: row.close_reason,
+    sentAt: row.sent_at,
+    repliedAt: row.replied_at,
+    followedUpAt: row.followed_up_at,
     campaignId: row.campaign_id ?? undefined,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+export type OutreachSignalKind = "sent" | "replied" | "clicked";
+
+export interface OutreachSignalInput {
+  prospectId: string;
+  kind: OutreachSignalKind;
+  occurredAt?: string | undefined;
+  detail?: string | undefined;
+}
+
+export interface OutreachSignalResult {
+  prospectId: string;
+  company: string;
+  outcome: "recorded" | "not_found" | "already" | "closed";
+  status: ProspectStatus | "";
+}
+
+export interface AwaitingReplyRecord {
+  prospectId: string;
+  company: string;
+  contactName: string;
+  contactEmail: string;
+  status: ProspectStatus;
+  draftedAt: string;
+  sentAt: string;
+  followUpDue: string;
+}
+
+export interface FollowUpDueRecord {
+  prospectId: string;
+  company: string;
+  contactName: string;
+  contactEmail: string;
+  hook: string;
+  draftedAt: string;
+  sentAt: string;
+  followUpDue: string;
+  daysOverdue: number;
+}
+
+export interface RecordedFollowUpInput {
+  prospectId: string;
+  draftId: string;
+}
+
+export interface RecordedFollowUpResult {
+  prospectId: string;
+  company: string;
+  outcome: "recorded" | "not_found" | "suppressed" | "replied" | "already" | "not_due";
+}
+
+export interface BdBriefCounts {
+  brand: string;
+  generatedAt: string;
+  readyToDraft: number;
+  draftedNotSent: number;
+  awaitingReply: number;
+  followUpsDue: number;
+  repliedUnworked: number;
+  staleForClose: number;
 }
 
 export interface BeginTurnInput {
@@ -1774,6 +1848,26 @@ export class ChatStore {
         `);
       });
     }
+    if (version < 14) {
+      // Step 4-5 of the BD spec. Until now a prospect could be drafted but
+      // nothing could record that the draft was actually sent, that a human
+      // answered, or that the single follow-up went out -- so no card could
+      // ever reach `replied`, and the BD->Sales handoff never fired.
+      this.transaction(() => {
+        this.database.exec(`
+          ALTER TABLE prospects ADD COLUMN sent_at TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN replied_at TEXT NOT NULL DEFAULT '';
+          ALTER TABLE prospects ADD COLUMN followed_up_at TEXT NOT NULL DEFAULT '';
+
+          -- The reply scan reads this set on every run, so keep it cheap.
+          CREATE INDEX prospects_awaiting_reply
+          ON prospects(brand, status)
+          WHERE replied_at = '';
+
+          PRAGMA user_version = 14;
+        `);
+      });
+    }
     this.database.prepare("SELECT rowid FROM message_search LIMIT 1").all();
     this.database.prepare("SELECT domain FROM business_memory LIMIT 1").all();
     this.database.prepare("SELECT job_id FROM domain_research_jobs LIMIT 1").all();
@@ -2603,9 +2697,10 @@ export class ChatStore {
            prospect_id, brand, list_name, company_key, row_number, company,
            region, tier, source, website, linkedin_company_url,
            contact_name, contact_email, linkedin_url,
+           confidence, flag_reason,
            pdf_sent, sent_date, opened, follow_up_sent,
            status, notes, created_at, updated_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       );
       const insertEvent = this.database.prepare(
         `INSERT INTO outreach_events (
@@ -2635,6 +2730,8 @@ export class ChatStore {
           row.contactName?.trim() ?? "",
           row.contactEmail?.trim() ?? "",
           row.linkedinUrl?.trim() ?? "",
+          row.confidence ?? "",
+          row.flagReason?.trim() ?? "",
           row.pdfSent?.trim() ?? "",
           row.sentDate?.trim() ?? "",
           row.opened?.trim() ?? "",
@@ -3514,7 +3611,25 @@ export class ChatStore {
       .prepare(
         `SELECT * FROM prospects WHERE ${conditions.join(" AND ")}
          ORDER BY
-           CASE WHEN tier = '' THEN 99 ELSE CAST(tier AS INTEGER) END ASC,
+           -- An explicit numeric tier is a human's own priority call, so it
+           -- ranks first. CAST alone cannot carry this: SQLite casts any
+           -- non-numeric text to 0, so a descriptive tier like
+           -- 'Experiential agency' used to sort ABOVE tier '1' and buried
+           -- the hand-ranked targets beneath every unranked row.
+           CASE
+             WHEN tier GLOB '[0-9]*' THEN CAST(tier AS INTEGER)
+             WHEN tier = '' THEN 9999
+             ELSE 1000
+           END ASC,
+           -- Then readiness to actually send, best first: a named human
+           -- beats a shared inbox, an address nobody has queried beats one
+           -- carrying a check-this flag, and a verified address beats a
+           -- pattern-derived one.
+           CASE WHEN contact_name <> '' THEN 0 ELSE 1 END ASC,
+           CASE WHEN flag_reason = '' THEN 0 ELSE 1 END ASC,
+           CASE confidence
+             WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN '' THEN 2 ELSE 3
+           END ASC,
            company ASC`,
       )
       .all(...parameters) as unknown as ProspectRow[];
@@ -4103,6 +4218,391 @@ export class ChatStore {
     return {
       outcome: added.outcome === "duplicate" ? "duplicate" : "accepted",
       company: row.company!,
+    };
+  }
+
+  /**
+   * Prospects that have had outreach prepared and have not answered yet.
+   * The reply scan matches inbox senders against this list, so it returns
+   * the address rather than making the caller look each one up.
+   */
+  listAwaitingReply(brand: string, limit = 200): AwaitingReplyRecord[] {
+    const boundedLimit = Math.max(1, Math.min(limit, 500));
+    const rows = this.database
+      .prepare(
+        `SELECT prospect_id, company, contact_name, contact_email, status,
+                drafted_at, sent_at, follow_up_due
+         FROM prospects
+         WHERE brand = ?
+           AND replied_at = ''
+           AND contact_email <> ''
+           AND status IN ('emailed', 'opened', 'followed_up')
+         ORDER BY drafted_at ASC
+         LIMIT ?`,
+      )
+      .all(brand, boundedLimit) as unknown as Array<{
+      prospect_id: string;
+      company: string;
+      contact_name: string;
+      contact_email: string;
+      status: ProspectStatus;
+      drafted_at: string;
+      sent_at: string;
+      follow_up_due: string;
+    }>;
+    return rows.map((row) => ({
+      prospectId: row.prospect_id,
+      company: row.company,
+      contactName: row.contact_name,
+      contactEmail: row.contact_email,
+      status: row.status,
+      draftedAt: row.drafted_at,
+      sentAt: row.sent_at,
+      followUpDue: row.follow_up_due,
+    }));
+  }
+
+  /**
+   * Write what the world did back onto the board: a draft was actually sent,
+   * a link was clicked, or a human replied.
+   *
+   * A reply is terminal for BD -- it is the handoff to Sales. Once a card is
+   * `replied` or `closed` a later `sent` or `clicked` signal is ignored
+   * rather than dragging it backwards, because scans re-read overlapping
+   * windows and must be safe to run twice.
+   */
+  recordOutreachSignals(
+    brand: string,
+    entries: readonly OutreachSignalInput[],
+  ): OutreachSignalResult[] {
+    const results: OutreachSignalResult[] = [];
+    this.transaction(() => {
+      for (const entry of entries) {
+        const row = this.database
+          .prepare(`SELECT * FROM prospects WHERE prospect_id = ? AND brand = ?`)
+          .get(entry.prospectId, brand) as unknown as ProspectRow | undefined;
+        if (row === undefined) {
+          results.push({
+            prospectId: entry.prospectId,
+            company: "",
+            outcome: "not_found",
+            status: "",
+          });
+          continue;
+        }
+        if (row.status === "closed") {
+          results.push({
+            prospectId: entry.prospectId,
+            company: row.company,
+            outcome: "closed",
+            status: row.status,
+          });
+          continue;
+        }
+        const seen = entry.kind === "replied"
+          ? row.replied_at
+          : entry.kind === "sent"
+            ? row.sent_at
+            : row.clicked_at;
+        if (seen !== "" || (row.status === "replied" && entry.kind !== "replied")) {
+          results.push({
+            prospectId: entry.prospectId,
+            company: row.company,
+            outcome: "already",
+            status: row.status,
+          });
+          continue;
+        }
+        const now = nowIso();
+        const occurredAt = entry.occurredAt?.trim() ?? "";
+        const stamp = occurredAt === "" ? now : occurredAt;
+        if (entry.kind === "replied") {
+          // Clearing the due date stops the follow-up chasing someone who
+          // has already answered.
+          this.database
+            .prepare(
+              `UPDATE prospects SET replied_at = ?, status = 'replied',
+                 follow_up_due = '', updated_at = ?
+               WHERE prospect_id = ?`,
+            )
+            .run(stamp, now, entry.prospectId);
+        } else if (entry.kind === "sent") {
+          this.database
+            .prepare(
+              `UPDATE prospects SET sent_at = ?, updated_at = ?
+               WHERE prospect_id = ?`,
+            )
+            .run(stamp, now, entry.prospectId);
+        } else {
+          const status = row.status === "emailed" ? "opened" : row.status;
+          this.database
+            .prepare(
+              `UPDATE prospects SET clicked_at = ?, status = ?, updated_at = ?
+               WHERE prospect_id = ?`,
+            )
+            .run(stamp, status, now, entry.prospectId);
+        }
+        const eventType = entry.kind === "replied"
+          ? "replied"
+          : entry.kind === "sent"
+            ? "emailed"
+            : "clicked";
+        const fallbackDetail = entry.kind === "replied"
+          ? "Reply detected in the inbox"
+          : entry.kind === "sent"
+            ? "Draft confirmed sent"
+            : "Guide link clicked";
+        const detail = entry.detail?.trim() ?? "";
+        this.database
+          .prepare(
+            `INSERT INTO outreach_events (
+               event_id, prospect_id, campaign_id, event_type, detail,
+               occurred_at, created_at
+             ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .run(
+            randomUUID(),
+            entry.prospectId,
+            row.campaign_id,
+            eventType,
+            detail === "" ? fallbackDetail : detail,
+            stamp,
+            now,
+          );
+        results.push({
+          prospectId: entry.prospectId,
+          company: row.company,
+          outcome: "recorded",
+          status: this.getProspect(entry.prospectId)?.status ?? row.status,
+        });
+      }
+    });
+    return results;
+  }
+
+  /**
+   * Prospects whose follow-up date has arrived and who have not answered.
+   * Suppression is applied here as well as on write: an opt-out that lands
+   * between reading this list and drafting from it still has to bite.
+   */
+  followUpDueProspects(brand: string, limit = 50): FollowUpDueRecord[] {
+    const boundedLimit = Math.max(1, Math.min(limit, 200));
+    const today = nowIso().slice(0, 10);
+    const rows = this.database
+      .prepare(
+        `SELECT prospect_id, company, contact_name, contact_email, hook,
+                drafted_at, sent_at, follow_up_due
+         FROM prospects
+         WHERE brand = ?
+           AND replied_at = ''
+           AND followed_up_at = ''
+           AND follow_up_due <> ''
+           AND follow_up_due <= ?
+           AND contact_email <> ''
+           AND status IN ('emailed', 'opened')
+         ORDER BY follow_up_due ASC
+         LIMIT ?`,
+      )
+      .all(brand, today, boundedLimit) as unknown as Array<{
+      prospect_id: string;
+      company: string;
+      contact_name: string;
+      contact_email: string;
+      hook: string;
+      drafted_at: string;
+      sent_at: string;
+      follow_up_due: string;
+    }>;
+    const suppressed = this.suppressedEmails(
+      brand,
+      rows.map((row) => row.contact_email),
+    );
+    const todayMs = Date.parse(`${today}T00:00:00Z`);
+    return rows
+      .filter((row) => !suppressed.has(suppressionKey(row.contact_email)))
+      .map((row) => ({
+        prospectId: row.prospect_id,
+        company: row.company,
+        contactName: row.contact_name,
+        contactEmail: row.contact_email,
+        hook: row.hook,
+        draftedAt: row.drafted_at,
+        sentAt: row.sent_at,
+        followUpDue: row.follow_up_due,
+        daysOverdue: Math.max(
+          0,
+          Math.round(
+            (todayMs - Date.parse(`${row.follow_up_due}T00:00:00Z`)) / 86400000,
+          ),
+        ),
+      }));
+  }
+
+  /**
+   * Record the one follow-up draft. The BD spec allows exactly one, so a
+   * prospect that already carries `followed_up_at` is refused rather than
+   * chased twice.
+   */
+  recordFollowUpDrafts(
+    brand: string,
+    entries: readonly RecordedFollowUpInput[],
+  ): RecordedFollowUpResult[] {
+    const results: RecordedFollowUpResult[] = [];
+    const today = nowIso().slice(0, 10);
+    this.transaction(() => {
+      for (const entry of entries) {
+        const row = this.database
+          .prepare(`SELECT * FROM prospects WHERE prospect_id = ? AND brand = ?`)
+          .get(entry.prospectId, brand) as unknown as ProspectRow | undefined;
+        if (row === undefined) {
+          results.push({ prospectId: entry.prospectId, company: "", outcome: "not_found" });
+          continue;
+        }
+        if (row.replied_at !== "" || row.status === "replied" || row.status === "closed") {
+          results.push({ prospectId: entry.prospectId, company: row.company, outcome: "replied" });
+          continue;
+        }
+        if (row.followed_up_at !== "") {
+          results.push({ prospectId: entry.prospectId, company: row.company, outcome: "already" });
+          continue;
+        }
+        if (row.follow_up_due === "" || row.follow_up_due > today) {
+          results.push({ prospectId: entry.prospectId, company: row.company, outcome: "not_due" });
+          continue;
+        }
+        if (this.suppressedEmails(brand, [row.contact_email]).size > 0) {
+          results.push({ prospectId: entry.prospectId, company: row.company, outcome: "suppressed" });
+          continue;
+        }
+        const now = nowIso();
+        this.database
+          .prepare(
+            `UPDATE prospects SET
+               followed_up_at = ?, follow_up_sent = ?, status = 'followed_up',
+               follow_up_due = '', updated_at = ?
+             WHERE prospect_id = ?`,
+          )
+          .run(now, now, now, entry.prospectId);
+        this.database
+          .prepare(
+            `INSERT INTO outreach_events (
+               event_id, prospect_id, campaign_id, event_type, detail,
+               occurred_at, created_at
+             ) VALUES (?, ?, ?, 'followed_up', ?, ?, ?)`,
+          )
+          .run(
+            randomUUID(),
+            entry.prospectId,
+            row.campaign_id,
+            `Follow-up draft prepared (${entry.draftId.trim()})`,
+            now,
+            now,
+          );
+        results.push({ prospectId: entry.prospectId, company: row.company, outcome: "recorded" });
+      }
+    });
+    return results;
+  }
+
+  /**
+   * Close prospects that were followed up and still said nothing. The
+   * outbound loop ends at one follow-up; without this the board silts up
+   * with cards that will never move again.
+   */
+  autoCloseStale(
+    brand: string,
+    days = 14,
+  ): Array<{ prospectId: string; company: string }> {
+    const window = Math.max(1, Math.min(days, 365));
+    const now = nowIso();
+    const cutoff = addDaysIso(now, -window);
+    const closed: Array<{ prospectId: string; company: string }> = [];
+    this.transaction(() => {
+      const rows = this.database
+        .prepare(
+          `SELECT prospect_id, company, campaign_id FROM prospects
+           WHERE brand = ?
+             AND status = 'followed_up'
+             AND replied_at = ''
+             AND followed_up_at <> ''
+             AND substr(followed_up_at, 1, 10) <= ?`,
+        )
+        .all(brand, cutoff) as unknown as Array<{
+        prospect_id: string;
+        company: string;
+        campaign_id: string | null;
+      }>;
+      for (const row of rows) {
+        const reason = `No reply ${window} days after follow-up`;
+        this.database
+          .prepare(
+            `UPDATE prospects SET status = 'closed', close_reason = ?,
+               follow_up_due = '', updated_at = ?
+             WHERE prospect_id = ?`,
+          )
+          .run(reason, now, row.prospect_id);
+        this.database
+          .prepare(
+            `INSERT INTO outreach_events (
+               event_id, prospect_id, campaign_id, event_type, detail,
+               occurred_at, created_at
+             ) VALUES (?, ?, ?, 'status_change', ?, ?, ?)`,
+          )
+          .run(randomUUID(), row.prospect_id, row.campaign_id, `Auto-closed: ${reason}`, now, now);
+        closed.push({ prospectId: row.prospect_id, company: row.company });
+      }
+    });
+    return closed;
+  }
+
+  /**
+   * The six numbers the morning brief is built from. Each one is a question
+   * Otto would otherwise have to ask the board by eye.
+   */
+  bdBriefCounts(brand: string, staleDays = 14): BdBriefCounts {
+    const now = nowIso();
+    const today = now.slice(0, 10);
+    const cutoff = addDaysIso(now, -Math.max(1, Math.min(staleDays, 365)));
+    const count = (sql: string, ...params: string[]): number => {
+      const row = this.database.prepare(sql).get(brand, ...params) as
+        | { n: number }
+        | undefined;
+      return row?.n ?? 0;
+    };
+    return {
+      brand,
+      generatedAt: now,
+      readyToDraft: count(
+        `SELECT COUNT(*) AS n FROM prospects
+         WHERE brand = ? AND draft_id = '' AND contact_email <> ''
+           AND status IN ('enriched', 'needs_review')`,
+      ),
+      draftedNotSent: count(
+        `SELECT COUNT(*) AS n FROM prospects
+         WHERE brand = ? AND draft_id <> '' AND sent_at = '' AND replied_at = ''
+           AND status NOT IN ('closed', 'replied')`,
+      ),
+      awaitingReply: count(
+        `SELECT COUNT(*) AS n FROM prospects
+         WHERE brand = ? AND replied_at = ''
+           AND status IN ('emailed', 'opened', 'followed_up')`,
+      ),
+      followUpsDue: count(
+        `SELECT COUNT(*) AS n FROM prospects
+         WHERE brand = ? AND replied_at = '' AND followed_up_at = ''
+           AND follow_up_due <> '' AND follow_up_due <= ?
+           AND contact_email <> '' AND status IN ('emailed', 'opened')`,
+        today,
+      ),
+      repliedUnworked: count(
+        `SELECT COUNT(*) AS n FROM prospects WHERE brand = ? AND status = 'replied'`,
+      ),
+      staleForClose: count(
+        `SELECT COUNT(*) AS n FROM prospects
+         WHERE brand = ? AND status = 'followed_up' AND replied_at = ''
+           AND followed_up_at <> '' AND substr(followed_up_at, 1, 10) <= ?`,
+        cutoff,
+      ),
     };
   }
 

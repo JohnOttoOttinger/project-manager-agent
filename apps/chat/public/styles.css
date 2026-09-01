@@ -3382,6 +3382,11 @@ h2 { text-transform: uppercase; }
 .bd-listcard__actions {
   display: flex;
   flex-wrap: wrap;
+  /* Without this the row stretches every item to the select's height. A
+     button centres its own text inside that taller box but an anchor does
+     not, so the link's glyphs sat ~8px above the button's. Centre the items
+     and all three sit on one line. */
+  align-items: center;
   gap: 0.5rem;
 }
 

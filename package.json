@@ -25,6 +25,7 @@
     "export-workflows": "node scripts/local.mjs export-workflows",
     "backup": "node scripts/local.mjs backup",
     "inspect-chats": "node scripts/inspect-chat-history.mjs",
+    "test:bd-loop": "node scripts/test-bd-loop.mjs",
     "reset": "node scripts/local.mjs reset"
   },
   "dependencies": {

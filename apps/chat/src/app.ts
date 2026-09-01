@@ -51,6 +51,9 @@ import {
   type ProspectRowInput,
   type ProspectStatus,
   type RecordedDraftInput,
+  type RecordedFollowUpInput,
+  type OutreachSignalInput,
+  type OutreachSignalKind,
   type SuppressionReason,
   type SeoArticleJobInput,
   type SeoArticleJobStatus,
@@ -641,6 +644,15 @@ function validateProspectRows(value: unknown): ProspectRowInput[] {
       contactName: prospectText(row.contactName, 120),
       contactEmail: prospectText(row.contactEmail, 254),
       linkedinUrl: prospectText(row.linkedinUrl, 300),
+      // An absent confidence means nobody assessed the address, which is the
+      // column's own default — not "low". Guessing a grade here would assert
+      // a judgement no one made. An unrecognised value falls back the same
+      // way rather than tripping the table's CHECK constraint at insert.
+      confidence: typeof row.confidence === "string" &&
+          PROSPECT_CONFIDENCES.includes(row.confidence as ProspectConfidence)
+        ? (row.confidence as ProspectConfidence)
+        : "",
+      flagReason: prospectText(row.flagReason, 300),
       pdfSent: prospectText(row.pdfSent, 40),
       sentDate: prospectText(row.sentDate, 40),
       opened: prospectText(row.opened, 40),
@@ -4597,6 +4609,340 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                 500,
                 "PROSPECT_STORE_ERROR",
                 "Those drafts could not be recorded.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/awaiting-reply") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const limit = optionalWholeNumber(
+            url.searchParams.get("limit") === null
+              ? undefined
+              : Number(url.searchParams.get("limit")),
+            "limit",
+          );
+          const awaiting = chatStore.listAwaitingReply(brand, limit ?? 200);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            awaiting,
+            addresses: awaiting.map((row) => row.contactEmail),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not list awaiting-reply prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The prospect store is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/signals") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "signal payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const rawSignals = businessMemoryObjectArray(
+            body.signals,
+            "outreach signals",
+            200,
+          );
+          const signals: OutreachSignalInput[] = rawSignals.map((candidate) => {
+            const prospectId = prospectText(candidate.prospectId, 64);
+            const kind = prospectText(candidate.kind, 16);
+            if (prospectId === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Every signal needs a prospect id.",
+              );
+            }
+            if (kind !== "sent" && kind !== "replied" && kind !== "clicked") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "A signal kind must be sent, replied, or clicked.",
+              );
+            }
+            return {
+              prospectId,
+              kind: kind as OutreachSignalKind,
+              occurredAt: prospectText(candidate.occurredAt, 40) || undefined,
+              detail: prospectText(candidate.detail, 500) || undefined,
+            };
+          });
+          const results = chatStore.recordOutreachSignals(brand, signals);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            results,
+            handedToSales: results.filter(
+              (row) => row.outcome === "recorded" && row.status === "replied",
+            ),
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not record outreach signals", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those signals could not be recorded.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/follow-up-due") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const limit = optionalWholeNumber(
+            url.searchParams.get("limit") === null
+              ? undefined
+              : Number(url.searchParams.get("limit")),
+            "limit",
+          );
+          const settings = chatStore.getOutreachSettings(brand);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            due: chatStore.followUpDueProspects(brand, limit ?? 50),
+            settings,
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not list follow-ups due", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The prospect store is not available right now.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/prospects/follow-ups") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "follow-up payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const rawDrafts = businessMemoryObjectArray(
+            body.drafts,
+            "recorded follow-ups",
+            200,
+          );
+          const drafts: RecordedFollowUpInput[] = rawDrafts.map((candidate) => {
+            const prospectId = prospectText(candidate.prospectId, 64);
+            const draftId = prospectText(candidate.draftId, 200);
+            if (prospectId === "" || draftId === "") {
+              throw new PublicError(
+                400,
+                "INVALID_REQUEST",
+                "Every follow-up needs a prospect id and the Gmail draft id.",
+              );
+            }
+            return { prospectId, draftId };
+          });
+          const results = chatStore.recordFollowUpDrafts(brand, drafts);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            results,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not record follow-ups", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those follow-ups could not be recorded.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/auto-close") {
+        try {
+          if (request.method !== "POST") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "POST" },
+            );
+            return;
+          }
+          const body = businessMemoryObject(
+            await readRequestBody(request),
+            "auto-close payload",
+          );
+          const brand = validateBrandSlug(body.brand);
+          const days = optionalWholeNumber(body.days, "days");
+          const closed = chatStore.autoCloseStale(brand, days ?? 14);
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            closed,
+            summary: chatStore.prospectPipelineSummary(brand),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not auto-close prospects", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "Those prospects could not be closed.",
+              ),
+            );
+          }
+        }
+        return;
+      }
+      if (url.pathname === "/api/outreach/brief") {
+        try {
+          if (request.method !== "GET") {
+            sendJson(
+              response,
+              405,
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: "That method is not supported.",
+                },
+              },
+              { Allow: "GET" },
+            );
+            return;
+          }
+          const brand = validateBrandSlug(url.searchParams.get("brand"));
+          const staleDays = optionalWholeNumber(
+            url.searchParams.get("staleDays") === null
+              ? undefined
+              : Number(url.searchParams.get("staleDays")),
+            "staleDays",
+          );
+          sendJson(response, 200, {
+            schemaVersion: 1,
+            counts: chatStore.bdBriefCounts(brand, staleDays ?? 14),
+            followUpsDue: chatStore.followUpDueProspects(brand, 10),
+            replied: chatStore
+              .listProspects({ brand, status: "replied", limit: 10 })
+              .map((row) => ({
+                prospectId: row.prospectId,
+                company: row.company,
+                contactName: row.contactName,
+                contactEmail: row.contactEmail,
+                repliedAt: row.repliedAt,
+              })),
+          });
+          return;
+        } catch (error) {
+          if (error instanceof PublicError) {
+            sendError(response, error);
+          } else {
+            options.logError?.("Could not build the BD brief", error);
+            sendError(
+              response,
+              new PublicError(
+                500,
+                "PROSPECT_STORE_ERROR",
+                "The brief could not be built.",
               ),
             );
           }

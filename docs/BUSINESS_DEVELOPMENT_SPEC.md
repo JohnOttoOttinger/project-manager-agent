@@ -308,18 +308,63 @@ and the drafting logic can all be built and tested against the Oddtoe path.
    `skills/sales-outreach` rewritten for the drafting stage and reassigned
    from the Sales agent to Business Development, per D1.
 
-4. **Signals** — suppression check, cap, hook selection, UTM
-   tagging, Gmail batch draft creation.
- — GA4 click read, inbox reply scan, Sent scan.
-5. **Follow-up** — due dates, the single follow-up draft, auto-close.
-6. **Morning brief** — wire steps 4 and 5 into a scheduled routine.
-7. **Skill update** — `sales-outreach` currently tells the agent that
-   reach-out, track and follow-up have no tools. That paragraph has to be
-   rewritten as each phase lands, or the agent will keep refusing to do work
-   it can now do.
+4. ~~**Signals**~~ — **done 1 Sep 2026.** Schema version 14 adds
+   `prospects.sent_at`, `replied_at` and `followed_up_at`, plus the partial
+   index `prospects_awaiting_reply`. Store methods `listAwaitingReply`,
+   `recordOutreachSignals`. Routes
+   `GET /api/prospects/awaiting-reply` and `POST /api/prospects/signals`.
+
+   Three signal kinds: `sent` (the draft actually left the mailbox, read
+   from Sent), `replied` (a human answered), `clicked` (the guide link was
+   followed). **A reply is terminal for BD** — it clears the follow-up date
+   and moves the card to Replied, which is the handoff Sales starts from.
+   Every signal is idempotent: a repeat returns `already` and changes
+   nothing, so an overlapping scan window and a re-run after an error are
+   both safe. A `sent` or `clicked` arriving after a reply is refused rather
+   than dragging the card backwards.
+
+   **The GA4 click read is still unbuilt.** The `clicked` kind is recorded
+   when something supplies it; nothing yet reads GA4 to produce it, and B2
+   blocks that path for Datalabs entirely.
+
+5. ~~**Follow-up**~~ — **done 1 Sep 2026.** Store methods
+   `followUpDueProspects`, `recordFollowUpDrafts`, `autoCloseStale`. Routes
+   `GET /api/prospects/follow-up-due`, `POST /api/prospects/follow-ups`,
+   `POST /api/outreach/auto-close`.
+
+   Exactly one follow-up per prospect, enforced in the store rather than in
+   the skill: a second attempt returns `already`. Suppression is applied on
+   read *and* re-checked on write, so an opt-out landing between the two
+   still bites. Auto-close ends the loop for prospects who were chased once
+   and stayed silent, and writes the reason onto the card.
+
+6. **Morning brief** — *API done 1 Sep 2026*, scheduling still open.
+   `bdBriefCounts` and `GET /api/outreach/brief` return the six counts, the
+   follow-ups due and the replies waiting to be worked. The
+   `bd-reply-scan` skill reads it on demand.
+
+   **The open decision from §11 stands:** the store is local, so the brief
+   cannot be a pure cloud routine. It runs on request today. Scheduling it
+   means either a local scheduler or moving the store behind a reachable
+   API — still Otto's call.
+
+7. ~~**Skill update**~~ — **done 1 Sep 2026.** `.claude/skills/bd-reply-scan/`
+   covers the scan, the follow-up and the brief. The stale "track and follow
+   up — not built yet" paragraph in `skills/sales-outreach` has been
+   rewritten, so the agent no longer refuses work it can now do.
 
 Steps 1–2 were independent of everything in §9 and are complete. Step 3 is
-the first one that needs B1 and B4.
+the first one that needs B1 and B4; B4 is satisfied for Oddtoe, whose sender
+block and unsubscribe line are configured.
+
+### Test
+
+`npm run test:bd-loop` (`scripts/test-bd-loop.mjs`) runs the whole loop —
+draft, sent, chase, close, and the reply handoff — against a throwaway
+database, backdating fixture rows to move time. 30 checks. It is the only
+automated test in the repo since CI was removed, and it exists because the
+loop is mostly date comparisons that are otherwise unverifiable without
+waiting a fortnight.
 
 ## 11. Where drafting actually runs
 

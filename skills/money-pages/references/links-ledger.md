@@ -744,3 +744,161 @@ Applied (REST edits, backups in session scratchpad):
 - 2026-08-28 · oddtoe · hub 13226 card renamed "Public Art Sculptor" → "Sculptor" (h3 + link title attr) to match the new H1; card href unchanged
 WP Engine "Quick clear all cache" purged after the edits (REST edits don't purge the edge cache); all three pages live-verified.
 SAME SESSION, before the pass: 11172's hero rev_slider swapped per Otto — "Oddview — C: Youtube Hero TV Credit" (oddview-c-youtube-hero-1) → "Video Hero — Stained Glass Art in 3D" (video-hero-character-designer-11, the slider from my-product 14868 Stained Glass Window Project; 3D-design content, more relevant). Live-verified rev_slider_115 renders; data/tmp/sculptor-staging.txt updated.
+
+## Street Artist / Muralist (11727) — white-bg bug fix + GEO retrofit, 30 Aug 2026
+
+Live page https://www.oddtoe.com/artist-designer/street-artist-muralist/. Same session also fixed
+Projection Artist (11158): a leftover `{{FAQ_CTA_TEXT}}` / `{{FAQ_CTA_URL}}` template token pair was
+rendering literally on the live FAQ CTA button, and the page canvas had no `crum_page_custom_bg_color`
+set (white, per the standard Ronneby gotcha) — REST-fixed the button text/link
+("Ask about your event" → `#digital-form`), Otto set `#121315` + header style 2 in wp-admin himself.
+Backup: `site-backups/oddtoe-street-artist-11727-pre-georetrofit-2026-08-30.json`.
+
+**GEO retrofit (direct REST push to the live page, backup taken first):**
+1. Canonical Oddtoe sentence added verbatim, inside a new FAQ answer.
+2. Q&A block built from scratch (page had none) — 5 questions, first-person Oddtoe voice, matching
+   FAQPage JSON-LD (round-trip verified). Deliberately different angles from the page's own pre-existing
+   "Who hires a muralist?" / "How do you choose a muralist?" sections to avoid answering the same query
+   twice on one page. New row backed with an explicit `#0C151B` background (matching its neighbours) —
+   this page's canvas is ALSO unset/white like Projection Artist's was, so an unset `bg_check="row-background-dark"`
+   row here would have hit the same invisible-text bug; flagging that latent page-level setting to Otto
+   separately, not fixed as part of this retrofit (no visible symptom pre-existing, out of scope).
+3. "Updated August 2026" added as its own centred bold-italic line in the row-2 intro block, per
+   template-catalog.md's Artist & Designer placement rule.
+4. Meta description: existing Yoast description was a stale/auto fallback (ended in "»", didn't match
+   any text on the page). New description drafted for Otto to paste in wp-admin (REST can't set Yoast):
+   "Oddtoe is a Melbourne street artist and muralist making 3D public art and odd campaigns designed to
+   make people laugh. See the work and get a quote." (148 chars)
+
+de-ai-check: 1 FAIL before (missing canonical) → 0 after. Diff verified as exactly two insertions,
+nothing else on the page touched.
+
+**Link pass — no edits applied.** Ran `link-pass.py plan oddtoe --target 11727` against the top
+candidates (Inflatable Artist, Installation Artist, Sculptor, Brand Activation Ideas). All were scored
+as topically related, but none currently mention street art/muralist by name in their existing prose —
+their "related practices" sentences name other crafts (installation, kinetic, topiary) and omit street
+art. A link-pass edit can only wrap an `<a>` around existing text, never add a new sentence, so there is
+no safe edit here without writing new copy on someone else's page — flagged to Otto as a possible
+"related practices" copy addition, not applied.
+
+**GSC indexing — done.** Otto opened Chrome with his own GSC session; ran URL Inspection on the
+`oddtoe.com` domain property for the retrofitted URL — "URL is on Google / Page is indexed" — then
+Request Indexing: "URL was added to a priority crawl queue."
+
+## Comedy Writer (12794) — white-bg + broken hero image bug fix, 30 Aug 2026
+
+Live page https://www.oddtoe.com/artist-designer/comedy-writer/. GEO retrofit (canonical sentence,
+Q&A + FAQPage schema, meta description) was already done in Phase 1 (27 Aug) — de-ai-check confirmed
+clean before touching anything today. This session was pure bug-fixing, worse than Projection Artist:
+
+1. Same leftover `{{FAQ_CTA_TEXT}}` / `{{FAQ_CTA_URL}}` token pair on the FAQ CTA button — REST-fixed
+   to "Ask about your project" → `#digital-form`. Backup: `site-backups/oddtoe-comedy-writer-12794-pre-faqbutton-2026-08-30.json`.
+2. `crum_page_custom_bg_color` unset (white) — same as every prior page, but here it broke MUCH more:
+   the hero, both intro rows, and the FAQ row all had no explicit row background and rendered fully
+   invisible (white text on white canvas) — including a `full_height="yes"` 720px hero block that
+   was a solid blank white rectangle.
+3. **A second, different bug on top of #2**: the hero's `dfd_bg_image_new="12299"` background image
+   (verified real and reachable via `/wp/v2/media/12299`) computed to `background-image: none` —
+   WPBakery had never compiled that row's `css` attr into `_wpb_shortcodes_custom_css`, the documented
+   "REST push doesn't recompile the builder's CSS" gotcha (§4 of the migration brief). Fix is the same
+   either way: open the editor and Update.
+
+Otto opted to have this driven in his own Chrome session (already open for GSC) rather than doing it
+by hand. Set via wp-admin Page Options tab (bottom tabbed panel, NOT the right-sidebar "Header style"
+box — that's a separate metabox): Background color `#0a141c` (typed into the color-picker hex field;
+pressing Return after typing submitted the whole edit form as a side effect — turned out to be exactly
+the Update click needed, since it both saved the color AND recompiled the hero CSS in one shot — hero
+image renders correctly now). Header style set separately via the right-sidebar "Select header style"
+dropdown → "Header 2" (family standard), saved with a deliberate Update click. Full page scrolled and
+visually verified end to end: hero image + heading, intro sections, Venn diagram, quote band, "Works
+of a Comedy Writer" heading, FAQ accordion (all 3 questions + fixed CTA button), contact form — all
+render correctly, nothing left white.
+
+**Link pass — plan only, NOT applied (standing plan-first rule).** Two candidates found with existing
+unlinked body prose naming comedy specifically (unlike Street Artist, where no candidate existed):
+- Investment (13258): "...developing a suite of generative A.I. with humor, irony, satire, and other
+  forms of **comedy** at their core." — wrap "comedy".
+- Original Stories (13246): "A million more **comedians** cracking very funny jokes." — wrap "comedians".
+Both would link to https://www.oddtoe.com/artist-designer/comedy-writer/, `<strong><a class=
+"dfd-custom-link-decorated">`, no other change. Presented to Otto, awaiting approval before applying.
+
+**GSC indexing — done.** Same Chrome session, `oddtoe.com` domain property: "URL is on Google / Page
+is indexed" → Request Indexing → "URL was added to a priority crawl queue."
+- 2026-08-30 · oddtoe · source 13258 (https://www.oddtoe.com/about-oddtoe/investment/) → target 12794
+- 2026-08-30 · oddtoe · source 13246 (https://www.oddtoe.com/studio/original-stories/) → target 12794
+
+## The Oddtoe TV Show (my-product 12489) — button case fix, 30 Aug 2026
+
+Live page https://www.oddtoe.com/my-product/the-oddtoe-tv-show/. `my-product` CPT — no REST route
+(confirmed, matches the known gap), edited via wp-admin/Chrome. Button text was ALL CAPS in the raw
+`button_text` attribute itself (not a CSS `text-transform`, verified via computed style first):
+"CONTACT ODDTOE TO RECEIVE THE PITCH BIBLE FOR ODDTOE TV" → "Contact Oddtoe to receive the pitch
+bible for Oddtoe TV" (sentence case, matching the site's button-text convention elsewhere).
+
+**First attempt reverted — a stricter version of the known WPBakery-owns-the-content trap.** Clicking
+"Backend Editor" (`.wpb_switch-to-composer`) alone was NOT enough this time; the underlying `#content`
+textarea was still under **TinyMCE Visual mode** (`#wp-content-wrap` class `tmce-active`), so editing
+`textarea.value` directly via JS got silently clobbered when TinyMCE's own `triggerSave()` re-serialized
+its contenteditable buffer over the textarea at submit — "Portfolio updated" fired, but the old text was
+still live. **Fix:** click the **"Code" tab** (top-right of the editor, next to "Visual") BEFORE editing —
+confirm `#wp-content-wrap` reads `html-active`, not `tmce-active` — which detaches TinyMCE entirely and
+makes the textarea genuinely authoritative. Verified both server-side (`#content` textarea after reload)
+and on the live front end.
+
+Updated gotcha for future `my-product` edits: **Code tab + Backend Editor, in that order, both required**
+— not just one or the other.
+
+## The Oddtoe TV Show (my-product 12489) — 20px spacer before button, 30 Aug 2026
+
+Added a `[dfd_spacer ...20px all breakpoints...]` between `[/dfd_heading]` (MAKING FUNNY STORIES, AT
+SCALE, FOR THE WORLD) and the "Contact Oddtoe to receive the pitch bible for Oddtoe TV" button — there
+was no spacer there at all before, button sat flush against the heading. Live-verified gap 26px
+(20px spacer + line-height overhead), was effectively 0 before.
+
+**New wrinkle on the `my-product` editing gotcha:** the computer-tool click (both raw coordinates and
+an element ref) on the Publish-box "Update" button silently did NOT submit the form at all — no
+`#message` notice, textarea edit still sat there unsaved, `#publish` button never went into its
+disabled/spinner state. Confirmed by checking for the "Portfolio updated" notice after the click,
+which was absent. **Fix: `document.getElementById('publish').click()` via JS** — a synthetic click
+dispatched directly on the button element — worked reliably where the simulated mouse click didn't.
+Root cause not fully diagnosed (possibly the button's on-screen position/hit-area shifted after the
+Code-tab toggle resized the editor chrome, so the computer tool's click landed off-target) — for
+future `my-product` saves, verify the "Portfolio updated" notice appeared before trusting a click,
+and fall back to `document.getElementById('publish').click()` if it didn't.
+
+## Wire Taps TV Show (my-product 12586) — button case fix, 30 Aug 2026
+
+Same pattern as The Oddtoe TV Show (12489): "CONTACT ODDTOE TO RECEIVE THE PITCH BIBLE FOR WIRE TAPS"
+→ "Contact Oddtoe to receive the pitch bible for Wire Taps". Code tab + `document.getElementById(
+'publish').click()` worked cleanly this time (no revert), live-verified.
+
+## Gag Cartoonist (my-product 15269) — missing heading added, 30 Aug 2026
+
+Otto flagged the carousel → "Oddtoe as a gag cartoonist... / What » Continuous content..." block as
+looking out of place. Diagnosed: that block had no heading module at all (unlike the hero section
+above it, which has "Continuous Content, Confidently Absurd"), so it read as orphaned text after the
+carousel. Checked alignment too — both this block and the hero text above it render `text-align: left`
+by default (no inline override either way), so alignment was NOT the problem, just the missing heading.
+
+Added `[dfd_heading]` in the same style_02 pattern used elsewhere on this page (Qwigley kicker +
+Bebas headline): subtitle "The specs, for syndication partners" / title "Licensing at a Glance",
+inserted right after the carousel's two spacers and before the row of columns, with a matching
+20/20/15/10 spacer beneath it (same pattern as the hero heading). Live-verified rendering correctly
+as an h2 + Qwigley subtitle, matching the page's existing heading treatment exactly.
+
+## Gag Cartoonist (my-product 15269) — merged two columns into one centered column, 30 Aug 2026
+
+Follow-up to the heading fix above (Otto: "make the two column text into one central text column").
+Replaced the `1/6 + 1/3 + 1/3 + 1/6` row (description column left-aligned, specs column unstyled/left)
+with `1/4 + 1/2 + 1/4` — one column carrying both the description paragraph and the specs list
+("What » / Format » / Syndication » / Running Since »"), both centered, stacked with a blank line
+between. Dropped the now-unneeded border/padding css and disabled box-shadow attrs that existed only
+to gutter the two 1/3 columns apart. Live-verified: reads as one balanced centered block under the
+"Licensing at a Glance" heading.
+
+**Gotcha hit composing the replacement:** the "What »" label is followed by a literal non-breaking
+space (U+00A0) in the source, not a regular space — a same-looking-but-wrong space character in a
+hand-typed search string silently breaks an exact-match replace with no error, just a 0-count "not
+found." When a full-string match unexpectedly returns 0 despite every visible substring checking out,
+binary-search the matching prefix length and compare `codePointAt` at the exact break — don't assume
+the text is wrong just because it looks identical in a diff.
