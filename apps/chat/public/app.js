@@ -1691,7 +1691,11 @@
     { status: "imported", label: "Imported" },
     { status: "needs_review", label: "Needs review" },
     { status: "enriched", label: "Enriched" },
-    { status: "emailed", label: "Emailed" },
+    // The status is "emailed" but it means an email has been PREPARED — the
+    // send is tracked by sentDate, which stays empty until Otto sends. A
+    // column headed "Emailed" read as already-sent and caused exactly that
+    // confusion, so the label says what the column actually holds.
+    { status: "emailed", label: "Email drafted" },
     { status: "opened", label: "Clicked" },
     { status: "followed_up", label: "Followed up" },
     { status: "replied", label: "Replied" },
