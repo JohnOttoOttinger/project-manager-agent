@@ -14,13 +14,22 @@ never mark something replied that you did not actually see.**
 The local app must be running (`./start.command`, http://localhost:3000). If
 it is not reachable, stop and say so — never report a scan you could not run.
 
-## Say which mailbox first
+## Say which mailbox first — verified 1 Sep 2026
 
-The Gmail connector reads the single account it is authorised for. Before
-scanning, say which mailbox that is. If it is not the brand's own address —
-Oddtoe is `oddtoe@oddtoe.com`, Datalabs `otto@datalabsagency.com` — say so
-before reporting anything, because replies to the other brand will not be in
-what you just read, and "no replies" would be a false all-clear.
+Two separate Google accounts, one connector:
+
+- **Datalabs** (`otto@datalabsagency.com`) — what the Gmail MCP connector
+  reads. Scan Datalabs outreach through the connector.
+- **Oddtoe** (`oddtoe@oddtoe.com`) — a separate sign-in the connector
+  cannot reach, at `https://mail.google.com/mail/u/3/` in the browser.
+  **Oddtoe replies are authoritative there.** Some Oddtoe mail has
+  historically appeared in the Datalabs inbox too (old threads to
+  `oddtoe@oddtoe.com` sit there), so forwarding may exist — but never
+  treat a connector-only scan as an Oddtoe all-clear. For Oddtoe, check
+  the u/3 inbox in the browser, matching the same sender addresses.
+
+Say which account was actually read before reporting. "No replies" from
+the wrong mailbox is a false all-clear, which is worse than no scan.
 
 ## 1. Who is waiting
 
