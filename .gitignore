@@ -1,6 +1,6 @@
 # Local secrets and generated environment
 .env
-.env.*
+.env*
 !.env.example
 
 # Local runtime data: plaintext chat history, the n8n database, encrypted
