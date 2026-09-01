@@ -1696,11 +1696,26 @@
     // column headed "Emailed" read as already-sent and caused exactly that
     // confusion, so the label says what the column actually holds.
     { status: "emailed", label: "Email drafted" },
+    // Not a stored status: the store keeps a sent prospect at "emailed" and
+    // stamps sentAt/sentDate. The board splits on that stamp so "waiting in
+    // Gmail" and "actually sent" stop sharing a column. Dropping a card here
+    // records a real sent signal rather than a status change.
+    { status: "sent", label: "Email sent", virtual: true },
     { status: "opened", label: "Clicked" },
     { status: "followed_up", label: "Followed up" },
     { status: "replied", label: "Replied" },
     { status: "closed", label: "Closed" },
   ];
+
+  // Which column a prospect belongs in. Only "emailed" splits: a sent stamp
+  // moves the card to the virtual "sent" column, everything else is 1:1 with
+  // its stored status.
+  function bdBoardStatus(prospect) {
+    if (prospect.status === "emailed" && (prospect.sentAt || prospect.sentDate)) {
+      return "sent";
+    }
+    return prospect.status;
+  }
 
   let bdDraggedProspectId = null;
   // Set from the Lists tab so "Show on board" opens the board scoped to one
@@ -1738,8 +1753,8 @@
       case "needs_review":
         return prospect.flagReason || "Flagged by enrichment";
       case "emailed":
-        return prospect.sentDate
-          ? `Sent ${prospect.sentDate}`
+        return prospect.sentDate || prospect.sentAt
+          ? `Sent ${prospect.sentDate || bdShortDate(prospect.sentAt)}`
           : prospect.draftedAt
             ? `Drafted ${bdShortDate(prospect.draftedAt)} — not sent yet`
             : "Draft prepared";
@@ -1916,9 +1931,41 @@
       if (!prospectId) {
         return;
       }
-      void moveProspect(prospectId, column.status, onMoved);
+      if (column.virtual) {
+        void markProspectSent(prospectId, onMoved);
+      } else {
+        void moveProspect(prospectId, column.status, onMoved);
+      }
     });
     return element;
+  }
+
+  // The virtual column records a sent signal — the same write the reply scan
+  // makes when it finds the message in the Oddtoe account's Sent folder — so
+  // a drag and an inbox scan produce identical state.
+  async function markProspectSent(prospectId, onMoved) {
+    try {
+      const payload = await fetchJson("/api/prospects/signals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brand: activeBrand()?.id ?? "oddtoe",
+          signals: [{ prospectId, kind: "sent" }],
+        }),
+      });
+      const result = payload.results?.[0];
+      if (!result || result.outcome === "not_found") {
+        onMoved(null, "That card could not be marked sent. Reload and try again.");
+        return;
+      }
+      if (result.outcome === "already") {
+        onMoved(null, `${result.company} was already recorded as sent.`);
+        return;
+      }
+      onMoved({ prospect: { company: result.company, status: "sent" } });
+    } catch {
+      onMoved(null, "That card could not be marked sent. Reload and try again.");
+    }
   }
 
   async function moveProspect(prospectId, status, onMoved) {
@@ -2022,7 +2069,7 @@
           };
           for (const column of BD_COLUMNS) {
             const inColumn = prospects
-              .filter((prospect) => prospect.status === column.status)
+              .filter((prospect) => bdBoardStatus(prospect) === column.status)
               .sort((first, second) => {
                 const firstTier =
                   first.tier === "" ? 99 : Number(first.tier) || 98;
@@ -2186,6 +2233,11 @@
         select.className = "prospect-move__select";
         select.setAttribute("aria-label", `Move ${prospect.company} to another column`);
         for (const column of BD_COLUMNS) {
+          // "Email sent" is not a storable status — marking sent happens by
+          // dragging the card there, or by the reply scan finding the message.
+          if (column.virtual) {
+            continue;
+          }
           const option = document.createElement("option");
           option.value = column.status;
           option.textContent = column.label;
@@ -2467,8 +2519,9 @@
         holder.append(setup);
 
         // --- In flight ----------------------------------------------------
-        const drafted = prospects.filter((p) => p.draftId !== "" && p.sentDate === "");
-        const sent = prospects.filter((p) => p.sentDate !== "" && p.status !== "replied" && p.status !== "closed");
+        const wasSent = (p) => p.sentDate !== "" || p.sentAt !== "";
+        const drafted = prospects.filter((p) => p.draftId !== "" && !wasSent(p));
+        const sent = prospects.filter((p) => wasSent(p) && p.status !== "replied" && p.status !== "closed");
         const dueFollowUp = prospects.filter(
           (p) => p.followUpDue !== "" && p.followUpDue <= today && p.status !== "replied" && p.status !== "closed",
         );
