@@ -4674,6 +4674,8 @@
       });
   }
 
+  let draggedPipelineItem = null;
+
   function pipelineItemsFor(payload, key) {
     const items = payload?.[key];
     return Array.isArray(items) ? items : [];
@@ -4696,7 +4698,7 @@
     return cut.length > 72 ? `${cut.slice(0, 72)}…` : cut;
   }
 
-  function makeIconCard(item, icon, { dimmed = false } = {}) {
+  function makeIconCard(item, icon, { dimmed = false, draggable = false } = {}) {
     const card = document.createElement("button");
     card.className = "icon-card";
     card.type = "button";
@@ -4704,6 +4706,26 @@
       card.classList.add("icon-card--dimmed");
     }
     card.setAttribute("aria-expanded", "false");
+    // A card can only be dragged when it maps back to a real line in a real
+    // file; sample cards and anything the server marked unwritable stay put.
+    if (draggable && item.source && Number.isInteger(item.line) && item.line >= 0) {
+      card.draggable = true;
+      card.classList.add("icon-card--draggable");
+      card.addEventListener("dragstart", (event) => {
+        draggedPipelineItem = item;
+        card.classList.add("icon-card--dragging");
+        event.dataTransfer.effectAllowed = "move";
+        // Some browsers refuse to start a drag with an empty payload.
+        event.dataTransfer.setData("text/plain", item.title);
+      });
+      card.addEventListener("dragend", () => {
+        draggedPipelineItem = null;
+        card.classList.remove("icon-card--dragging");
+        for (const column of document.querySelectorAll(".kanban-col--drop")) {
+          column.classList.remove("kanban-col--drop");
+        }
+      });
+    }
 
     const head = document.createElement("span");
     head.className = "icon-card__head";
@@ -4722,7 +4744,7 @@
 
     const detail = document.createElement("span");
     detail.className = "icon-card__detail";
-    detail.textContent = item.title;
+    detail.textContent = item.note ?? item.title;
     if (item.url) {
       const link = document.createElement("a");
       link.href = item.url;
@@ -4853,30 +4875,195 @@
     );
   }
 
-  function kanbanColumn(title, icon, items, brand) {
-    const column = document.createElement("div");
-    column.className = "kanban-col";
+  // ---- Content Pipeline board ----
+  // Every column is one marker in one of two markdown files, so a drag is a
+  // one-character edit to a known line. Backlog, Awaiting review and Published
+  // are the same file and move between each other freely; Outreach is a
+  // different file and only ever leaves the board by being marked sent.
+  const PIPELINE_COLUMNS = [
+    {
+      key: "nextPages",
+      title: "Backlog",
+      icon: "📝",
+      source: "backlog",
+      status: "queued",
+      canAdd: true,
+    },
+    {
+      key: "awaitingReview",
+      title: "Awaiting review",
+      icon: "👀",
+      source: "backlog",
+      status: "review",
+    },
+    {
+      key: "outreach",
+      title: "Outreach to send",
+      icon: "📣",
+      source: "outreach",
+      status: "queued",
+      canAdd: true,
+      sendable: true,
+    },
+    {
+      key: "published",
+      title: "Published",
+      icon: "✅",
+      source: "backlog",
+      status: "published",
+    },
+  ];
+
+  function pipelinePost(payload) {
+    return fetchJson("/api/pipeline", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  function acceptsPipelineDrop(target, item) {
+    return (
+      Boolean(item) &&
+      item.source === target.source &&
+      item.status !== target.status
+    );
+  }
+
+  // Wires one element as a drop target for a { source, status } pair.
+  function pipelineDropTarget(element, target, commit) {
+    element.addEventListener("dragover", (event) => {
+      if (!acceptsPipelineDrop(target, draggedPipelineItem)) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      element.classList.add("kanban-col--drop");
+    });
+    element.addEventListener("dragleave", (event) => {
+      if (!element.contains(event.relatedTarget)) {
+        element.classList.remove("kanban-col--drop");
+      }
+    });
+    element.addEventListener("drop", (event) => {
+      const item = draggedPipelineItem;
+      if (!acceptsPipelineDrop(target, item)) {
+        return;
+      }
+      event.preventDefault();
+      element.classList.remove("kanban-col--drop");
+      commit(() =>
+        pipelinePost({
+          action: "move",
+          source: item.source,
+          line: item.line,
+          fingerprint: item.fingerprint,
+          status: target.status,
+        }),
+      );
+    });
+  }
+
+  function pipelineAddForm(column, brand, commit) {
+    const form = document.createElement("form");
+    form.className = "kanban-add";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "kanban-add__input";
+    input.maxLength = 200;
+    input.placeholder =
+      column.source === "outreach" ? "Add an artifact…" : "Add a page…";
+    input.setAttribute("aria-label", `Add a card to ${column.title}`);
+    const select = document.createElement("select");
+    select.className = "kanban-add__brand";
+    select.setAttribute("aria-label", "Brand");
+    for (const option of [
+      { value: "datalabs", label: "Datalabs" },
+      { value: "oddtoe", label: "Oddtoe" },
+      { value: "general", label: "Both" },
+    ]) {
+      const element = document.createElement("option");
+      element.value = option.value;
+      element.textContent = option.label;
+      select.append(element);
+    }
+    select.value = brand?.id ?? "general";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "kanban-add__submit";
+    submit.textContent = "Add";
+    form.append(input, select, submit);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const title = input.value.trim();
+      if (title === "") {
+        input.focus();
+        return;
+      }
+      commit(() =>
+        pipelinePost({
+          action: "add",
+          source: column.source,
+          brand: select.value,
+          title,
+        }),
+      );
+    });
+    return form;
+  }
+
+  function pipelineColumn(column, payload, brand, commit) {
+    const items = pipelineItemsFor(payload, column.key);
+    const writable = payload.writable === true;
+    const element = document.createElement("div");
+    element.className = "kanban-col";
+
     const heading = document.createElement("p");
     heading.className = "kanban-col__title";
     const text = document.createElement("span");
-    text.textContent = `${icon} ${title}`;
+    text.textContent = `${column.icon} ${column.title}`;
     const count = document.createElement("span");
     count.className = "kanban-col__count";
     count.textContent = String(items.length);
     heading.append(text, count);
-    column.append(heading);
+    element.append(heading);
+
+    // The list scrolls rather than truncating: the count in the heading is the
+    // real number of items in the file, and all of them are reachable.
+    const list = document.createElement("div");
+    list.className = "kanban-col__list";
     if (items.length === 0) {
-      column.append(dashEmpty("Empty."));
-      return column;
+      list.append(dashEmpty("Empty."));
     }
     for (const item of items) {
-      column.append(
-        makeIconCard(item, icon, {
+      list.append(
+        makeIconCard(item, column.icon, {
           dimmed: !itemMatchesBrand(item, brand),
+          draggable: writable,
         }),
       );
     }
-    return column;
+    element.append(list);
+
+    if (writable) {
+      pipelineDropTarget(element, column, commit);
+      if (column.sendable) {
+        // Sent outreach leaves the board, so it needs a target of its own.
+        const sent = document.createElement("div");
+        sent.className = "kanban-col__sent";
+        sent.textContent = "✓ Drop here when sent";
+        pipelineDropTarget(
+          sent,
+          { source: column.source, status: "published" },
+          commit,
+        );
+        element.append(sent);
+      }
+      if (column.canAdd) {
+        element.append(pipelineAddForm(column, brand, commit));
+      }
+    }
+    return element;
   }
 
   function renderPipelineBoard(body) {
@@ -4888,47 +5075,66 @@
           : "Content pipeline — both brands",
       ),
     );
+    const status = document.createElement("p");
+    status.className = "kanban-status";
+    status.hidden = true;
+    status.setAttribute("role", "status");
+    body.append(status);
     const board = document.createElement("div");
     board.className = "kanban";
     body.append(board);
+    const footer = document.createElement("div");
+    body.append(footer);
     board.append(dashEmpty("Loading the board…"));
+
+    let busy = false;
+    function draw(payload) {
+      board.replaceChildren(
+        ...PIPELINE_COLUMNS.map((column) =>
+          pipelineColumn(column, payload, brand, commit),
+        ),
+      );
+      footer.replaceChildren();
+      if (payload.sample === true) {
+        footer.append(dashNote("Sample data — the backlog skill is not present."));
+      }
+      footer.append(
+        dashNote(
+          payload.writable === true
+            ? "Click a card for its full note; dimmed cards belong to the other brand. Drag a card to a new column to change its marker in the backlog file."
+            : "Click a card for its full note; dimmed cards belong to the other brand.",
+        ),
+      );
+    }
+    function commit(run) {
+      if (busy) {
+        return;
+      }
+      busy = true;
+      status.hidden = false;
+      status.className = "kanban-status";
+      status.textContent = "Saving…";
+      void run()
+        .then((payload) => {
+          status.hidden = true;
+          draw(payload);
+        })
+        .catch((error) => {
+          status.className = "kanban-status kanban-status--error";
+          status.textContent =
+            error?.message ?? "That change could not be saved.";
+          // The file moved under us, so redraw from what is actually on disk.
+          void fetchJson("/api/pipeline")
+            .then(draw)
+            .catch(() => {});
+        })
+        .finally(() => {
+          busy = false;
+        });
+    }
+
     void fetchJson("/api/pipeline")
-      .then((payload) => {
-        board.replaceChildren(
-          kanbanColumn(
-            "Backlog",
-            "📝",
-            pipelineItemsFor(payload, "nextPages"),
-            brand,
-          ),
-          kanbanColumn(
-            "Awaiting review",
-            "👀",
-            pipelineItemsFor(payload, "awaitingReview"),
-            brand,
-          ),
-          kanbanColumn(
-            "Outreach to send",
-            "📣",
-            pipelineItemsFor(payload, "outreach"),
-            brand,
-          ),
-          kanbanColumn(
-            "Published",
-            "✅",
-            pipelineItemsFor(payload, "published"),
-            brand,
-          ),
-        );
-        if (payload.sample === true) {
-          body.append(
-            dashNote("Sample data — the backlog skill is not present."),
-          );
-        }
-        body.append(
-          dashNote("Click a card for the full note; dimmed cards belong to the other brand."),
-        );
-      })
+      .then(draw)
       .catch(() => {
         board.replaceChildren(dashEmpty("The pipeline is not reachable."));
       });

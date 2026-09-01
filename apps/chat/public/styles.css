@@ -3653,3 +3653,105 @@ h2 { text-transform: uppercase; }
 .kanban-col .icon-card { margin-bottom: 0.5rem; }
 
 .icon-card-grid { align-items: start; }
+
+/* ---- Content Pipeline: scrolling columns, drag-and-drop, add-a-card ---- */
+
+/* The column heading states the real count, so the list scrolls instead of
+   silently dropping everything past the first handful. */
+.kanban-col__list {
+  max-height: 26rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
+}
+
+.kanban-col__list::-webkit-scrollbar { width: 6px; }
+.kanban-col__list::-webkit-scrollbar-thumb {
+  background: #3c4139;
+  border-radius: 3px;
+}
+
+.icon-card--draggable { cursor: grab; }
+.icon-card--dragging { opacity: 0.4; cursor: grabbing; }
+
+.kanban-col--drop {
+  border-color: #ddccb1;
+  background: #20251f;
+}
+
+.kanban-col__sent {
+  margin-top: 0.5rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px dashed #3c4139;
+  border-radius: calc(var(--radius) - 3px);
+  font-size: 0.75rem;
+  color: #8d8674;
+  text-align: center;
+}
+
+.kanban-col__sent.kanban-col--drop {
+  border-style: solid;
+  color: #ddccb1;
+}
+
+.kanban-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid #32362f;
+}
+
+.kanban-add__input {
+  flex: 1 1 100%;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #32362f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #171b19;
+  color: #f0ece0;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.kanban-add__input::placeholder { color: #6f6a5c; }
+.kanban-add__input:focus-visible,
+.kanban-add__brand:focus-visible,
+.kanban-add__submit:focus-visible {
+  outline: 2px solid #ddccb1;
+  outline-offset: 1px;
+}
+
+.kanban-add__brand {
+  flex: 1 1 auto;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid #32362f;
+  border-radius: calc(var(--radius) - 3px);
+  background: #171b19;
+  color: #a89f88;
+  font: inherit;
+  font-size: 0.75rem;
+}
+
+.kanban-add__submit {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.8rem;
+  border: 1px solid #3c4139;
+  border-radius: calc(var(--radius) - 3px);
+  background: #262b28;
+  color: #ddccb1;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.kanban-add__submit:hover { border-color: #8a8f6a; }
+
+.kanban-status {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: #a89f88;
+}
+
+.kanban-status--error { color: #d98c6a; }

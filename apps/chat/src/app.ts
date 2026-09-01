@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
-import { readFile, stat } from "node:fs/promises";
+import { readFile, rename, stat, writeFile } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
@@ -94,13 +94,54 @@ const MAX_UPSTREAM_BYTES = 65_536;
 const SKILLS_DIRECTORY = fileURLToPath(
   new URL("../../../skills", import.meta.url),
 );
+
+// The board is a view onto two hand-kept markdown files, not a database. A
+// card's identity is therefore "which file, which line", carried with a
+// fingerprint of the line as it was read. Every write re-reads the file and
+// refuses when that fingerprint has moved, so a drag can never clobber a note
+// an agent wrote into the backlog while the board sat open.
+type PipelineSource = "backlog" | "outreach";
+type PipelineStatus = "queued" | "review" | "published";
+const PIPELINE_FILES: Record<PipelineSource, string> = {
+  backlog: `${SKILLS_DIRECTORY}/money-pages/references/backlog.md`,
+  outreach: `${SKILLS_DIRECTORY}/offsite-consensus/references/outreach-log.md`,
+};
+// Which markers each file is allowed to carry. The outreach log only records
+// drafted-versus-sent, so its cards cannot be dragged into a backlog column
+// and backlog cards cannot be dragged into the outreach column.
+const PIPELINE_STATUSES: Record<PipelineSource, PipelineStatus[]> = {
+  backlog: ["queued", "review", "published"],
+  outreach: ["queued", "published"],
+};
+const STATUS_MARKERS: Record<PipelineStatus, string> = {
+  queued: " ",
+  review: "~",
+  published: "x",
+};
+const MARKER_STATUSES: Record<string, PipelineStatus> = {
+  " ": "queued",
+  "~": "review",
+  x: "published",
+  X: "published",
+};
+const PIPELINE_BULLET = /^(\s*-\s*\[)([ x~X])(\]\s*)(.*)$/;
+const PIPELINE_BRANDS = new Set(["datalabs", "oddtoe", "general"]);
+const MAX_PIPELINE_TITLE = 200;
+
 interface PipelineItem {
+  id: string;
+  source: PipelineSource;
+  line: number;
+  fingerprint: string;
+  status: PipelineStatus;
   title: string;
+  note: string;
   brand: string;
   url?: string | undefined;
 }
 interface PipelinePayload {
   sample: boolean;
+  writable: boolean;
   nextPages: PipelineItem[];
   awaitingReview: PipelineItem[];
   outreach: PipelineItem[];
@@ -108,22 +149,50 @@ interface PipelinePayload {
 }
 const SAMPLE_PIPELINE: PipelinePayload = {
   sample: true,
+  writable: false,
   nextPages: [
-    { title: "Workshop pricing page", brand: "datalabs" },
-    { title: "Credits page", brand: "oddtoe" },
-    { title: "Power BI vs Tableau training", brand: "datalabs" },
+    samplePipelineItem("Workshop pricing page", "datalabs", "queued"),
+    samplePipelineItem("Credits page", "oddtoe", "queued"),
+    samplePipelineItem("Power BI vs Tableau training", "datalabs", "queued"),
   ],
   awaitingReview: [
-    { title: "How much does dashboard design cost?", brand: "datalabs" },
+    samplePipelineItem(
+      "How much does dashboard design cost?",
+      "datalabs",
+      "review",
+    ),
   ],
   outreach: [
-    { title: "LinkedIn post — workshop pricing", brand: "datalabs" },
-    { title: "Pitch — best data agencies listicle", brand: "datalabs" },
+    samplePipelineItem("LinkedIn post — workshop pricing", "datalabs", "queued"),
+    samplePipelineItem(
+      "Pitch — best data agencies listicle",
+      "datalabs",
+      "queued",
+    ),
   ],
   published: [
-    { title: "Brand activation ideas", brand: "oddtoe" },
+    samplePipelineItem("Brand activation ideas", "oddtoe", "published"),
   ],
 };
+function samplePipelineItem(
+  title: string,
+  brand: string,
+  status: PipelineStatus,
+): PipelineItem {
+  return {
+    id: `sample:${title}`,
+    source: "backlog",
+    line: -1,
+    fingerprint: "",
+    status,
+    title,
+    note: title,
+    brand,
+  };
+}
+function pipelineFingerprint(line: string): string {
+  return createHash("sha1").update(line).digest("hex").slice(0, 12);
+}
 function pipelineBrand(line: string): string {
   if (/\(datalabs\)/i.test(line)) {
     return "datalabs";
@@ -133,68 +202,289 @@ function pipelineBrand(line: string): string {
   }
   return "general";
 }
-function pipelineTitle(line: string): string {
-  return line
-    .replace(/^\s*-\s*\[[ x~]\]\s*/i, "")
-    .replace(/\((?:datalabs|oddtoe)\)/i, "")
-    .replace(/—?\s*\[[^\]]*\]\([^)]*\)/g, "")
-    .trim();
-}
 function pipelineUrl(line: string): string | undefined {
   const match = /\]\((https?:\/\/[^)]+)\)/.exec(line);
   return match ? match[1] : undefined;
 }
-async function loadPipeline(): Promise<PipelinePayload> {
-  let backlog: string | null = null;
-  let outreachLog: string | null = null;
-  try {
-    backlog = await readFile(
-      `${SKILLS_DIRECTORY}/money-pages/references/backlog.md`,
-      "utf8",
-    );
-  } catch {
-    // Skill not built yet.
-  }
-  try {
-    outreachLog = await readFile(
-      `${SKILLS_DIRECTORY}/offsite-consensus/references/outreach-log.md`,
-      "utf8",
-    );
-  } catch {
-    // Skill not built yet.
-  }
-  if (backlog === null && outreachLog === null) {
-    return SAMPLE_PIPELINE;
-  }
-
-  const nextPages: PipelineItem[] = [];
-  const awaitingReview: PipelineItem[] = [];
-  const published: PipelineItem[] = [];
-  for (const line of (backlog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && nextPages.length < 6) {
-      nextPages.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
-    } else if (/^\s*-\s*\[~\]/.test(line) && awaitingReview.length < 6) {
-      awaitingReview.push({
-        title: pipelineTitle(line),
-        brand: pipelineBrand(line),
-        url: pipelineUrl(line),
-      });
-    } else if (/^\s*-\s*\[x\]/i.test(line) && published.length < 6) {
-      published.push({
-        title: pipelineTitle(line),
-        brand: pipelineBrand(line),
-        url: pipelineUrl(line),
-      });
-    }
-  }
-  const outreach: PipelineItem[] = [];
-  for (const line of (outreachLog ?? "").split("\n")) {
-    if (/^\s*-\s*\[ \]/.test(line) && outreach.length < 6) {
-      outreach.push({ title: pipelineTitle(line), brand: pipelineBrand(line) });
-    }
-  }
-  return { sample: false, nextPages, awaitingReview, outreach, published };
+// These bullets are working notes, not card labels: they carry bold runs,
+// inline code, and a [review](url) or [live](url) marker that the board shows
+// as its own link. Strip the syntax so a card reads as a sentence.
+function pipelineText(body: string): string {
+  return body
+    .replace(/—?\s*\[[^\]]*\]\((?:https?:\/\/)[^)]*\)/g, " ")
+    .replace(/\((?:datalabs|oddtoe)\)/gi, " ")
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/(^|[^\w*])\*([^*]+)\*(?=[^\w*]|$)/g, "$1$2")
+    .replace(/\*\*/g, "")
+    .replace(/(^|\s)__([^_]+)__(?=\s|$)/g, "$1$2")
+    .replace(/\s+/g, " ")
+    .replace(/^[\s—–\-:.;,]+/, "")
+    .trim();
 }
+function parsePipelineFile(
+  source: PipelineSource,
+  text: string,
+): PipelineItem[] {
+  const lines = text.split("\n");
+  const items: PipelineItem[] = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const raw = lines[index] ?? "";
+    const match = PIPELINE_BULLET.exec(raw);
+    if (!match) {
+      continue;
+    }
+    const status = MARKER_STATUSES[match[2] ?? ""];
+    if (!status) {
+      continue;
+    }
+    // A bullet's note often wraps onto indented continuation lines; those
+    // belong to the card above them, not to a card of their own.
+    let body = match[4] ?? "";
+    for (let next = index + 1; next < lines.length; next += 1) {
+      const following = lines[next] ?? "";
+      if (!/^\s+\S/.test(following) || PIPELINE_BULLET.test(following)) {
+        break;
+      }
+      body += ` ${following.trim()}`;
+    }
+    const note = pipelineText(body);
+    if (note === "") {
+      continue;
+    }
+    items.push({
+      id: `${source}:${index}`,
+      source,
+      line: index,
+      fingerprint: pipelineFingerprint(raw),
+      status,
+      // The face of the card wants the headline sentence; the expander keeps
+      // the whole note.
+      title: pipelineText(match[4] ?? "") || note,
+      note,
+      brand: pipelineBrand(raw),
+      url: pipelineUrl(body),
+    });
+  }
+  return items;
+}
+async function readPipelineFile(
+  source: PipelineSource,
+): Promise<string | null> {
+  try {
+    return await readFile(PIPELINE_FILES[source], "utf8");
+  } catch {
+    // Skill not built yet.
+    return null;
+  }
+}
+async function loadPipeline(): Promise<PipelinePayload> {
+  const [backlog, outreachLog] = await Promise.all([
+    readPipelineFile("backlog"),
+    readPipelineFile("outreach"),
+  ]);
+  if (backlog === null && outreachLog === null) {
+    return { ...SAMPLE_PIPELINE };
+  }
+  const backlogItems = parsePipelineFile("backlog", backlog ?? "");
+  const outreachItems = parsePipelineFile("outreach", outreachLog ?? "");
+  return {
+    sample: false,
+    writable: true,
+    nextPages: backlogItems.filter((item) => item.status === "queued"),
+    awaitingReview: backlogItems.filter((item) => item.status === "review"),
+    // A sent outreach artifact leaves the board rather than filling a column.
+    outreach: outreachItems.filter((item) => item.status === "queued"),
+    published: backlogItems.filter((item) => item.status === "published"),
+  };
+}
+
+// Writes are serialised: two drags landing together must not each read the
+// file, edit their own copy, and race to write it back.
+let pipelineWriteQueue: Promise<unknown> = Promise.resolve();
+function withPipelineLock<T>(task: () => Promise<T>): Promise<T> {
+  const run = pipelineWriteQueue.then(task, task);
+  pipelineWriteQueue = run.then(
+    () => undefined,
+    () => undefined,
+  );
+  return run;
+}
+async function writePipelineFile(
+  source: PipelineSource,
+  text: string,
+): Promise<void> {
+  const target = PIPELINE_FILES[source];
+  const temporary = `${target}.${randomUUID()}.tmp`;
+  await writeFile(temporary, text, "utf8");
+  await rename(temporary, target);
+}
+function validatePipelineSource(value: unknown): PipelineSource {
+  if (value === "backlog" || value === "outreach") {
+    return value;
+  }
+  throw new PublicError(
+    400,
+    "INVALID_REQUEST",
+    "That card does not belong to a file the board can write.",
+  );
+}
+function validatePipelineStatus(
+  value: unknown,
+  source: PipelineSource,
+): PipelineStatus {
+  const allowed = PIPELINE_STATUSES[source];
+  if (
+    (value === "queued" || value === "review" || value === "published") &&
+    allowed.includes(value)
+  ) {
+    return value;
+  }
+  throw new PublicError(
+    400,
+    "INVALID_REQUEST",
+    source === "outreach"
+      ? "Outreach drafts only move between waiting-to-send and sent."
+      : "That column is not one this card can move to.",
+  );
+}
+function validatePipelineLine(value: unknown): number {
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+    return value;
+  }
+  throw new PublicError(400, "INVALID_REQUEST", "That card has no line to move.");
+}
+function validatePipelineTitle(value: unknown): string {
+  const title = typeof value === "string" ? value.trim() : "";
+  if (title === "") {
+    throw new PublicError(400, "INVALID_REQUEST", "Give the card a title.");
+  }
+  if (title.length > MAX_PIPELINE_TITLE) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      `Keep the title under ${MAX_PIPELINE_TITLE} characters — the detail belongs in the file.`,
+    );
+  }
+  // The title becomes one markdown bullet, so it cannot carry line breaks or
+  // open a bullet of its own.
+  if (/[\r\n]/.test(title) || /^[-*[#]/.test(title)) {
+    throw new PublicError(
+      400,
+      "INVALID_REQUEST",
+      "Write the title as a single plain line.",
+    );
+  }
+  return title;
+}
+function validatePipelineBrand(value: unknown): string {
+  if (typeof value === "string" && PIPELINE_BRANDS.has(value)) {
+    return value;
+  }
+  throw new PublicError(400, "INVALID_REQUEST", "Choose which brand this card belongs to.");
+}
+function pipelineChanged(): PublicError {
+  return new PublicError(
+    409,
+    "PIPELINE_CHANGED",
+    "That file changed since the board loaded — reload the board and try again.",
+  );
+}
+async function movePipelineItem(
+  source: PipelineSource,
+  line: number,
+  fingerprint: unknown,
+  status: PipelineStatus,
+): Promise<PipelinePayload> {
+  return withPipelineLock(async () => {
+    const text = await readPipelineFile(source);
+    if (text === null) {
+      throw new PublicError(
+        404,
+        "INVALID_REQUEST",
+        "That file is not present, so the board cannot write to it.",
+      );
+    }
+    const lines = text.split("\n");
+    const raw = lines[line];
+    if (raw === undefined || pipelineFingerprint(raw) !== fingerprint) {
+      throw pipelineChanged();
+    }
+    const match = PIPELINE_BULLET.exec(raw);
+    if (!match) {
+      throw pipelineChanged();
+    }
+    // Only the three marker characters change. The note the line carries is
+    // rewritten byte-for-byte.
+    lines[line] = `${match[1]}${STATUS_MARKERS[status]}${match[3]}${match[4]}`;
+    await writePipelineFile(source, lines.join("\n"));
+    return loadPipeline();
+  });
+}
+// New cards land at the end of the section that owns them, so the file keeps
+// its Datalabs/Oddtoe split.
+function pipelineInsertionPoint(
+  source: PipelineSource,
+  lines: string[],
+  brand: string,
+): number {
+  let start = 0;
+  let end = lines.length;
+  if (source === "backlog" && brand !== "general") {
+    const heading = brand === "datalabs" ? /^##\s+Datalabs\b/i : /^##\s+Oddtoe\b/i;
+    const headingIndex = lines.findIndex((line) => heading.test(line));
+    if (headingIndex >= 0) {
+      start = headingIndex + 1;
+      const nextHeading = lines.findIndex(
+        (line, index) => index > headingIndex && /^##\s/.test(line),
+      );
+      end = nextHeading >= 0 ? nextHeading : lines.length;
+    }
+  }
+  let insertion = start;
+  for (let index = start; index < end; index += 1) {
+    if (PIPELINE_BULLET.test(lines[index] ?? "")) {
+      insertion = index + 1;
+    }
+  }
+  // Carry past the bullet's own indented continuation lines.
+  while (
+    insertion < end &&
+    /^\s+\S/.test(lines[insertion] ?? "") &&
+    !PIPELINE_BULLET.test(lines[insertion] ?? "")
+  ) {
+    insertion += 1;
+  }
+  return insertion;
+}
+async function addPipelineItem(
+  source: PipelineSource,
+  brand: string,
+  title: string,
+): Promise<PipelinePayload> {
+  return withPipelineLock(async () => {
+    const text = await readPipelineFile(source);
+    if (text === null) {
+      throw new PublicError(
+        404,
+        "INVALID_REQUEST",
+        "That file is not present, so the board cannot write to it.",
+      );
+    }
+    const lines = text.split("\n");
+    const tag = brand === "general" ? "" : ` (${brand})`;
+    lines.splice(
+      pipelineInsertionPoint(source, lines, brand),
+      0,
+      `- [ ] ${title}${tag}`,
+    );
+    await writePipelineFile(source, lines.join("\n"));
+    return loadPipeline();
+  });
+}
+
 const BRAND_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const MAX_PROSPECT_IMPORT_ROWS = 200;
 function validateBrandSlug(value: unknown): string {
@@ -396,6 +686,8 @@ type ErrorCode =
   | "IMPORT_TOO_LARGE"
   | "INVALID_REQUEST"
   | "MESSAGE_TOO_LONG"
+  | "PIPELINE_CHANGED"
+  | "PIPELINE_WRITE_ERROR"
   | "RATE_LIMITED"
   | "REQUEST_IN_PROGRESS"
   | "ENRICHMENT_UNAVAILABLE"
@@ -2962,26 +3254,80 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
       }
 
       if (url.pathname === "/api/pipeline") {
-        if (request.method !== "GET") {
-          sendJson(
-            response,
-            405,
-            {
-              error: {
-                code: "INVALID_REQUEST",
-                message: "That method is not supported.",
-              },
-            },
-            { Allow: "GET" },
-          );
+        if (request.method === "GET") {
+          try {
+            sendJson(response, 200, await loadPipeline());
+          } catch (error) {
+            options.logError?.("Pipeline state could not be read.", error);
+            sendJson(response, 200, { ...SAMPLE_PIPELINE });
+          }
           return;
         }
-        try {
-          sendJson(response, 200, await loadPipeline());
-        } catch (error) {
-          options.logError?.("Pipeline state could not be read.", error);
-          sendJson(response, 200, { ...SAMPLE_PIPELINE });
+        if (request.method === "POST") {
+          try {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "pipeline card",
+            );
+            const source = validatePipelineSource(body.source);
+            if (body.action === "add") {
+              sendJson(
+                response,
+                200,
+                await addPipelineItem(
+                  source,
+                  validatePipelineBrand(body.brand),
+                  validatePipelineTitle(body.title),
+                ),
+              );
+              return;
+            }
+            if (body.action === "move") {
+              sendJson(
+                response,
+                200,
+                await movePipelineItem(
+                  source,
+                  validatePipelineLine(body.line),
+                  body.fingerprint,
+                  validatePipelineStatus(body.status, source),
+                ),
+              );
+              return;
+            }
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "That is not something the board can do.",
+            );
+          } catch (error) {
+            if (error instanceof PublicError) {
+              sendError(response, error);
+            } else {
+              options.logError?.("Pipeline state could not be written.", error);
+              sendError(
+                response,
+                new PublicError(
+                  500,
+                  "PIPELINE_WRITE_ERROR",
+                  "The board could not write to the backlog file.",
+                ),
+              );
+            }
+          }
+          return;
         }
+        sendJson(
+          response,
+          405,
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "That method is not supported.",
+            },
+          },
+          { Allow: "GET, POST" },
+        );
         return;
       }
       if (url.pathname === "/api/prospects/enrichment-jobs") {
@@ -3745,6 +4091,7 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
               contact: prospectText(row.contact, 254),
               relevance: prospectText(row.relevance, 2000),
               nextAction: prospectText(row.nextAction, 500),
+              verified: prospectText(row.verified, 40),
               notes: prospectText(row.notes, 2000),
             };
           });
@@ -3786,6 +4133,8 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
               linkedin: prospectText(row.linkedin, 500),
               hook: prospectText(row.hook, 500),
               whyFit: prospectText(row.whyFit, 2000),
+              evidenceUrl: prospectText(row.evidenceUrl, 500),
+              relevance: prospectText(row.relevance, 2000),
               notes: prospectText(row.notes, 2000),
             };
           });
