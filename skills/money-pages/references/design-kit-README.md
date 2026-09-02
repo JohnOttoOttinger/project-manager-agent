@@ -335,6 +335,27 @@ same clothes.
 
 ---
 
+## Lesson 11a — measure the columns, do not calculate them (27 Aug 2026)
+
+Lesson 11 said balance two-column rows by rendered height. This is the proof, from Marketing
+Dashboards (54156): the character-count model predicted a **2.1%** difference and the browser
+measured **8.6%** (413px vs 452px). Paragraph margins cost far more than "~1px ≈ 1 character"
+suggests, so a side with an extra paragraph runs long even when its text is shorter.
+
+**How to actually do it.** Ronneby half-columns carry the class `columns six` — not a Bootstrap
+`vc_col-*` class, which is why a generic selector finds nothing. Walk down from `body` to the
+deepest element containing a known sentence, then up to the nearest `.columns` ancestor, and compare
+`getBoundingClientRect().height`. Push, measure, adjust, measure again.
+
+**The resolution is one line (~22px), not one character.** A trim of fewer characters than a line
+holds changes nothing. Iterations here: 39px → 17px → **5px (1.1%)**, each step moving roughly one
+line of text between the columns.
+
+**Also worth doing: check whether the split is in the right place.** On this row the paragraph "I
+sketch the layout" sat at the bottom of the left column while "Once the layout is agreed" opened the
+right. Moving the layout paragraph across both balanced the row and put the two sentences next to
+each other, turning the row into *what we decide* / *how we build*.
+
 ## Lesson 14 — never bold a list (27 Aug 2026)
 
 `de-ai-check`'s `blanket bold` rule fires on any `<strong>` over 60 characters, and a bolded list of
