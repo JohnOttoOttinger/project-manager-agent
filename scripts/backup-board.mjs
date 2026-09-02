@@ -30,7 +30,11 @@ const destArg = args.includes("--dest") ? args[args.indexOf("--dest") + 1] : "";
 const outDir = destArg || process.env.BOARD_BACKUP_DEST
   || join(root, "backups", "board");
 const secretsDir = join(root, "backups", "secrets");
-const logPath = join(outDir, "backup.log");
+// The log lives locally, never in --dest. A synced folder applies file
+// coordination to appends, and two runs landing together can lose one — a log
+// that silently drops entries is worse than no log. The snapshots in --dest
+// are the record; this is the commentary.
+const logPath = join(root, "backups", "backup.log");
 
 // Every live SQLite store worth losing sleep over.
 const SOURCES = [
@@ -69,6 +73,7 @@ function fail(message, error) {
 }
 
 mkdirSync(outDir, { recursive: true, mode: 0o700 });
+mkdirSync(join(root, "backups"), { recursive: true });
 
 const when = stamp(new Date());
 let backedUp = 0;
@@ -82,8 +87,14 @@ for (const src of SOURCES) {
   // n8n's store is 20MB and changes only when a workflow runs. Re-copying an
   // unchanged file every two hours would push ~240MB/day of identical bytes
   // through iCloud for nothing, so skip when the source has not moved.
+  //
+  // "Moved" must include the -wal sidecar. In WAL mode every write lands there
+  // and the main file's mtime only advances on checkpoint, so comparing the
+  // .sqlite alone would skip a board that had been written to all day.
   try {
-    const sourceAt = statSync(src.path).mtimeMs;
+    const sourceAt = [src.path, `${src.path}-wal`, `${src.path}-shm`]
+      .filter((path) => existsSync(path))
+      .reduce((newest, path) => Math.max(newest, statSync(path).mtimeMs), 0);
     const newest = readdirSync(outDir)
       .filter((name) => name.startsWith(`${src.name}-`) && name.endsWith(".sqlite"))
       .map((name) => statSync(join(outDir, name)).mtimeMs)

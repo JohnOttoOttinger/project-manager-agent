@@ -67,8 +67,21 @@ rather than a scheduled job.
     npm run backup-board -- --dest /tmp/x    # somewhere else
     npm run backup-board -- --keep 12        # different retention
 
-The log is `backup.log` inside the destination folder; launchd stderr goes to
-`backups/launchd.err.log`.
+The log is `backups/backup.log`, kept local rather than in the synced
+destination: iCloud applies file coordination to appends and two runs landing
+together can lose one. launchd stderr goes to `backups/launchd.err.log`.
+
+## Installing the agent on another Mac
+
+    npm run backup-agent                       # install and load
+    npm run backup-agent -- --status           # check it
+    npm run backup-agent -- --dest /some/dir    # different destination
+    npm run backup-agent -- --interval 3600     # different cadence
+    npm run backup-agent -- --uninstall        # remove, snapshots kept
+
+The plist is generated rather than committed: it holds absolute paths to this
+checkout and to the private Node runtime, both of which differ per machine.
+Re-running the installer is how you change the schedule.
 
 ## Restoring
 

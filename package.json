@@ -27,6 +27,7 @@
     "inspect-chats": "node scripts/inspect-chat-history.mjs",
     "test:bd-loop": "node scripts/test-bd-loop.mjs",
     "backup-board": "node scripts/backup-board.mjs",
+    "backup-agent": "node scripts/install-backup-agent.mjs",
     "reset": "node scripts/local.mjs reset"
   },
   "dependencies": {
