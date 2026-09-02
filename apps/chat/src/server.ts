@@ -11,6 +11,7 @@ import { ChatStore } from "./chat-store.js";
 import { DocumentStore } from "./documents.js";
 import { ProfileStore } from "./profile.js";
 import { AgentSettingsStore } from "./agent-settings.js";
+import { SalesLeadStore } from "./sales-leads.js";
 
 const DEFAULT_PORT = 3_000;
 const DEFAULT_TIMEOUT_MS = 120_000;
@@ -50,6 +51,9 @@ const profileDataDirectory =
 const skillsDirectory =
   process.env.SKILLS_DIRECTORY ??
   fileURLToPath(new URL("../../../skills", import.meta.url));
+const salesDataDirectory =
+  process.env.SALES_DATA_DIRECTORY ??
+  fileURLToPath(new URL("../../../data/sales", import.meta.url));
 
 try {
   new URL(upstreamUrl);
@@ -98,6 +102,8 @@ const agentSettingsStore = new AgentSettingsStore(
   })),
 );
 
+const salesLeadStore = new SalesLeadStore(salesDataDirectory);
+
 const server = createChatServer({
   accessGate,
   agents,
@@ -105,6 +111,7 @@ const server = createChatServer({
   documentStore,
   profileStore,
   agentSettingsStore,
+  salesLeadStore,
   skillsDirectory,
   profileDirectory: profileDataDirectory,
   publicDirectory,

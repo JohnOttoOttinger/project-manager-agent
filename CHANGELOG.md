@@ -7,6 +7,12 @@ versioning for local workshop releases.
 
 ### Added
 
+- Sales CRM board under the Sales agent — six stages (New, Contacted, In
+  conversation, Proposal sent, Won, Lost) with drag-and-drop between columns,
+  inline add and edit, per-brand highlighting, and open/won value totals.
+  Leads persist to the Git-ignored `data/sales/leads.json` via
+  `GET/POST /api/sales/leads`; writes are serialised and land through a
+  temporary file so a crash cannot leave a half-written board.
 - Durable plaintext SQLite chat history stored in the Git-ignored local data
   folder.
 - Conversation browsing, full-text search, rename, delete, pagination, and

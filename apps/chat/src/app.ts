@@ -81,6 +81,12 @@ import {
   type AgentProfile,
 } from "./profile.js";
 import { fetchPublicDomainPage, fetchPublicWebPages } from "./public-web.js";
+import {
+  LeadValidationError,
+  SalesLeadStore,
+  validateLeadId,
+  validateStage,
+} from "./sales-leads.js";
 import { validateSeoArticleResult } from "./seo-article.js";
 
 const MAX_MESSAGE_LENGTH = 8_000;
@@ -757,6 +763,7 @@ export interface ChatGatewayOptions {
   chatStore?: ChatStore;
   profileStore?: ProfileStore;
   agentSettingsStore?: AgentSettingsStore;
+  salesLeadStore?: SalesLeadStore;
   skillsDirectory?: string;
   profileDirectory?: string;
   /**
@@ -3323,6 +3330,101 @@ export function createChatHandler(options: ChatGatewayOptions): RequestListener 
                   500,
                   "PIPELINE_WRITE_ERROR",
                   "The board could not write to the backlog file.",
+                ),
+              );
+            }
+          }
+          return;
+        }
+        sendJson(
+          response,
+          405,
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "That method is not supported.",
+            },
+          },
+          { Allow: "GET, POST" },
+        );
+        return;
+      }
+      if (url.pathname === "/api/sales/leads") {
+        const salesLeadStore = options.salesLeadStore;
+        if (salesLeadStore === undefined) {
+          sendJson(response, 200, { writable: false, leads: [] });
+          return;
+        }
+        if (request.method === "GET") {
+          try {
+            sendJson(response, 200, await salesLeadStore.load());
+          } catch (error) {
+            options.logError?.("Sales leads could not be read.", error);
+            sendJson(response, 200, { writable: false, leads: [] });
+          }
+          return;
+        }
+        if (request.method === "POST") {
+          try {
+            const body = businessMemoryObject(
+              await readRequestBody(request),
+              "lead",
+            );
+            if (body.action === "add") {
+              sendJson(response, 200, await salesLeadStore.add(body.lead));
+              return;
+            }
+            if (body.action === "move") {
+              sendJson(
+                response,
+                200,
+                await salesLeadStore.move(
+                  validateLeadId(body.id),
+                  validateStage(body.stage),
+                ),
+              );
+              return;
+            }
+            if (body.action === "update") {
+              sendJson(
+                response,
+                200,
+                await salesLeadStore.update(
+                  validateLeadId(body.id),
+                  body.lead,
+                ),
+              );
+              return;
+            }
+            if (body.action === "remove") {
+              sendJson(
+                response,
+                200,
+                await salesLeadStore.remove(validateLeadId(body.id)),
+              );
+              return;
+            }
+            throw new PublicError(
+              400,
+              "INVALID_REQUEST",
+              "That is not something the board can do.",
+            );
+          } catch (error) {
+            if (error instanceof LeadValidationError) {
+              sendError(
+                response,
+                new PublicError(400, "INVALID_REQUEST", error.message),
+              );
+            } else if (error instanceof PublicError) {
+              sendError(response, error);
+            } else {
+              options.logError?.("Sales leads could not be written.", error);
+              sendError(
+                response,
+                new PublicError(
+                  500,
+                  "PIPELINE_WRITE_ERROR",
+                  "The board could not save that change.",
                 ),
               );
             }
