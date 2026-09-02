@@ -215,7 +215,7 @@ def table_row(blocks, subtitle, title, intro, heads, rows, footnote=None, first_
 
 def plain(s):
     s = re.sub(r'<[^>]+>', '', s)
-    for ent, ch in [('&mdash;', '—'), ('&ndash;', '–'), ('&amp;', '&'), ('&rsquo;', '’'), ('&times;', 'x')]:
+    for ent, ch in [('&mdash;', '—'), ('&ndash;', '–'), ('&amp;', '&'), ('&rsquo;', '’'), ('&lsquo;', '‘'), ('&ldquo;', '“'), ('&rdquo;', '”'), ('&hellip;', '…'), ('&times;', 'x')]:
         s = s.replace(ent, ch)
     return s
 

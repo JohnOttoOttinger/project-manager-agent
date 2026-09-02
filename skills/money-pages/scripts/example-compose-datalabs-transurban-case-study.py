@@ -90,8 +90,8 @@ t_modes = table_row(blocks, 'Meet users where their data is', 'The three input m
     footnote='All modes fed the same comparison engine: current charges (fuel excise plus registration) against the modelled Road Usage Charge.')
 
 # ---------- gallery ----------
-row_gallery = gallery_row('The tool itself, full size', 'Inside the calculator',
-    'Click any screen to view it full-size. All figures shown are <strong>indicative modelling data</strong>, not real fleet costs.',
+row_gallery = gallery_row('Design screens from the build', 'Inside the calculator',
+    'Click any screen to view it full-size &mdash; design frames from the build, with <strong>indicative modelling data</strong> throughout.',
     [(53941, 'Choose Your Way In', 'The three input methods'),
      (53944, 'Quick Mode', 'Sliders for rapid scenarios'),
      (53950, 'Per-Car Breakdown', 'Every vehicle, both systems'),
@@ -104,7 +104,7 @@ row_hotspot = hotspot_row('Click the markers', 'Read the results screen',
         (8, 40, 'The vehicle rail', 'The fleet being modelled - each vehicle with its state, registration category, and fuel type.'),
         (38, 28, 'The RUC rate slider', 'The heart of the tool: drag the cents-per-kilometre rate and every number on screen recalculates.'),
         (44, 45, 'Current vs RUC', 'Side-by-side bars - fuel excise plus registration today, against the modelled road usage charge. Savings show green.'),
-        (42, 72, 'Registration breakdown', 'Donut charts splitting registration by state and category - where the current system is heaviest.'),
+        (42, 72, 'Registration breakdown', 'Donut charts splitting registration by state and category, at a glance.'),
         (75, 55, 'The cost trajectory', 'Costs projected across increasing annual distance, so the crossover point is visible at a glance.'),
     ])
 
@@ -149,8 +149,8 @@ art1 = fill(blocks['article1'], {
     'ARTICLE_1_HEADING': 'Designing a calculator the public can argue with',
     'ARTICLE_1_BODY': f'''{P}A policy tool has two audiences that want opposite things. A curious member of the public wants an answer in <strong>ninety seconds</strong>; a fleet analyst wants to model four hundred vehicles precisely. Serve only the first and the tool is a toy; only the second and nobody opens it.</p>
 {P}The calculator&rsquo;s answer was <strong>three doors into one engine</strong>. Quick mode asked for a handful of sliders &mdash; fleet size, vehicle mix, average kilometres &mdash; and produced a defensible first answer fast. Detailed mode let a user specify every vehicle down to <strong>make, model, year, and state</strong>. CSV import took an entire fleet in one upload, against a template the tool itself provided.</p>
-{P}The output design carried the argument. Current charges and the modelled <strong>Road Usage Charge sat side by side</strong>, with differences colour-coded and savings in green; a trajectory chart projected both across rising annual distance so the crossover point was visible; and three cost lenses &mdash; <strong>fleet, vehicle, kilometre</strong> &mdash; meant every stakeholder found the number they think in.</p>
-{P}Interactivity is our craft in every format &mdash; see the {LINK("/?page_id=415", "interactive data visualizations")} we design &mdash; but a public policy tool is its sharpest use: the audience does not read the analysis, they <strong>drive it</strong>.</p>''',
+{P}The output design made the comparison legible. Current charges and the modelled <strong>Road Usage Charge sat side by side</strong>, with differences colour-coded and savings in green; a trajectory chart projected both across rising annual distance so the crossover point was visible; and three cost lenses &mdash; <strong>fleet, vehicle, kilometre</strong> &mdash; meant every stakeholder found the number they think in.</p>
+{P}Interactivity is our craft in every format &mdash; see the {LINK("/?page_id=415", "interactive data visualizations")} we design &mdash; but a public policy tool is its sharpest use: the audience explores the model for themselves.</p>''',
 })
 art2 = fill(blocks['article2'], {
     'ARTICLE_2_SUBTITLE': 'Eight jurisdictions, no shortcuts&hellip;',

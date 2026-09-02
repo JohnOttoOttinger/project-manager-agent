@@ -35,11 +35,12 @@ hero = widen_hero(fill(blocks['intro'], {
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why does a brand-new school system need a data audit?',
     'SECTION_B_ANSWER': 'The animation above is the framework the co-design produced. The brief behind it: a school system being built from scratch has <strong>no legacy reports to lean on</strong> &mdash; and no legacy habits to unlearn. NEOM&rsquo;s education leadership wanted the data foundations designed deliberately: what to measure, who sees it, and at what altitude.',
-    'SECTION_B_CONTEXT': 'That is a rarer and better starting point than it sounds. Most dashboard projects begin by untangling years of accumulated reporting; this one began with <strong>real questions and clean intent</strong> &mdash; enrolment and demographics, attendance patterns, facility utilisation, future intake projections. The engagement was sequenced so the people came first: train the team, co-design the framework with them, and only then audit the data sources and plan the build. Skills before screens is the whole philosophy, and a new city is the purest place to apply it.',
+    'SECTION_B_CONTEXT': 'That is a rarer and better starting point than it sounds. Most dashboard projects begin by untangling years of accumulated reporting; this one began with <strong>real questions and clean intent</strong> &mdash; enrolment, attendance, and capacity. The engagement was sequenced so the people came first: train the team, co-design the framework with them, and only then audit the data sources and plan the build. Skills before screens is the whole philosophy, and a new city is the purest place to apply it.',
     'PRIMARY_CTA_TEXT': 'Plan your data foundations',
     'PRIMARY_CTA_URL': CONTACT,
 }))
-hero_p1, row_secB = split_hero(hero, 53927)
+hero_p1, row_secB = split_hero(hero, None)
+hero_p1 = hero_p1.replace('[vc_single_image image="None" img_size="large" alignment="center" style="vc_box_rounded" onclick="link_image" css=""]', '')
 
 # ---------- Row: Animated Flow Diagram — the three-tier drill-down ----------
 def svg_tiers():
@@ -49,8 +50,8 @@ def svg_tiers():
         ('STUDENT DASHBOARD', 'Student-level tracking and intervention support', 470),
     ]
     scopes = [
-        ('Enrolment', 40), ('Attendance', 262), ('Facility utilisation', 484),
-        ('Intake projections', 706), ('Applied status', 928),
+        ('Enrolment', 40), ('Attendance', 262), ('Capacity', 484),
+        ('Planning', 706), ('Progress', 928),
     ]
     parts = [f'<svg viewBox="0 0 1200 640" xmlns="http://www.w3.org/2000/svg" role="img" '
              f'aria-label="The three-tier NEOM education dashboard framework: leadership, school, and student dashboards, fed by five measurement areas" '
@@ -123,7 +124,7 @@ row_faq = faq_row(blocks, 'The NEOM engagement', 'Ask about your data foundation
     ('What did the Datalabs Agency do for NEOM?',
      'A three-phase engagement for NEOM&rsquo;s Education District across August to December 2023: <strong>four on-site training workshops</strong> for 12 education staff, co-design sessions that produced a <strong>three-tier dashboard framework</strong>, and a <strong>data audit with implementation planning</strong> &mdash; metric definitions, governance guidelines, and a technology roadmap.'),
     ('What is the three-tier dashboard framework?',
-     'One measurement model read at <strong>three altitudes</strong>: a <strong>Leadership Dashboard</strong> for the district-level executive view, a School Dashboard for individual school performance and operations, and a <strong>Student Dashboard</strong> for student-level tracking and intervention support. Initial designs covered enrolment, facility utilisation, attendance, intake projections, and applied-status tracking.'),
+     'One measurement model read at <strong>three altitudes</strong>: a <strong>Leadership Dashboard</strong> for the district-level executive view, a School Dashboard for individual school performance and operations, and a <strong>Student Dashboard</strong> for student-level tracking and intervention support. Initial designs covered enrolment, attendance, and school capacity.'),
     ('What did the workshops cover?',
      '<strong>Four sessions over two days</strong>, on site: Introduction to Data Visualisation and Storytelling, Infographics and Report Design, Creative Data Presentations with PowerPoint, and Storytelling with Data. Each combined live instruction, hands-on exercises on <strong>real NEOM education data</strong>, group critique, and a custom workbook.'),
     ('Is the project confidential?',
@@ -137,19 +138,19 @@ art1 = fill(blocks['article1'], {
     'ARTICLE_1_HEADING': 'Why the framework was designed with NEOM, together',
     'ARTICLE_1_BODY': f'''{P}I could have designed a school-district dashboard framework from Melbourne and shipped it. It would have been wrong in a dozen quiet ways &mdash; because a <strong>new school system in a new city</strong> does not run like the systems the templates were learned from. Co-design exists for exactly this situation.</p>
 {P}The sessions worked through <strong>user personas</strong> before screens: what a district leader needs on a Monday morning, what a school principal acts on weekly, what student-level intervention actually requires. Wireframes and <strong>information architecture</strong> came out of those conversations, not ahead of them, and every use case was NEOM&rsquo;s own.</p>
-{P}The result was the <strong>three-tier framework</strong> &mdash; Leadership, School, Student &mdash; with a scope that started honest: enrolment (matriculated and non-matriculated), <strong>facility utilisation</strong> measured as available against occupied seats, attendance across grade levels, and future intake projections. No vanity metrics, because the people in the room would be the ones living with them.</p>
+{P}The result was the <strong>three-tier framework</strong> &mdash; Leadership, School, Student &mdash; with a scope that started honest: enrolment, attendance, and <strong>school capacity</strong>. No vanity metrics, because the people in the room would be the ones living with them.</p>
 {P}Co-design is the same method behind our {LINK("/?page_id=661", "training workshops")} and every dashboard engagement we run: the client&rsquo;s knowledge is a design input, and the workshop is how you collect it.</p>''',
 })
 art2 = fill(blocks['article2'], {
     'ARTICLE_2_SUBTITLE': 'Foundations before furniture&hellip;',
     'ARTICLE_2_HEADING': 'Auditing data for a city that is still arriving',
-    'ARTICLE_2_BODY': f'''{P}Phase three was the least glamorous and the most valuable: a <strong>data audit</strong> for a school system whose data was still taking shape. We assessed the sources and structures behind <strong>enrolment and demographics</strong>, academic performance, attendance patterns, behavioural incident tracking, <strong>teacher-student ratios</strong>, and resource allocation &mdash; and wrote down, metric by metric, what each one means and where it comes from.</p>
+    'ARTICLE_2_BODY': f'''{P}Phase three was the least glamorous and the most valuable: a <strong>data audit</strong> for a school system whose data was still taking shape. We assessed the sources and structures behind <strong>enrolment and demographics</strong>, academic performance, attendance, and <strong>resourcing</strong> &mdash; and wrote down, metric by metric, what each one means and where it comes from.</p>
 {P}Metric definition sounds bureaucratic until two reports disagree. When &ldquo;attendance&rdquo; is documented once &mdash; numerator, denominator, exclusions &mdash; the Leadership Dashboard and the Student Dashboard can never quietly diverge. That documentation, plus <strong>data governance guidelines</strong>, is what lets a growing organisation add reporting without re-arguing its arithmetic.</p>
 {P}The engagement closed with a written <strong>implementation plan</strong>: technology evaluation and recommendations, a skills assessment with development recommendations for the team, and a roadmap for automated reporting. Deliberately, it is a plan NEOM&rsquo;s own people can execute &mdash; the workshops in phase one existed so the roadmap in phase three would have owners.</p>
-{P}If your organisation is earlier in its data life than its ambitions, that sequence &mdash; skills, framework, audit, roadmap &mdash; is the one to copy. Our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how we scope it.</p>''',
+{P}If your organisation is earlier in its data life than its ambitions, that sequence &mdash; skills, framework, audit, roadmap &mdash; is the one we would bring to you. Our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how we scope it.</p>''',
 })
 
-page = assemble([hero_p1, row_flow, row_secB, t_phases, row_gallery, row_tiles,
+page = assemble([hero_p1, row_flow, row_secB, t_phases, row_tiles,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
 page = apply_theme(page, '#16262a')  # per-page tint (Otto-approved palette, 25 Aug)
 assert '120+' not in page

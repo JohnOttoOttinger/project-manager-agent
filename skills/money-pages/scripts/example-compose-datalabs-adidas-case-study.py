@@ -88,7 +88,7 @@ def svg_row(subtitle, title, intro, svg):
 
 # ---------- Row: Animated Flow Diagram (SVG) — four continents -> 7 workshops -> two tracks ----------
 def svg_flow():
-    sources = [('SHANGHAI', 'APAC &amp; GCA cohort'), ('HERZOGENAURACH', 'PELT + EMEA cohorts'),
+    sources = [('SHANGHAI', 'APAC &amp; Greater China cohort'), ('HERZOGENAURACH', 'Executive + EMEA cohorts'),
                ('PORTLAND', 'Americas cohort'), ('LISBON', 'Portugal+ cohort')]
     tracks = [('EXECUTIVE TRACK', 'Around 30 VPs, Senior Directors &amp; Directors'),
               ('ANALYST TRACK', 'Around 120 junior and mid-level staff')]
@@ -136,7 +136,7 @@ def svg_concepts():
         ('A POINT OF VIEW', 'Data supports a recommendation, never a dump', 'charts'),
         ('ANSWER FIRST', 'Open with the number that matters most', 'hierarchy'),
         ('TWO TRACKS, ONE METHOD', 'Executive and analyst depth, same language', 'people'),
-        ('REAL ADIDAS DATA', 'Exercises built on procurement scenarios', 'grid'),
+        ('REAL SCENARIOS, DUMMY DATA', 'Exercises shaped like procurement, safely fake', 'grid'),
         ('BUILT FOR TIME ZONES', 'Seven sessions, live from Melbourne', 'clock'),
         ('A SHARED LANGUAGE', 'One way to communicate data upward', 'swatches'),
     ]
@@ -193,7 +193,7 @@ hero = widen_hero(fill(blocks['intro'], {
     'CANONICAL_SENTENCE': 'The <strong>Datalabs Agency</strong> is a Melbourne-based data visualization consultancy founded in 2012 that delivers corporate training workshops (Power BI, Tableau, data storytelling), dashboard design, and BI style guides for clients including Mercedes-Benz, Adidas, and UPS.',
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why did Adidas bring in a data storytelling trainer?',
-    'SECTION_B_ANSWER': 'The animation above is the delivery map. The brief behind it: Adidas&rsquo;s procurement teams had no shortage of analysis, but stakeholder presentations were arriving as <strong>data dumps</strong> &mdash; dozens of metrics and no message. Leadership wanted presentations that <strong>open with the number that matters</strong> and use data to support a recommendation.',
+    'SECTION_B_ANSWER': 'The animation above is the delivery map. The brief behind it: Adidas&rsquo;s procurement teams had no shortage of analysis, and, like most analytical teams, the challenge was volume without a message &mdash; <strong>data-dump presentations</strong> that buried the point. Leadership wanted presentations that <strong>open with the number that matters</strong> and use data to support a recommendation.',
     'SECTION_B_CONTEXT': 'That reframing &mdash; from data reporters to <strong>strategic advisors</strong> who use data to support a point of view &mdash; set the shape of the whole program. Executives and analysts were given separate tracks with the same methodology, so a VP and a junior buyer came away speaking the same language at the depth their role needs. And because generic training examples slide off a specialist audience, every exercise was built from <strong>procurement-specific scenarios and datasets</strong>, not stock charts.',
     'PRIMARY_CTA_TEXT': 'Book a workshop like this',
     'PRIMARY_CTA_URL': CONTACT,
@@ -215,11 +215,11 @@ def td(bg, bold=False, nowrap=False):
     if nowrap: s += ' white-space: nowrap;'
     return f'style="{s}"'
 sched = [
-    ['29 Nov 2022', 'APAC &amp; GCA analysts', 'Shanghai'],
-    ['30 Nov 2022', 'Executive session (PELT)', 'Herzogenaurach'],
+    ['29 Nov 2022', 'APAC &amp; Greater China analysts', 'Shanghai'],
+    ['30 Nov 2022', 'Executive leadership session', 'Herzogenaurach'],
     ['5 Dec 2022', 'Americas analysts', 'Portland'],
     ['6 Dec 2022', 'EMEA analysts', 'Herzogenaurach'],
-    ['8 Dec 2022', 'Executive session (PELT)', 'Herzogenaurach'],
+    ['8 Dec 2022', 'Executive leadership session', 'Herzogenaurach'],
     ['12 Dec 2022', 'Portugal+ mixed group', 'Lisbon'],
     ['13 Dec 2022', 'EMEA analysts', 'Herzogenaurach'],
 ]
@@ -234,7 +234,7 @@ table_html = ('<div style="overflow-x: auto;">\n<table style="width: 100%; borde
     + '\n<p style="text-align: left; font-size: 13px; font-style: italic; color: #8a8a95; margin-top: 10px;">All seven sessions ran live from Melbourne in a three-hour interactive format, across start times spanning 2 AM to 12 PM Australian time.</p>')
 t_block = fill(blocks['table'], {'TABLE_SUBTITLE': 'Three weeks, door to door', 'TABLE_HEADING': 'The seven Adidas workshops'})
 m = re.search(r'(\[vc_column_text css=""\]\n).*?(\n\[/vc_column_text\])', t_block, flags=re.S)
-guts = '<p style="text-align: center;"><strong>The delivery schedule, from the project&rsquo;s own planning documents.</strong></p>\n\n' + table_html
+guts = '<p style="text-align: center;"><strong>The delivery schedule at a glance.</strong></p>\n\n' + table_html
 t_schedule = widen_inner(t_block[:m.start(1) + len(m.group(1))] + guts + t_block[m.end(2) - len(m.group(2)):], '1/6', '2/3')
 
 # ---------- gallery (2x2, lightbox) ----------
@@ -250,12 +250,12 @@ row_gallery = (DARKROW + '[vc_column]' + SP(40)
                'Click any asset to view it full-screen &mdash; these are the <strong>actual workshop materials</strong> built for Adidas.')
     + SP(30)
     + '[vc_row_inner]' + gal_cell(53882, 'The Superlatives Exercise', 'Suppliers become characters') + gal_cell(53885, 'The Superlative Venn', 'One supplier, three stories') + '[/vc_row_inner]'
-    + '[vc_row_inner]' + gal_cell(53891, 'The Custom Dataset', 'Real scenarios, dummy numbers') + gal_cell(53894, 'Where Procurement Sits', 'The go-to-market context') + '[/vc_row_inner]'
+    + '[vc_row_inner]' + gal_cell(53891, 'The Custom Dataset', 'Real scenarios, dummy numbers') + '[/vc_row_inner]'
     + SP(20) + '[/vc_column][/vc_row]')
 
 # ---------- hotspot: the teaching dashboard ----------
 hotspots = [
-    (8, 32, 'The KPI rail', 'Month-to-date quality KPIs - 114 suppliers, $11.20M ordered, a 3.0% vendor rejection rate - the health check before any drill-down.'),
+    (8, 32, 'The KPI rail', 'Month-to-date quality KPIs (dummy data) - supplier count, ordered value, rejection rate - the health check before any drill-down.'),
     (48, 6, 'Filters', 'Project, category, supplier and time filters, so one dashboard serves every buyer question.'),
     (55, 30, 'Return cost analysis', 'Return costs and rejection rates for the top five suppliers, side by side - the chart that starts the conversation.'),
     (55, 62, 'Supplier quality rating', 'Ordered value, availability, defect rate and a single quality score per supplier - a ranking the room can argue with.'),
@@ -372,7 +372,7 @@ row_svg_concepts = svg_row('The rules under every session', 'The principles behi
     svg_concepts())
 
 # ---------- assemble ----------
-page = '\n'.join([hero_p1, row_svg_flow, row_secB, sec_tailor, t_schedule, row_gallery, row_hotspot,
+page = '\n'.join([hero_p1, row_svg_flow, row_secB, sec_tailor, t_schedule, row_gallery,
                   row_svg_concepts, sec_deliver, row_quote, faq, art1, blocks['offers'], art2, blocks['fixed']])
 page = re.sub(r'<!--.*?-->\n?', '', page, flags=re.S)
 page = re.sub(r'\]\s+\[', '][', page)

@@ -1,5 +1,26 @@
 # Visual Case Studies — Adversarial IP Review (2 Sep 2026)
 
+**FIX PASS APPLIED 3 Sep 2026** — every non-judgment fix below is live in the compose
+scripts and re-pushed to all nine drafts (de-ai-check clean across the board). Applied:
+all BLOCK-level copy fixes; page references to the four dangerous media items REMOVED
+(NEOM hero+gallery now image-free, BlackRock hero+gallery removed, Gumtree map out of
+gallery, Adidas hotspot row + ops diagram out pending provenance); Marriott system map
+replaced with cropped v2 (media 54158 — "Later Phases" panel + version painted out);
+ZIM teaching dashboard replaced with retitled v2 (media 54161 — "ACME Financial",
+date removed); Intel dashboard names generalised ("names generalised for
+confidentiality" footnote); Lockheed timeline made relative; all "client's own data"
+claims corrected; all "from the project's own planning documents" captions removed;
+all client-deficit framings reframed; JSON-LD regenerates from fixed FAQ pairs; vcs_lib
+plain() now strips ldquo/rdquo/hellip; kit info_banner title attr fixed.
+
+**STILL OTTO'S:** (1) DELETE media 53927/53930/53933 (NEOM), 53920 + 53917 (BlackRock),
+53967 (Gumtree map), and now-unused 53857 (Marriott map v1), 54127 (ZIM dashboard v1),
+53894 (Adidas ops diagram), 53888 (Adidas datapine-lookalike dashboard) — files stay
+publicly served until deleted; (2) judgment calls: Lockheed program names (kept — they
+are the story), Adidas 30/120 split (kept) + dataset worksheet image (kept), ZIM 7-step
+process image (kept), Marriott SVG system names (kept); (3) eBay agreement publicity-
+clause check; (4) per-client naming permissions before any publish.
+
 Nine parallel adversarial reviews (client legal/comms · Datalabs competitor · Otto's-IP
 auditor; + security lens on Lockheed, NDA-image lens on NEOM). Each reviewed the full
 composed markup incl. decoded FAQ JSON-LD + every published image. This file is the

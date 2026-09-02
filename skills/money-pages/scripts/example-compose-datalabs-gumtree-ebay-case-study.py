@@ -27,14 +27,14 @@ hero = widen_hero(fill(blocks['intro'], {
     'PAGE_SUBTITLE': 'A visual case study&hellip;',
     'PAGE_TITLE': 'Gumtree &amp; eBay: A Visual BI Strategy',
     'UPDATED_DATE': 'August 2026',
-    'HOOK': 'In mid-2017, Gumtree Australia &mdash; part of the eBay Group &mdash; had deep data and no strategy connecting it to decisions. Over an <strong>eight-week engagement</strong>, Datalabs audited the analytics landscape across <strong>four lenses</strong> and delivered a visual BI strategy: a multi-year roadmap, governance frameworks, and a capability pathway.',
+    'HOOK': 'In mid-2017, Gumtree Australia &mdash; part of the eBay Group &mdash; wanted a strategy connecting its deep data to decisions. Over an <strong>eight-week engagement</strong>, Datalabs audited the analytics landscape across <strong>four lenses</strong> and delivered a visual BI strategy: a multi-year roadmap, governance frameworks, and a capability pathway.',
     'SECTION_A_SUBTITLE': 'The engagement in one paragraph',
     'SECTION_A_HEADING': 'What did the Datalabs Agency deliver for Gumtree?',
     'SECTION_A_INTRO': 'From 2 May to 30 June 2017, the <strong>Datalabs Agency</strong> ran an independent <strong>visual business intelligence strategy</strong> engagement for Gumtree Australia: a discovery audit across the existing Google Analytics and <strong>eBay data warehouse</strong> landscape, then a strategy package &mdash; a multi-year roadmap, <strong>governance frameworks and best-practice standards</strong>, implementation guidelines, and training recommendations &mdash; presented to the Director of Analytics and leadership.',
     'CANONICAL_SENTENCE': CANONICAL,
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why did a data-rich business need a BI strategy?',
-    'SECTION_B_ANSWER': 'The animation above is the engagement&rsquo;s shape. The problem behind it: Gumtree had <strong>no shortage of data</strong> &mdash; Google Analytics and the eBay data warehouse gave deep visibility into behaviour, audience, revenue, and user actions. What was missing was the connective layer: no coherent approach to <strong>visual analytics</strong>, complex data never reaching decision-makers in usable form, and no basis for choosing BI tools.',
+    'SECTION_B_ANSWER': 'The animation above is the engagement&rsquo;s shape. The problem behind it: Gumtree had <strong>no shortage of data</strong> &mdash; Google Analytics and the eBay data warehouse gave deep visibility into behaviour, audience, revenue, and user actions. The brief the Director of Analytics set out named the gaps to close: a coherent approach to <strong>visual analytics</strong>, data reaching decision-makers in usable form, and a defensible basis for choosing BI tools.',
     'SECTION_B_CONTEXT': 'The Director of Analytics wanted something specific: an <strong>independent expert assessment</strong> &mdash; someone outside the organisation, with nothing to sell, who could evaluate the landscape objectively and produce a roadmap the business could act on. That independence shaped the whole engagement: pure strategy, no build, and recommendations judged on <strong>fit-for-purpose criteria</strong> rather than a vendor relationship.',
     'PRIMARY_CTA_TEXT': 'Ask for an independent audit',
     'PRIMARY_CTA_URL': CONTACT,
@@ -85,14 +85,12 @@ t_lenses = table_row(blocks, 'What an audit inspects', 'The four audit lenses',
      ['Business analysis', 'Stakeholder needs, current reporting capability, and how decisions were actually being made'],
      ['Data analysis', 'Data quality, accessibility, and integration points across platforms'],
      ['Tool evaluation', 'The BI tool landscape, assessed against fit-for-purpose criteria']],
-    footnote='Delivered primarily remotely from Melbourne, under secure access to eBay consoles and databases.')
+    footnote='Delivered primarily remotely from Melbourne.')
 
 # ---------- gallery ----------
 row_gallery = gallery_row('The working documents, full size', 'From the strategy sessions',
-    'Click any document to view it full-screen &mdash; the session materials and the proposed <strong>dashboard relational map</strong>.',
-    [(53967, 'The Relational Map', 'The proposed dashboard system'),
-     (53958, 'Three Things', 'The strategy presentation opener'),
-     (53961, 'Session One', 'The first working session agenda'),
+    'Click either agenda to view it full-screen &mdash; the working-session materials from the engagement.',
+    [(53961, 'Session One', 'The first working session agenda'),
      (53964, 'Session Two', 'The second working session agenda')])
 
 # ---------- Row: Design Principle Tiles ----------
@@ -102,7 +100,7 @@ row_tiles = svg_row('Why this engagement is different', 'The shape of an indepen
         ('PURE STRATEGY', 'The deliverable was thinking, no build', 'doc'),
         ('INDEPENDENT ADVISOR', 'Objectivity on a major tool decision', 'target'),
         ('ENTERPRISE SECURITY', 'ISO 27001-aligned controls throughout', 'grid'),
-        ('REMOTE, SECURE ACCESS', 'Melbourne to the eBay warehouse, governed', 'layers'),
+        ('REMOTE DELIVERY', 'From Melbourne, governed end to end', 'layers'),
         ('GOVERNANCE FIRST', 'Frameworks before dashboards', 'hierarchy'),
         ('CAPABILITY PATHWAY', 'A plan the in-house team executes', 'people'),
     ]))
@@ -145,7 +143,7 @@ art2 = fill(blocks['article2'], {
     'ARTICLE_2_BODY': f'''{P}Working for an eBay Group company means working inside an eBay-grade perimeter. The engagement ran under a formal <strong>Data Protection Requirements Addendum</strong> and <strong>ISO 27001-aligned controls</strong>, with secure remote access from Melbourne into eBay consoles and databases &mdash; every session governed, every access accountable.</p>
 {P}That framework is a constraint, and it is also a credential. A consultancy that can operate under a global technology company&rsquo;s security regime &mdash; full service agreements, governed data access, remote delivery &mdash; has demonstrated something no case study paragraph can: that it can be <strong>trusted inside the walls</strong>.</p>
 {P}The remote model mattered too. In 2017, delivering an enterprise strategy engagement <strong>primarily from Melbourne</strong> into an Australian subsidiary of a US giant was still unusual; it has since become our default shape for interstate and international work. Secure access plus disciplined working sessions beat airfares &mdash; then and now.</p>
-{P}And the deliverable respected the trust: strategy the client owns outright, with training and capability recommendations so the {LINK("/?page_id=661", "skills to execute it")} could be built in-house. When the engagement ended, everything of value stayed behind.</p>''',
+{P}And the deliverable respected the trust: strategy the client owns outright, with training and capability recommendations so the {LINK("/?page_id=661", "skills to execute it")} could be built in-house. When the engagement ended, the client held everything needed to execute.</p>''',
 })
 
 page = assemble([hero_p1, row_flow, row_secB, t_lenses, row_gallery, row_tiles,

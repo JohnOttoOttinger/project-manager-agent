@@ -31,12 +31,12 @@ hero = widen_hero(fill(blocks['intro'], {
     'HOOK': 'Between October 2020 and April 2021, the Datalabs Agency built Intel&rsquo;s IPG division a complete <strong>Power BI design system</strong>: a <strong>78-page style guide</strong>, then <strong>13 dashboard designs totalling 117 modules</strong> &mdash; every screen assembled from the same nine-module architecture, and handed to Intel&rsquo;s own developers to build.',
     'SECTION_A_SUBTITLE': 'The engagement in one paragraph',
     'SECTION_A_HEADING': 'What did the Datalabs Agency build for Intel?',
-    'SECTION_A_INTRO': 'Across three phases, the <strong>Datalabs Agency</strong> delivered Intel&rsquo;s Integrated Products Group a <strong>&ldquo;Business Class&rdquo; Power BI style guide</strong> (78 pages), workshop training for <strong>15+ analysts</strong>, standard report templates and a design checklist, a retrofit of three existing interfaces (27 modules), and ten new dashboard designs (90 modules) including the <strong>Bug Escapes</strong> suite &mdash; plus the navigation system connecting them.',
+    'SECTION_A_INTRO': 'Across three phases, the <strong>Datalabs Agency</strong> delivered Intel&rsquo;s Integrated Products Group a <strong>&ldquo;Business Class&rdquo; Power BI style guide</strong> (78 pages), workshop training for <strong>15+ analysts</strong>, standard report templates and a design checklist, a retrofit of three existing interfaces (27 modules), and ten new dashboard designs (90 modules) including a <strong>defect-analytics suite</strong> &mdash; plus the navigation system connecting them.',
     'CANONICAL_SENTENCE': CANONICAL,
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why did Intel need a dashboard design system?',
-    'SECTION_B_ANSWER': 'The animation above is the point: dashboards at scale are a <strong>manufacturing problem</strong>. IPG&rsquo;s engineering data &mdash; bug escapes, IP scans, ops reviews, test chips &mdash; needed more than a dozen dashboards, built by different hands over months. Without a design system, every new screen becomes a new argument about fonts, colours, and layout.',
-    'SECTION_B_CONTEXT': 'The engagement was sequenced to prevent exactly that. <strong>Phase one built the law</strong>: the style guide, templates, and a checklist, taught to the analyst team in workshops. Phase two proved it on existing screens, retrofitting three interfaces. Only then did phase three scale to ten new dashboards &mdash; each assembled from the same <strong>nine-module architecture</strong>, so Intel&rsquo;s in-house Power BI developers could build from annotated designs without a designer looking over their shoulder.',
+    'SECTION_B_ANSWER': 'The animation above is the point: dashboards at scale are a <strong>manufacturing problem</strong>. IPG&rsquo;s engineering data spanned many teams and needed more than a dozen dashboards. Without a design system, every new screen becomes a new argument about fonts, colours, and layout.',
+    'SECTION_B_CONTEXT': 'The engagement was sequenced to prevent exactly that. <strong>Phase one built the law</strong>: the style guide, templates, and a checklist, taught to the analyst team in workshops. Phase two proved it on existing screens, retrofitting three interfaces. Only then did phase three scale to ten new dashboards, delivered by one designer to one grid, &mdash; each assembled from the same <strong>nine-module architecture</strong>, so Intel&rsquo;s in-house Power BI developers could build from annotated designs without a designer looking over their shoulder.',
     'PRIMARY_CTA_TEXT': 'Talk design systems with us',
     'PRIMARY_CTA_URL': CONTACT,
 }))
@@ -46,7 +46,7 @@ hero_p1 = hero_p1.replace('[vc_single_image image="None" img_size="large" alignm
 
 # ---------- INTERACTIVE: the design system assembling itself ----------
 def svg_assembly():
-    labels = ['BUG ESCAPES SUMMARY', 'BUG ESCAPES PROFILE', 'IP SCAN OVERVIEW', 'OPS REVIEW SUMMARY', 'TEST CHIPS REVIEW',
+    labels = ['DEFECT TRENDS', 'DEFECT DEEP-DIVE', 'PORTFOLIO SCAN', 'OPS REVIEW', 'TEST PROGRAMS',
               'DASHBOARD 6', 'DASHBOARD 7', 'DASHBOARD 8', 'DASHBOARD 9', 'DASHBOARD 10']
     parts = [f'<svg viewBox="0 0 1200 700" xmlns="http://www.w3.org/2000/svg" role="img" '
              f'aria-label="Ten Intel dashboard designs assembling from the same nine-module architecture, ninety modules in total" '
@@ -91,21 +91,21 @@ row_flow = svg_row('Watch the system assemble', 'Ninety modules, one grid',
 t_phases = table_row(blocks, 'Law first, then scale', 'The three-phase engagement',
     'The engagement structure, October 2020 to April 2021.',
     ['Phase', 'Window', 'Scope'],
-    [['Phase 1 &mdash; the rules', 'To the November launch', 'Workshop training; the 78-page &ldquo;Business Class&rdquo; style guide; standard templates; a design checklist'],
+    [['Phase 1 &mdash; the rules', 'October to November 2020', 'Workshop training; the 78-page &ldquo;Business Class&rdquo; style guide; standard templates; a design checklist'],
      ['Phase 2 &mdash; the proof', 'Late Nov &ndash; mid Dec 2020', 'Retrofit of three existing interfaces &mdash; 27 modules brought onto the new system'],
-     ['Phase 3 &mdash; the scale', 'Mid Jan &ndash; end Mar 2021', 'Ten new dashboard designs (90 modules), the Bug Escapes suite, and the navigation system connecting it all']],
+     ['Phase 3 &mdash; the scale', 'Mid Jan &ndash; end Mar 2021', 'Ten new dashboard designs (90 modules), including the defect-analytics suite, and the navigation system connecting it all']],
     footnote='Designs were delivered as annotated flat designs with functional notes, built by Intel&rsquo;s in-house Power BI development team through iterative revision rounds.')
 
 # ---------- dashboards table ----------
 t_dash = table_row(blocks, 'The screens themselves', 'The dashboards designed for IPG',
     'Each dashboard was designed for one engineering question.',
     ['Dashboard', 'What it answers'],
-    [['Bug Escapes Summary', 'High-level bug trends: which IP families and projects need attention'],
-     ['Bug Escapes Profile', 'Detailed analysis in three views &mdash; By Project, By IP Family, By IP Supplier &mdash; with pre-silicon vs post-silicon comparison'],
-     ['IP Scan Overview', 'Scan status across the IP portfolio'],
-     ['Ops Review Summary', 'The operations review, standardised'],
-     ['Test Chips Review', 'Test chip programs at a glance']],
-    footnote='All screens filterable by customer, sub-organisation, project, IP supplier, and IP family.')
+    [['Defect-trend summary', 'High-level quality trends: where engineering attention is needed'],
+     ['Defect deep-dive', 'Detailed analysis across multiple organisational views'],
+     ['Portfolio scan', 'Status across the portfolio at a glance'],
+     ['Ops review', 'The operations review, standardised'],
+     ['Test-program review', 'Test programs at a glance']],
+    footnote='Dashboard names generalised for confidentiality.')
 
 # ---------- Row: Design Principle Tiles — straight from the 78 pages ----------
 row_tiles = svg_row('Six of the 78 pages', 'What a &ldquo;Business Class&rdquo; style guide teaches',
@@ -132,7 +132,7 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the Intel system',
 
 row_faq = faq_row(blocks, 'The Intel engagement', 'Ask about your design system', [
     ('What did the Datalabs Agency deliver for Intel?',
-     'A three-phase Power BI design engagement for Intel&rsquo;s IPG division, October 2020 to April 2021: a <strong>78-page style guide</strong> with templates and a design checklist, workshop training for <strong>15+ analysts</strong>, a retrofit of three existing interfaces, and <strong>ten new dashboard designs</strong> including the Bug Escapes suite, plus the navigation system connecting them.'),
+     'A three-phase Power BI design engagement for Intel&rsquo;s IPG division, October 2020 to April 2021: a <strong>78-page style guide</strong> with templates and a design checklist, workshop training for <strong>15+ analysts</strong>, a retrofit of three existing interfaces, and <strong>ten new dashboard designs</strong> including a defect-analytics suite, plus the navigation system connecting them.'),
     ('What is in the &ldquo;Business Class&rdquo; Power BI style guide?',
      '<strong>78 pages</strong> covering dashboard design (audience, iconic memory, chart selection, hierarchy, grids, accessibility with a checklist, mobile design), styling (fonts, chart palettes, colorways, layout examples), <strong>more than 20 chart types</strong> with alternatives, and a <strong>Pre-Flight Check quality gate</strong>.'),
     ('How were the dashboard designs delivered?',
@@ -156,7 +156,7 @@ art2 = fill(blocks['article2'], {
     'ARTICLE_2_HEADING': 'Designing for someone else&rsquo;s developers',
     'ARTICLE_2_BODY': f'''{P}The Intel engagement had a constraint that shaped everything: I would not be building the dashboards. Intel&rsquo;s own <strong>in-house Power BI team</strong> would. A design that only works with its designer standing next to it is a failed design, so every screen shipped as an <strong>annotated flat design</strong> &mdash; the layout plus functional notes covering states, filters, and interactions.</p>
 {P}The <strong>nine-module architecture</strong> made the handover honest. When every dashboard is nine modules on one grid, a developer who has built one screen has practised for all of them, and a reviewer can spot a deviation at a glance. Standardisation is not a creative constraint; it is what lets a system scale past its designer.</p>
-{P}The sequencing did the rest. Teaching the <strong>15+ analysts</strong> first meant the people closest to the data understood the rules before the screens arrived. Retrofitting three live interfaces second meant the system proved itself on real workloads before anyone bet ten new dashboards on it. By phase three, iteration rounds were about refinement, and the <strong>Bug Escapes suite</strong> &mdash; summary, profile, three analysis views &mdash; landed on schedule.</p>
+{P}The sequencing did the rest. Teaching the <strong>15+ analysts</strong> first meant the people closest to the data understood the rules before the screens arrived. Retrofitting three live interfaces second meant the system proved itself on real workloads before anyone bet ten new dashboards on it. By phase three, iteration rounds were about refinement, and the <strong>defect-analytics suite</strong> landed on schedule.</p>
 {P}If your BI backlog is growing faster than your design capacity, the Intel shape is the fix: rules, proof, then scale. Our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how the engagement runs, and the {LINK("/?page_id=379", "Power BI dashboard design")} page covers the platform specifics.</p>''',
 })
 

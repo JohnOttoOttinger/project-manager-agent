@@ -41,8 +41,8 @@ hero = widen_hero(fill(blocks['intro'], {
     'CANONICAL_SENTENCE': CANONICAL,
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why does a shipping line train analysts in storytelling?',
-    'SECTION_B_ANSWER': 'The animation above is the program&rsquo;s shape. The brief behind it, from ZIM&rsquo;s <strong>Learning &amp; Development team</strong>: analysts across the fleet of offices had deep data and solid tooling, and the gap was <strong>accessibility and understandability</strong> &mdash; getting what the analysis means across to the business, in reports people actually read.',
-    'SECTION_B_CONTEXT': 'A global analyst community makes that a design problem twice over. The training had to land in <strong>Jerusalem, Hong Kong, and Americas working hours</strong> without diluting into a webinar, and it had to give analysts in different regions <strong>one shared method</strong> &mdash; so a report drafted in Haifa reads the same way in Norfolk or Hong Kong. The funnel design answered both: broad lectures open to every analyst, then small hands-on workshops for the people who build the reports.',
+    'SECTION_B_ANSWER': 'The animation above is the program&rsquo;s shape. The ambition behind it: ZIM wanted its analysts&rsquo; insights to land harder with the business &mdash; <strong>data accessibility and understandability</strong>, with what the analysis means front and centre.',
+    'SECTION_B_CONTEXT': 'A global analyst community makes that a design problem twice over. The training had to land in <strong>Jerusalem, Hong Kong, and Americas working hours</strong> without diluting into a webinar, and it had to give analysts in different regions <strong>one shared method</strong>, so analysts in different regions end up speaking one language. The funnel design answered both: broad lectures open to every analyst, then small hands-on workshops for the people who build the reports.',
     'PRIMARY_CTA_TEXT': 'Plan a program like this',
     'PRIMARY_CTA_URL': CONTACT,
 }))
@@ -93,7 +93,7 @@ row_flow = svg_row('Watch the funnel work', 'Two lectures in, three workshops ou
 
 # ---------- schedule table ----------
 t_shape = table_row(blocks, 'Five deliveries, one method', 'The program, piece by piece',
-    'The delivery schedule, from the program&rsquo;s own planning documents.',
+    'The program at a glance.',
     ['Delivery', 'Cohort', 'Format'],
     [['Open lecture', 'Hong Kong &amp; Israel', 'One hour, all analysts invited'],
      ['Open lecture', 'The Americas', 'One hour, all analysts invited'],
@@ -104,7 +104,7 @@ t_shape = table_row(blocks, 'Five deliveries, one method', 'The program, piece b
 
 # ---------- gallery ----------
 row_gallery = gallery_row('The teaching assets, full size', 'Inside the workshop materials',
-    'Click any asset to view it full-screen &mdash; chapters and process frames from the <strong>ZIM-branded decks</strong>.',
+    'Click any asset to view it full-screen &mdash; chapters and process frames from the <strong>program decks</strong>.',
     [(54118, 'Micro-Stories', 'Finding the small stories in big data'),
      (54121, 'Macro-Stories', 'Zooming back out to the big picture'),
      (54124, 'The Story Design Process', 'Seven steps, audience first'),
@@ -112,8 +112,8 @@ row_gallery = gallery_row('The teaching assets, full size', 'Inside the workshop
 
 # ---------- hotspot: the teaching dashboard ----------
 row_hotspot = hotspot_row('Click the markers', 'Read the teaching dashboard',
-    'Workshop cohorts practised on this <strong>teaching dashboard</strong>, built on dummy portfolio data. Five markers explain how it reads.',
-    54127, [
+    'Workshop cohorts practised on this <strong>teaching dashboard</strong>, built on fictional portfolio data. Five markers explain how it reads.',
+    54161, [
         (12, 8, 'The KPI band', 'Four headline numbers - budget, actual spend, forecast, average completion - the read-first row every dashboard needs.'),
         (25, 38, 'Budget vs actual', 'The core comparison, one bar per project - where the money went against where it was planned to go.'),
         (72, 32, 'The completion tracker', 'Project-by-project progress with status flags, so the laggards surface without hunting.'),
@@ -123,7 +123,7 @@ row_hotspot = hotspot_row('Click the markers', 'Read the teaching dashboard',
 
 # ---------- Row: Design Principle Tiles — the method the client wrote back ----------
 row_tiles = svg_row('The method that stuck', 'Six ideas the analysts took home',
-    'Six devices from the curriculum &mdash; the ones ZIM&rsquo;s own L&amp;D team later summarised back to attendees in its wrap-up.',
+    'Six devices from the curriculum &mdash; the ones attendees quote back.',
     svg_tiles('Six data storytelling devices taught in the ZIM program', [
         ('THE THREE-ACT STRUCTURE', 'Context, insight, then the call to action', 'doc'),
         ('THE SIX-QUESTION FILTER', 'Scope, context, insight, plot, motive, ask', 'target'),
@@ -138,7 +138,7 @@ sec_deliver = widen_inner(fill(blocks['section2'], {
     'SECTION_D_SUBTITLE': 'Delivered, documented, taught',
     'SECTION_D_HEADING': 'What did ZIM receive at the end?',
     'SECTION_D_ANSWER': 'ZIM received the five live deliveries, decks designed to <strong>ZIM&rsquo;s own brand guidelines</strong>, a custom <strong>workbook with exercises and a dummy dataset</strong>, and a full aftercare layer: curated <strong>slide packs</strong>, per-cohort summary packs, and session recordings for attendees to revisit.',
-    'SECTION_D_RATIONALE': 'The outcome that matters most arrived a few weeks later, unprompted: ZIM&rsquo;s Learning &amp; Development team circulated its <strong>own written summary of the method</strong> to attendees &mdash; the three-act structure, the six-question filter, micro-stories, the five pillars &mdash; in the team&rsquo;s own words. When the client can teach the material back, the <strong>shared language</strong> has landed &mdash; and a shared language is what separates training from consulting.',
+    'SECTION_D_RATIONALE': 'The outcome that matters most showed up in the weeks after delivery: the method&rsquo;s vocabulary &mdash; the <strong>three-act structure</strong>, the six-question filter, micro-stories &mdash; began appearing in how the analyst community talks about its own reports. When a client can teach the material back, the <strong>shared language</strong> has landed &mdash; and a shared language is what separates training from consulting.',
 }), '1/4', '1/2')
 
 row_quote = quote_row('Otto Ottinger', 'The principle behind the ZIM curriculum',

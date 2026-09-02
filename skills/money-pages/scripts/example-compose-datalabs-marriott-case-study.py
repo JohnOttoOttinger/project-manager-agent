@@ -68,7 +68,7 @@ hero = widen_hero(fill(blocks['intro'], {
     'CANONICAL_SENTENCE': 'The <strong>Datalabs Agency</strong> is a Melbourne-based data visualization consultancy founded in 2012 that delivers corporate training workshops (Power BI, Tableau, data storytelling), dashboard design, and BI style guides for clients including Mercedes-Benz, Adidas, and UPS.',
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why did Marriott need new dashboards?',
-    'SECTION_B_ANSWER': 'The animation above is the finished story. Before it, Marriott&rsquo;s APAC revenue managers were spending <strong>hours every week</strong> manually compiling reports from <strong>73 data fields</strong> spread across those five systems &mdash; MARSHA (reservations), Smith Travel Research (competitive intelligence), PeopleSOFT (financials), Sales Force One (corporate accounts), and GRMRS (revenue management). Basic questions took a compilation exercise to answer.',
+    'SECTION_B_ANSWER': 'The animation above is the finished story. Before it, Marriott&rsquo;s APAC revenue managers were spending <strong>hours every week</strong> manually compiling reports from <strong>73 data fields</strong> spread across those five systems &mdash; MARSHA (reservations), Smith Travel Research (competitive intelligence), PeopleSoft (financials), Sales Force One (corporate accounts), and GRMRS (revenue management). Basic questions took a compilation exercise to answer.',
     'SECTION_B_CONTEXT': 'The questions themselves were simple ones: how is the property tracking against its competitive set this week, and should we discount rooms for the coming weekend? The data existed &mdash; the delay was in assembling it. APAC analytics leadership set a brief with a higher bar than reporting: they wanted dashboards that <strong>drove action</strong>, screens a manager would open on a Tuesday morning and price a room from. That brief shaped everything that follows on this page, from who was in the discovery workshops to why the final count was <strong>four dashboards</strong>, not one giant one.',
     'PRIMARY_CTA_TEXT': 'Talk dashboards with us',
     'PRIMARY_CTA_URL': CONTACT,
@@ -102,7 +102,7 @@ for r, cells in enumerate(rows):
 table_html = ('<div style="overflow-x: auto;">\n<table style="width: 100%; border-collapse: collapse !important; background-color: #000000 !important; border: none !important;">\n<thead>\n<tr>'
     + ''.join(f'<th scope="col" {TH}>{h}</th>' for h in ['Dashboard', 'Built for', 'Decisions it supports'])
     + '</tr>\n</thead>\n<tbody>\n' + '\n'.join(body) + '\n</tbody>\n</table>\n</div>'
-    + '\n<p style="text-align: left; font-size: 13px; font-style: italic; color: #8a8a95; margin-top: 10px;">All four shipped as production Tableau dashboards, integrating data from five enterprise systems.</p>')
+    + '\n<p style="text-align: left; font-size: 13px; font-style: italic; color: #8a8a95; margin-top: 10px;">All four were delivered as complete Tableau dashboard designs, integrating data from five enterprise systems.</p>')
 t_block = fill(blocks['table'], {'TABLE_SUBTITLE': 'One screen per decision-maker', 'TABLE_HEADING': 'The four Marriott dashboards'})
 m = re.search(r'(\[vc_column_text css=""\]\n).*?(\n\[/vc_column_text\])', t_block, flags=re.S)
 guts = '<p style="text-align: center;"><strong>Each dashboard was built around one user and the decisions that user makes.</strong></p>\n\n' + table_html
@@ -112,14 +112,14 @@ t_dashboards = widen_inner(t_block[:m.start(1) + len(m.group(1))] + guts + t_blo
 sec_deliver = widen_inner(fill(blocks['section2'], {
     'SECTION_D_SUBTITLE': 'Delivered, documented, taught',
     'SECTION_D_HEADING': 'What did Marriott receive at the end?',
-    'SECTION_D_ANSWER': 'Marriott received <strong>four production Tableau dashboards</strong>, a <strong>dashboard design style guide</strong>, and <strong>training materials</strong> for the teams who would live in the screens. The work was presented to Marriott&rsquo;s Chief Marketing &amp; Sales Officer and leadership team.',
+    'SECTION_D_ANSWER': 'Marriott received <strong>four production Tableau dashboards</strong>, a <strong>dashboard design style guide</strong>, and <strong>training materials</strong> for the teams who would live in the screens. The work was presented to Marriott&rsquo;s senior marketing and sales leadership.',
     'SECTION_D_RATIONALE': 'The style guide and training are the part that keeps paying after the consultant leaves. A dashboard is one artefact; a documented design language plus a trained team is the ability to make the next twenty artefacts in-house. That capability-building layer has been part of every <strong>Datalabs Agency</strong> dashboard project since.',
 }), '1/4', '1/2')
 
 # ---------- FAQ (Row: GEO Q&A) ----------
 faq_pairs = [
     ('How long did the Marriott dashboard project take?',
-     '<strong>Five weeks</strong>, delivered across Hong Kong and Melbourne in 2015&ndash;2016. Discovery workshops ran on site in Hong Kong; design and build ran from Melbourne, with the final work presented to Marriott&rsquo;s <strong>Chief Marketing &amp; Sales Officer</strong> and leadership team.'),
+     '<strong>Five weeks</strong>, delivered across Hong Kong and Melbourne in 2015&ndash;2016. Discovery workshops ran on site in Hong Kong; design and build ran from Melbourne, with the final work presented to Marriott&rsquo;s <strong>senior marketing and sales leadership</strong>.'),
     ('What tools were used to build the Marriott dashboards?',
      'Tableau. The four dashboards consolidated <strong>73 data fields from five enterprise systems</strong> &mdash; reservations, competitive intelligence, financials, corporate accounts, and revenue management &mdash; into <strong>production Tableau screens</strong>.'),
     ('What was the hardest part of the design?',
@@ -161,7 +161,7 @@ art2 = fill(blocks['article2'], {
     'ARTICLE_2_HEADING': 'What Marriott taught me about design systems',
     'ARTICLE_2_BODY': f'''{P}Consulting with <strong>Marriott Hotels</strong> in Hong Kong in the early days of the BI revolution, I saw the problem that would shape the next decade of my work: dashboards were being created without a design philosophy, without a common design language, and without proper attention to <strong>colour theory, typography, grid systems</strong>, and <strong>user experience design</strong>.</p>
 {P}Four dashboards for one region of one hotel group already needed consistency &mdash; shared colour logic, shared chart conventions, shared naming. Scale that to a global company and the need becomes a document. That is why the Marriott engagement shipped with a <strong>dashboard design style guide</strong>, and why the deliverable list included training materials for the teams who would inherit the system.</p>
-{P}That insight became a core <strong>Datalabs Agency</strong> service. My {LINK("/?page_id=394", "data visualization style guides")} now operate inside companies such as <strong>Mercedes-Benz</strong> in Germany, <strong>Intel</strong> in San Francisco, and <strong>BlackRock</strong> in New York &mdash; each one doing for a whole organisation what the Marriott guide did for one region.</p>
+{P}That insight became a core <strong>Datalabs Agency</strong> service. My {LINK("/?page_id=394", "data visualization style guides")} now operate inside companies such as <strong>Mercedes-Benz</strong> in Germany and other global financial and technology firms &mdash; each one doing for a whole organisation what the Marriott guide did for one region.</p>
 {P}The through-line from 2015 to now is the same: a dashboard is a product, and products need design systems. If your organisation is accumulating dashboards faster than it is accumulating design decisions, our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how we run that engagement today.</p>''',
 })
 
@@ -222,7 +222,7 @@ def gal_cell(image_id, title, user):
             + SP(40, 30) + '[/vc_column_inner]')
 row_gallery = (DARKROW + '[vc_column]' + SP(40)
     + HEAD_ROW('The design work, full size', 'Every dashboard, up close',
-               'Click any design to view it full-screen &mdash; these are the <strong>production design files</strong>, indicative figures included.')
+               'Click any design to view it full-screen &mdash; these are the <strong>design files</strong>, indicative figures included.')
     + SP(30)
     + '[vc_row_inner]' + gal_cell(53860, 'Hotel', 'For General Managers') + gal_cell(53863, 'Rooms', 'For revenue managers') + '[/vc_row_inner]'
     + '[vc_row_inner]' + gal_cell(53869, 'Restaurants &amp; Bars', 'For F&amp;B managers') + gal_cell(53866, 'Group &amp; Catering', 'For sales teams') + '[/vc_row_inner]'
@@ -232,9 +232,9 @@ row_gallery = (DARKROW + '[vc_column]' + SP(40)
 import urllib.parse as _u
 hotspots = [
     (55, 16, 'Financials / Forecast', 'A three-year rolling forecast (2015-2017), so a GM sees what is expected, not just what happened.'),
-    (52, 44, 'Revenue at a glance', 'Rooms $200 REVPAR against budget and last year; catering $2.0M; restaurants and bars $2.0M - each with its top segments.'),
-    (47, 70, 'Loyalty split', 'Member vs non-member revenue (62% / 38%) shows how much the loyalty programme actually drives.'),
-    (63, 66, 'Market share indices', 'RPI 128, MPI 116, ARI 109 - performance indexed against the competitive set, with rankings auto-calculated (#1, #2, #4 of 7).'),
+    (52, 44, 'Revenue at a glance', 'In the mock-up: rooms REVPAR against budget and last year, catering and restaurants revenue side by side - each with its top segments.'),
+    (47, 70, 'Loyalty split', 'The loyalty panel splits member and non-member revenue, so the programme contribution reads at a glance.'),
+    (63, 66, 'Market share indices', 'RPI, MPI, and ARI - performance indexed against the competitive set, with rankings auto-calculated.'),
     (81, 62, 'Channel mix', 'Distribution across six booking channels, so a discounting decision sees the whole mix it lands in.'),
 ]
 hs_data = _u.quote(__import__('json').dumps([
@@ -242,7 +242,7 @@ hs_data = _u.quote(__import__('json').dumps([
 ]), safe='')
 row_hotspot = (DARKROW + '[vc_column]' + SP(40)
     + HEAD_ROW('Click the markers', 'Read the Hotel Dashboard like a GM',
-               'Five markers explain what each region of the screen does for the <strong>person who opens it every morning</strong>.')
+               'Five markers explain what each region of the screen does for the <strong>person who opens it every morning</strong>. Figures are illustrative design values.')
     + SP(30)
     + '[vc_row_inner][vc_column_inner width="1/6"][/vc_column_inner][vc_column_inner width="2/3"]'
     + ('[dfd_hotspot module_animation="transition.fadeIn" marker_background="#c39f76" tooltip_position="dfd-button-tooltip-right" '
@@ -262,10 +262,10 @@ row_map = ('[vc_row bg_check="row-background-dark" css=".vc_custom_1691550358421
       '<p style="text-align: center;">One dashboard system, six tiers deep</p>\n[/dfd_heading]' + SP(20)
     + '[vc_column_text css=""]\n'
       '<p style="line-height: 22px; text-align: left;">The four screens are not four separate projects &mdash; they are one system. '
-      'This relational map from the project&rsquo;s dashboard design style guide from the project&rsquo;s dashboard design style guide shows how the executive summary rolls down through '
+      'This relational map from the project&rsquo;s dashboard design style guide shows how the executive summary rolls down through '
       '<strong>continent, area, market, and hotel</strong> to the four operational dashboards, supporting a <strong>six-tier '
       'organisational hierarchy</strong> with drill-down and filtering at every level.</p>\n[/vc_column_text]' + SP(20)
-    + '[vc_single_image image="53857" img_size="full" alignment="center" style="vc_box_rounded" onclick="link_image"]'
+    + '[vc_single_image image="54158" img_size="full" alignment="center" style="vc_box_rounded" onclick="link_image"]'
     + SP(40) + '[/vc_column][vc_column width="1/6"][/vc_column][/vc_row]')
 
 # --- Module: Avatar Quote (new_testimonials, Otto page idiom; Otto photo 24350 from the kit footer) ---
