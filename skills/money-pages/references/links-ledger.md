@@ -937,3 +937,29 @@ Also fixed a copy-paste bug Otto's screenshot caught: the Intro card's link `tit
 **Still worth considering:** there is a **Visualization for the Modern Marketer** workshop
 (`/data-visualization-marketing-workshop/`, image 19569) which is arguably the closest fit of all for
 a *marketing* dashboards page. Otto's call whether it replaces the Intro card.
+
+---
+
+## Marketing Dashboards — PUBLISHED 27 Aug 2026
+
+Live at https://www.datalabsagency.com/marketing-dashboards/ (54156). Verified: 200, single H1,
+Yoast title (48) and description (148), 6 FAQ questions in schema, canonical sentence present, AU$ on
+every price, no Excel claim.
+
+**Inbound links — 3, all verified live.** Backups `datalabs-{53840,379,367}-pre-mdash-linkpass-*.json`.
+
+| Source | Link |
+|---|---|
+| [Dashboard Design Services](https://www.datalabsagency.com/dashboard-design-services/) | "When those decisions are campaign ones — what to pause, where to move budget — that is a **marketing dashboard**" |
+| [Power BI Dashboard Design](https://www.datalabsagency.com/power-bi-dashboard-design/) | "Campaign, channel and spend reporting has a shape of its own — see **marketing dashboards**" |
+| [Tableau Dashboard Designers](https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) | "…including **marketing dashboards** for campaign and channel reporting" |
+
+**Two anchors failed on the first attempt, both for markup reasons worth remembering:** page 379 has
+`Our <strong>Microsoft Power BI dashboard designers</strong>` — a tag sits inside the phrase, so a
+plain-text anchor never matches. Page 367 uses a literal curly `’`, not `&rsquo;`. Always anchor on
+the RAW string pulled from `?context=edit`, never on what the rendered page reads.
+
+**Search Console:** indexing requested, "Indexing requested" confirmed. The inspect box needs a click
+by `ref` and then typing in a SEPARATE call — clicking and typing inside one batch silently does
+nothing, and the "REQUEST INDEXING" button likewise needs a fresh coordinate click after the panel
+settles; a stale ref reports success without acting.
