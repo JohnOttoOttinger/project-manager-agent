@@ -379,6 +379,30 @@ image proving competence wastes it for accessibility and for anything reading th
 (`#8224E31C` / `#EEE6F6` / `#D4C9E0`) that lesson 13 removed from the Oddtoe kit — three of them, on
 Datalabs. Retinted to the plum/tan palette. Worth grepping any page you edit.
 
+## Lesson 11b — equal height is not balance; match the paragraph rhythm (27 Aug 2026)
+
+The columns measured **435px vs 430px** and Otto still said "the two columns don't look balanced."
+He was right and the measurement was blind to it. The line counts per paragraph:
+
+| | paragraphs |
+|---|---|
+| Left | 7 lines, then **12 lines** |
+| Right | 8, 6, 4 |
+
+Same box height, completely different texture. A twelve-line paragraph beside a four-line one reads
+as a wall next to a set of steps, whatever the geometry says. **Measure paragraph line counts, not
+just column height** — `Math.round(p.getBoundingClientRect().height / 22)` gives lines per paragraph
+and exposes this instantly.
+
+**The fix costs nothing in height if you trim while you split.** Splitting the 12-line paragraph adds
+one paragraph gap (~22px), so remove roughly one line of text at the same time and the column height
+is unchanged. Result here: left 7/5/6, right 8/6/4, both **430px, a 0px difference**.
+
+**Also: these columns are a fixed 400px, not fluid.** The row sits in an 800px container, so wrap
+width does not change with the viewport and a balance tuned once holds. Do check this before assuming
+a balance is fragile — but do NOT trust `innerWidth` while measuring; the browser pane resizes itself
+between calls, which sent me chasing a viewport problem that did not exist.
+
 ## Lesson 14 — never bold a list (27 Aug 2026)
 
 `de-ai-check`'s `blanket bold` rule fires on any `<strong>` over 60 characters, and a bolded list of
