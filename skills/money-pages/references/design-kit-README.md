@@ -356,6 +356,29 @@ sketch the layout" sat at the bottom of the left column while "Once the layout i
 right. Moving the layout paragraph across both balanced the row and put the two sentences next to
 each other, turning the row into *what we decide* / *how we build*.
 
+## Lesson 15 — use real work as the hero image, and check the alt text (27 Aug 2026)
+
+Marketing Dashboards (54156) shipped with `Analysts-Toolkit-Chart-Box` as its main image — alt text
+literally "Box with a chart on it". Otto: "can you find one of the Marketing Dashboards I actually
+designed?" On a page selling dashboard design, a stock illustration of a box is the weakest possible
+proof.
+
+**The media library already had the real thing.** Search it before reaching for a generic asset:
+`?search=marketing+dashboard&media_type=image` surfaced `Marketing_Dashboard_design_Tableau_Education`
+(39240, 2048×1440) — a genuine Tableau marketing dashboard with sales funnel, campaign metrics, paid
+channels, brand health and share of voice, carrying dummy figures rather than client data. Exactly
+the page's subject.
+
+**Look at the image before using it.** Filename matching is not verification; download and view it.
+Half the plausible-sounding candidates were training slides or session photos, not dashboards.
+
+**Set the alt text — real work usually has none.** 39240's alt was empty. An empty alt on the one
+image proving competence wastes it for accessibility and for anything reading the page.
+
+**While you are in there, check the delimiters.** This page carried the same v0-seed lavender
+(`#8224E31C` / `#EEE6F6` / `#D4C9E0`) that lesson 13 removed from the Oddtoe kit — three of them, on
+Datalabs. Retinted to the plum/tan palette. Worth grepping any page you edit.
+
 ## Lesson 14 — never bold a list (27 Aug 2026)
 
 `de-ai-check`'s `blanket bold` rule fires on any `<strong>` over 60 characters, and a bolded list of
