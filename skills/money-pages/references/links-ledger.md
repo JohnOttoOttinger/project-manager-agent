@@ -906,3 +906,33 @@ the text is wrong just because it looks identical in a diff.
 - 2026-09-02 · datalabs · source 461 (https://www.datalabsagency.com/animated-data-videos/) → target 54143
 - 2026-09-02 · datalabs · source 53763 (https://www.datalabsagency.com/types-of-data-visualization/) → target 54143
 - 2026-09-02 · datalabs · source 19178 (https://www.datalabsagency.com/case-studies/infographic-workshop-case-study/) → target 54143
+
+---
+
+## Corrections from Otto's review, 27 Aug 2026
+
+**Currency.** Five workshop pages carried "$4,600 and $7,500 inc GST" with no currency marker. Now
+**AU$**. Otto: "not everyone will know which currency the Q&A prices are in." GEO sharpens this —
+an AI answer lifts the sentence away from the page, so the pricing page's "all prices in Australian
+dollars" line does not travel with it. Added to the playbook as rule 3.
+
+**And the trap inside the fix: the schema did not follow.** Editing the visible answer left all five
+FAQPage JSON-LD copies still saying "$4,600" — page and schema disagreeing on price, which is worse
+than the original ambiguity. Both are separate strings and both must change. Caught only because the
+push script printed `schema=False`; print that check, do not assume it.
+
+**Excel.** Otto does not build Excel dashboards. Four claims on
+[Marketing Dashboards](https://www.datalabsagency.com/?page_id=54156&preview=true) said he did.
+Removed. **The workshop pages' Excel mentions were left alone** and are correct: those say the design
+*thinking* carries into Excel, which is the tool-agnostic claim from Otto's own pricing page. Same
+word, two different claims — check which one before editing.
+
+**Cross-promo fit.** The page promoted Infographics & Report Design and Intro to Data Viz on a page
+about dashboards. Swapped the infographics card for **Designing Great Dashboards** (image 19571,
+`/designing-great-business-dashboards-workshop/`), taken verbatim from the hub's canonical card set.
+Also fixed a copy-paste bug Otto's screenshot caught: the Intro card's link `title` read "Infographics
+& Report Design Workshop", so the tooltip named the wrong workshop.
+
+**Still worth considering:** there is a **Visualization for the Modern Marketer** workshop
+(`/data-visualization-marketing-workshop/`, image 19569) which is arguably the closest fit of all for
+a *marketing* dashboards page. Otto's call whether it replaces the Intro card.
