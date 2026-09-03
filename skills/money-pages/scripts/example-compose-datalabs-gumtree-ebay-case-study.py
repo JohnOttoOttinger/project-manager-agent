@@ -89,9 +89,11 @@ t_lenses = table_row(blocks, 'What an audit inspects', 'The four audit lenses',
 
 # ---------- gallery ----------
 row_gallery = gallery_row('The working documents, full size', 'From the strategy sessions',
-    'Click either agenda to view it full-screen &mdash; the working-session materials from the engagement.',
+    'Click any panel to view it full-screen &mdash; the working-session materials, plus the relational map we drew '
+    'as a Datalabs planning artifact to see the whole dashboard suite on one page.',
     [(53961, 'Session One', 'The first working session agenda'),
-     (53964, 'Session Two', 'The second working session agenda')])
+     (53964, 'Session Two', 'The second working session agenda'),
+     (54202, 'The relational map', 'Our relational map of the proposed advertising dashboard suite &mdash; a Datalabs planning artifact')])
 
 # ---------- Row: Design Principle Tiles ----------
 row_tiles = svg_row('Why this engagement is different', 'The shape of an independent strategy',

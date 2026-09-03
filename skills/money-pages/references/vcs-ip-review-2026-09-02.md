@@ -13,13 +13,21 @@ claims corrected; all "from the project's own planning documents" captions remov
 all client-deficit framings reframed; JSON-LD regenerates from fixed FAQ pairs; vcs_lib
 plain() now strips ldquo/rdquo/hellip; kit info_banner title attr fixed.
 
-**STILL OTTO'S:** (1) DELETE media 53927/53930/53933 (NEOM), 53920 + 53917 (BlackRock),
-53967 (Gumtree map), and now-unused 53857 (Marriott map v1), 54127 (ZIM dashboard v1),
-53894 (Adidas ops diagram), 53888 (Adidas datapine-lookalike dashboard) — files stay
-publicly served until deleted; (2) judgment calls: Lockheed program names (kept — they
-are the story), Adidas 30/120 split (kept) + dataset worksheet image (kept), ZIM 7-step
-process image (kept), Marriott SVG system names (kept); (3) eBay agreement publicity-
-clause check; (4) per-client naming permissions before any publish.
+**MEDIA PASS DONE 3 Sep 2026.** Otto deleted 53927/53930/53933 (NEOM), 53920 (BlackRock
+Data Grid), 53894 + 53888 (Adidas) — confirmed 404. Kept by choice: 53917 (BlackRock
+style guide page), 54127 (ZIM dashboard v1). The two relational maps were then SANITISED
+(client name painted out of the subtitle, "Version 0.1" removed, re-declared as Datalabs
+planning artifacts) and re-uploaded: Marriott map → media 54205
+(datalabs-dashboard-system-relational-map.jpg, now on page 53852, replacing 54158);
+Gumtree map → media 54202 (datalabs-advertising-dashboards-relational-map.jpg,
+reinstated in page 53970's gallery). NOW DELETABLE by Otto: 53857 (Marriott map v1),
+54158 (Marriott map v2 — superseded), 53967 (original Gumtree map).
+
+**STILL OTTO'S:** (1) delete 53857 / 54158 / 53967 above; (2) judgment calls: Lockheed
+program names (kept — they are the story), Adidas 30/120 split (kept) + dataset
+worksheet image (kept), ZIM 7-step process image (kept), Marriott SVG system names
+(kept); (3) eBay agreement publicity-clause check; (4) per-client naming permissions
+before any publish.
 
 Nine parallel adversarial reviews (client legal/comms · Datalabs competitor · Otto's-IP
 auditor; + security lens on Lockheed, NDA-image lens on NEOM). Each reviewed the full

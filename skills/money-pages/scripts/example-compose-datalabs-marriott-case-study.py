@@ -262,10 +262,11 @@ row_map = ('[vc_row bg_check="row-background-dark" css=".vc_custom_1691550358421
       '<p style="text-align: center;">One dashboard system, six tiers deep</p>\n[/dfd_heading]' + SP(20)
     + '[vc_column_text css=""]\n'
       '<p style="line-height: 22px; text-align: left;">The four screens are not four separate projects &mdash; they are one system. '
-      'This relational map from the project&rsquo;s dashboard design style guide shows how the executive summary rolls down through '
+      'This relational map is a <strong>Datalabs planning artifact</strong> &mdash; we draw one at the start of every dashboard '
+      'program so the whole system can be seen on one page. Here it shows how an executive summary rolls down through '
       '<strong>continent, area, market, and hotel</strong> to the four operational dashboards, supporting a <strong>six-tier '
       'organisational hierarchy</strong> with drill-down and filtering at every level.</p>\n[/vc_column_text]' + SP(20)
-    + '[vc_single_image image="54158" img_size="full" alignment="center" style="vc_box_rounded" onclick="link_image"]'
+    + '[vc_single_image image="54205" img_size="full" alignment="center" style="vc_box_rounded" onclick="link_image"]'
     + SP(40) + '[/vc_column][vc_column width="1/6"][/vc_column][/vc_row]')
 
 # --- Module: Avatar Quote (new_testimonials, Otto page idiom; Otto photo 24350 from the kit footer) ---
