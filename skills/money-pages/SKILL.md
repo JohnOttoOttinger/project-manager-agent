@@ -2,27 +2,54 @@
 
 Use this skill when Otto asks for the next money page, a pricing page, a comparison, a case study, the credits page, an events-guide page, or a directory/list page of people or companies — or clicks the "Next money page" quick action. The full template suite is `references/template-catalog.md`. These pages answer buying questions AI assistants get asked ("who can train my team", "what does X cost"), which is where a recommendation becomes a lead.
 
-## The 6am draft pipeline (24 Aug 2026)
+## The daily pipeline (rebuilt 3 Sep 2026)
 
-A scheduled task, `oddtoe-next-best-page`, composes the next money page as a WordPress **draft** every
-morning at 05:00. Otto reviews, verifies any statistic, sets the two wp-admin page settings, and publishes.
-Two scripts back it, both usable by hand:
+Two cloud routines per brand. **4pm scout** emails a shortlist of candidates; Otto replies with a
+number, "skip", or a page in his own words; **5am builder** composes it as a WordPress draft and
+records it. The prompts those routines run live in `references/routine-prompts/` — that directory
+is the source of truth, and a change there has to be pasted into the routine to take effect.
 
-    python3 scripts/next-best-page.py            # what to build next, and why
-    python3 scripts/de-ai-check.py <file.html>   # fail a draft that reads like a machine wrote it
+    python3 scripts/next-content.py --brand datalabs      # what to build next, and why
+    python3 scripts/suggest.py oddtoe "the page you want" # jump the queue, in your own words
+    python3 scripts/suggest.py --list                     # the whole queue
+    python3 scripts/de-ai-check.py <file.html>            # fail a draft that reads machine-written
 
-**`next-best-page.py`** ranks opportunities from live Search Console data. It looks for the pattern that
-produced /animation-agency/: real demand, the site already appearing for it, ranking badly, converting at
-nothing, because Google is serving the WRONG page. Signals: impression volume, whether the position sits in
-the winnable 11-40 band, whether the serving page's slug reflects the query at all, wasted demand
-(<1% CTR on 300+ impressions), and commercial intent. It clusters query variants by their two most
-site-frequent terms so "X services / X studio / X company" propose ONE page, not three. For every candidate
-it computes a `do_not_target` list — queries other Oddtoe pages already rank top-10 for — which is the
-cannibalisation guardrail the composer must honour.
+**Two files hold the state.** `references/queue.json` is the forward-looking list — short, machine
+readable, shared by the scout and the builder. `references/backlog.md`
+stays the human build record, takes the long post-build write-ups, and is still what the app's
+Content pipeline card parses. Before the split, one file
+did both jobs and the record was crushing the queue: 44 items, 13 of them actually queued, single
+entries running 900+ words.
 
-It also separates a second class: **title/meta fixes**. A query ranking top-10 with no clicks does not need
-a new page, it needs a better title, and proposing a page over it would be self-cannibalisation. The first
-run surfaced `prop making companies australia` — 15,015 impressions, position 6.4, 0.01% CTR.
+**`next-content.py`** ranks
+
+    log10(volume) x relevance x commercial_tier x gap x winnability x competition
+
+against `references/keyword-universe.json` — real Australian search volumes from DataForSEO
+sweeps. `gap` is a live HEAD check, so a 404 is a real hole and a 200 is a retrofit; `relevance`
+asks whether the term is about what the brand actually does; `winnability` reads how weakly the
+incumbent holds it. Terms already in the queue, already drafted, or already served by an existing
+page at another slug are suppressed rather than offered back. When nothing clears the build
+threshold it says the universe is exhausted and asks for a fresh sweep instead of padding.
+
+**Why not Search Console.** GSC only reports queries the site *already appears for*, so the gaps
+worth building are invisible to it by construction. `power bi training` is 720/mo of real demand
+and produced 8 impressions in 180 days — the demand was invisible, not absent, and the old picker
+could never have found it. Its impressions are also up to 91% machine-generated. GSC is now used
+for the one thing it is genuinely good at: the `do_not_target` cannibalisation guardrail.
+
+**`next-best-page.py` is RETIRED** (3 Sep 2026) and is not part of this pipeline. It ranked GSC
+impressions and could only ever propose variations on rankings the site already had. Kept for
+reference and for its `fix-existing` / `title-meta-fix` classification, which is still sound.
+
+**Feeding the universe.** A sweep is one DataForSEO run in Otto's signed-in API Playground
+session (no credential is ever handled — the n8n path is bound to *local* n8n and unreachable
+from a cloud routine). Location Australia (2036). Write it up in
+`skills/analytics/references/dataforseo/`, then add the terms to `keyword-universe.json`. Never
+invent a volume: a term with no verified figure belongs in the queue as an Otto-origin idea.
+
+**Retrofitting existing pages is deliberately NOT on this timer** (Otto, 3 Sep 2026). Run
+`skills/analytics/scripts/geo-retrofit-rank.py` on demand, against the Phase 1 queue.
 
 **`de-ai-check.py`** enforces the tells in geo-playbook plus the ones found in review: balanced antithesis,
 aphoristic closers, coined compounds, self-praise, "rather than" as a tic, blanket bold, repeated sentence
@@ -170,4 +197,4 @@ of a page already ranking top-10.
 **Companion tool:** `skills/analytics/scripts/geo-coverage.py --brand <brand>` ranks live pages by
 (traffic already earned) x (GEO treatment missing), scoring each 0–6 on the detectable playbook
 rules — canonical sentence, FAQ schema, 2+ question headings, comparison table, visible date, meta
-description. Use it to pick the next *improvement*; use `next-best-page.py` only for genuine gaps.
+description. Use it to pick the next *improvement*; use `next-content.py` for genuine gaps.

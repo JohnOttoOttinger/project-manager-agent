@@ -1,0 +1,413 @@
+{
+ "_readme": [
+  "Real search demand, and who currently holds it. This is the input next-content.py ranks.",
+  "Search Console CANNOT populate this file: GSC only reports queries the site already appears",
+  "for, so the gaps that matter are invisible to it (power bi training: 720/mo real demand, 8",
+  "impressions in 180 days, because the site does not rank for it at all).",
+  "",
+  "Every row must come from a DataForSEO sweep run in Otto's signed-in API Playground session",
+  "(location Australia 2036, language en) and be written up in",
+  "skills/analytics/references/dataforseo/. Never invent a volume. A term with no verified",
+  "volume belongs in queue.json as an Otto-origin idea, not here.",
+  "",
+  "incumbent = who ranks for it today. A deep incumbent on a big term is the best shape there is",
+  "(gantt charts: 33,100/mo held at position 53). A strong incumbent is proof of demand, not a",
+  "reason to skip - it costs a little winnability, not the whole candidate.",
+  "exclude = do not propose, with the reason. Kept rather than deleted so a later sweep does not",
+  "rediscover it and re-propose it.",
+  "served_by = an existing page already covers this term at a different slug. Ranks as a retrofit, never as a new build - proposing a page here would cannibalise our own ranking."
+ ],
+ "captured": "2026-08-28",
+ "location": "Australia (2036)",
+ "language": "en",
+ "sources": [
+  "skills/analytics/references/dataforseo/2026-08-24-datalabs-service-seed-sweep.md",
+  "skills/analytics/references/dataforseo/2026-08-28-competitor-keyword-sweep.md"
+ ],
+ "terms": [
+  {
+   "term": "gantt charts",
+   "brand": "datalabs",
+   "volume": 33100,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 53
+   },
+   "note": "giant, weakly held. Fits the types-of-data-visualization guide family.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "how to make a gantt chart",
+   "brand": "datalabs",
+   "volume": 480,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 29
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "data analytics courses",
+   "brand": "datalabs",
+   "volume": 2400,
+   "competition": "MEDIUM",
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 45
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "classes for data analysis",
+   "brand": "datalabs",
+   "volume": 2400,
+   "competition": "MEDIUM",
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 48
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "training on power bi",
+   "brand": "datalabs",
+   "volume": 880,
+   "cpc": 8.66,
+   "competition": "MEDIUM",
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 2
+   },
+   "source": "2026-08-24"
+  },
+  {
+   "term": "power bi training",
+   "brand": "datalabs",
+   "volume": 720,
+   "cpc": 8.59,
+   "competition": "MEDIUM",
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 2
+   },
+   "note": "Otto already delivers this service. Highest-confidence new-page candidate found by any method.",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "microsoft power bi training",
+   "brand": "datalabs",
+   "volume": 210,
+   "cpc": 8.63,
+   "competition": "LOW",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "power bi certification",
+   "brand": "datalabs",
+   "volume": 720,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 7
+   },
+   "note": "PL-300. Informational, natural feeder to a power bi training page.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "online training data analytics",
+   "brand": "datalabs",
+   "volume": 480,
+   "cpc": 14.25,
+   "competition": "MEDIUM",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "data analytics training online",
+   "brand": "datalabs",
+   "volume": 390,
+   "cpc": 12.27,
+   "competition": "MEDIUM",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "free data analytics training",
+   "brand": "datalabs",
+   "volume": 320,
+   "cpc": 4.36,
+   "competition": "MEDIUM",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "dashboard design",
+   "brand": "datalabs",
+   "volume": 390,
+   "cpc": 5.04,
+   "competition": "LOW",
+   "note": "bare /dashboard-design/ is consumed by a broken German redirect; served by /dashboard-design-services/.",
+   "source": "2026-08-24",
+   "served_by": "/dashboard-design-services/"
+  },
+  {
+   "term": "power bi dashboard design",
+   "brand": "datalabs",
+   "volume": 140,
+   "cpc": 11.82,
+   "competition": "LOW",
+   "exclude": "fix-existing, not a new page: /power-bi-dashboard-design/ already ranks pos 8.4 with 0 clicks.",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "tableau training",
+   "brand": "datalabs",
+   "volume": 70,
+   "cpc": 4.23,
+   "competition": "LOW",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "how to add chart in excel",
+   "brand": "datalabs",
+   "volume": 720,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 43
+   },
+   "note": "charts are squarely ours - the Nexacu funnel model applied to Datalabs chart expertise.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "how to create a pivot table in excel",
+   "brand": "datalabs",
+   "volume": 880,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 25
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "pivot tables",
+   "brand": "datalabs",
+   "volume": 4400,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 35
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "online excel workshop",
+   "brand": "datalabs",
+   "volume": 590,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 6
+   },
+   "source": "2026-08-28"
+  },
+  {
+   "term": "how to create a drop down list in excel",
+   "brand": "datalabs",
+   "volume": 6600,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 22
+   },
+   "exclude": "adjacent but off-brand - Datalabs sells data visualisation, not Excel data entry.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "communication skills course",
+   "brand": "datalabs",
+   "volume": 1000,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 41
+   },
+   "note": "adjacent to data storytelling; would need a real angle, not a generic soft-skills page.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "excel course",
+   "brand": "datalabs",
+   "volume": 1600,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 3
+   },
+   "exclude": "off-brand: generic Excel training is Nexacu's core product, not Otto's.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "power bi course",
+   "brand": "datalabs",
+   "volume": 1600,
+   "competition": null,
+   "incumbent": {
+    "who": "nexacu.com.au",
+    "position": 3
+   },
+   "note": "course form of the power bi training term - build ONE page, not both.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "infographic report",
+   "brand": "datalabs",
+   "volume": 40,
+   "competition": "LOW",
+   "exclude": "demand is not there. May still earn its place as sales collateral - different argument.",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "data visualization style guide",
+   "brand": "datalabs",
+   "volume": 10,
+   "competition": null,
+   "exclude": "demand is not there (10/mo). The site is optimised for language nobody searches.",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "data visualisation training",
+   "brand": "datalabs",
+   "volume": 10,
+   "cpc": 12.62,
+   "competition": "MEDIUM",
+   "exclude": "10/mo. Datalabs' own positioning language, not what buyers type.",
+   "source": "2026-08-24"
+  },
+  {
+   "term": "kinetic sculpture",
+   "brand": "oddtoe",
+   "volume": 480,
+   "competition": "MEDIUM",
+   "note": "biggest ownable Oddtoe category term, no strong owner. /artist-designer/kinetic-sculptor/ exists - retrofit, not new page.",
+   "source": "2026-08-28",
+   "served_by": "/artist-designer/kinetic-sculptor/"
+  },
+  {
+   "term": "immersive experience melbourne",
+   "brand": "oddtoe",
+   "volume": 320,
+   "competition": "HIGH",
+   "note": "listicle-shaped - the citation format assistants prefer.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "immersive art melbourne",
+   "brand": "oddtoe",
+   "volume": 70,
+   "competition": "HIGH",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "experiential agency",
+   "brand": "oddtoe",
+   "volume": 50,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "interactive installation art",
+   "brand": "oddtoe",
+   "volume": 40,
+   "competition": null,
+   "incumbent": {
+    "who": "eness.com",
+    "position": 22
+   },
+   "note": "the ONLY category term ENESS holds. The category shelf is otherwise empty - no rival owns it.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "interactive installation",
+   "brand": "oddtoe",
+   "volume": 30,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "projection mapping melbourne",
+   "brand": "oddtoe",
+   "volume": 20,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "experiential marketing agency melbourne",
+   "brand": "oddtoe",
+   "volume": 20,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "brand activation agency melbourne",
+   "brand": "oddtoe",
+   "volume": 20,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "interactive art installation",
+   "brand": "oddtoe",
+   "volume": 20,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "projection mapping cost",
+   "brand": "oddtoe",
+   "volume": 10,
+   "competition": null,
+   "note": "tiny AU volume but AI-retrieval value stands - a cost question is exactly what assistants get asked.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "projection mapping company",
+   "brand": "oddtoe",
+   "volume": 10,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "event installation",
+   "brand": "oddtoe",
+   "volume": 10,
+   "competition": null,
+   "source": "2026-08-28"
+  },
+  {
+   "term": "topiary artist",
+   "brand": "oddtoe",
+   "volume": 10,
+   "competition": null,
+   "note": "/artist-designer/topiarist/ exists - retrofit, not new page.",
+   "source": "2026-08-28",
+   "served_by": "/artist-designer/topiarist/"
+  },
+  {
+   "term": "ai animation studio",
+   "brand": "oddtoe",
+   "volume": 10,
+   "competition": null,
+   "exclude": "owned by /studio/generative-ai-animator/ (pos 4.7-9.7) and deliberately not bid for by /ai-animation-studios/.",
+   "source": "2026-08-28"
+  },
+  {
+   "term": "generative ai artist",
+   "brand": "oddtoe",
+   "volume": 0,
+   "competition": null,
+   "note": "no AdWords volume - a pre-volume term, consistent with the early-mover definitional strategy. Volume 0 does not mean worthless here.",
+   "source": "2026-08-28"
+  }
+ ]
+}
