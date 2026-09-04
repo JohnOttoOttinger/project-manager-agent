@@ -82,17 +82,20 @@ downloaded PDF and someone asking for a quote are not the same conversion.
 `purchase` is listed as an event but is **not** starred as a key event, and does not fire anyway
 (see Fix 3).
 
-### OPEN — the old circular rule should probably be deleted
+### The old circular rule — DELETED 4 Sep 2026 on Otto's instruction
 
-The broken rule is still there. It was inert while nothing emitted `FormFilloutThankYou`, but the
-new rule now emits exactly that, on a page whose URL contains `thank-you` — so its conditions
-match. GA4 warns against a created event matching its own conditions. Risk is a doubled count or
-a loop. **Recommend deleting custom event #1** (the one whose first condition is
-`event_name equals FormFilloutThankYou`), leaving the two correct rules. Not done unasked,
-because deleting configuration is irreversible.
+It had to go: the new rule emits `FormFilloutThankYou` on a page whose URL contains `thank-you`,
+which is exactly what the old rule matched on, so it would have created a second event from the
+first. GA4 warns against a created event matching its own conditions; the risk was a doubled
+count or a loop.
 
-Check `Reports → Engagement → Events` in a few days: if `FormFilloutThankYou` reads roughly
-double the `/thank-you/` pageviews, the old rule is double-counting.
+Deleting the custom-event rule does **not** remove the key event of the same name — verified
+after deletion, both key events remain starred. Only two custom-event rules now exist, and both
+are correct.
+
+**Sanity check in a few days** (`Reports → Engagement → Events`): `FormFilloutThankYou` should
+track the `/thank-you/` pageview count roughly 1:1. Materially more than that would mean
+something else is still emitting it.
 
 ## Why this could not be done from the repo automatically
 
