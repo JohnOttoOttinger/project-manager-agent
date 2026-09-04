@@ -1,4 +1,4 @@
-# Datalabs ecommerce tracking — diagnosed 4 Sep 2026, NOT fixed (blocked on admin)
+# Datalabs ecommerce tracking — root cause found 4 Sep 2026, NOT fixed (blocked on admin)
 
 Follows on from `ga4-key-events-datalabs.md`. The enquiry conversions are now counted; the shop
 still is not.
@@ -26,35 +26,46 @@ the WooCommerce order count — see "The one number that decides it" below.
 - **WooCommerce Payments**, **PayPal (PPCP / smart buttons)** and **Stripe** — the product page
   carries a "Secure express checkout frame" beside the ordinary Add to cart button.
 
-## Three separate defects
+## ROOT CAUSE — the ecommerce plugin is pointed at a property that died in 2023
 
-### 1. `G-ST757S330F` is configured TWICE on every page
+Read straight off the live product page, by script id:
 
-Site Kit and the WooCommerce GA plugin each inject their own Google tag — 2 `gtag('config',
-'G-ST757S330F')` calls and 3 `gtag.js` script tags per page load. Duplicate tagging inflates
-pageviews and makes event delivery unpredictable.
+| Script block | Configures |
+|---|---|
+| `woocommerce-google-analytics-integration-gtag-js-after` | **`UA-34087862-1`** |
+| `google_gtagjs-js-after` (Site Kit) | `G-ST757S330F` |
+| `GA Google Analytics` plugin (m0n.co/ga), inline | `UA-34087862-1` |
 
-**Fix:** pick one owner of the GA4 tag. Keep the WooCommerce plugin's (it is the one that sends
-ecommerce), and turn Site Kit's Analytics snippet off — Site Kit → Settings → Analytics →
-disable snippet insertion, keeping the property connection for reporting.
+**The plugin that generates every ecommerce event is configured with the dead Universal Analytics
+property, not the GA4 one.** Universal Analytics stopped processing data in July 2023.
 
-### 2. Dead Universal Analytics tag still on every page
+Its events reach GA4 today only by accident: Site Kit separately configures `G-ST757S330F` on the
+same page, and `gtag()` broadcasts an event to *every* configured destination. That is why
+`view_item` and `view_item_list` show up at all — they are riding on Site Kit's config, not on
+the plugin's own.
 
-`UA-34087862-1` appears 4 times per page. Universal Analytics stopped processing data in 2023.
-Harmless, but it is dead weight and it confuses anyone auditing the tagging. Remove it.
+### This invalidates the earlier recommendation
 
-### 3. `add_to_cart` never fires — most likely express checkout
+An earlier version of this file said to fix the duplicate tagging by turning off Site Kit's
+snippet and keeping the WooCommerce plugin's. **Doing that first would have killed ecommerce
+tracking completely**, because Site Kit's config is currently the only thing pointing at GA4.
+Order matters, and it is the reverse of what it looked like.
 
-The plugin is present, capable, and correctly fed, so the event is not missing for want of
-product data. The likeliest cause is the **express checkout path**: a buyer using the PayPal or
-WooPayments express button goes product → payment sheet directly and never touches the cart, so
-no add-to-cart interaction exists to capture. That also fits `begin_checkout` being tiny (6) while
-`view_item` is 481.
+## The fixes, in the order they must happen
 
-**To confirm:** open a product page in an incognito window with GA4 DebugView running, click the
-ordinary **Add to cart** button, and watch whether `add_to_cart` arrives. If it does, the ordinary
-path is fine and the gap is entirely express checkout. If it does not, the plugin's event settings
-need checking in WooCommerce → Settings → Integration → Google Analytics.
+1. **Point the WooCommerce plugin at GA4.** WooCommerce → Settings → Integration → Google
+   Analytics (or the plugin's own settings screen). Replace `UA-34087862-1` with
+   **`G-ST757S330F`**. Nothing else should change until this is done and verified.
+2. **Verify in GA4 DebugView** that `view_item` still arrives, then that `add_to_cart` arrives
+   when the ordinary Add to cart button is clicked in an incognito window.
+3. **Only then, remove the duplicate tag.** Site Kit → Settings → Analytics → stop it inserting
+   its own snippet, keeping the property connection for reporting. Re-check DebugView afterwards.
+4. **Delete the `GA Google Analytics` plugin** (m0n.co/ga). It exists solely to inject the dead UA
+   property and does nothing else. Nothing on the site needs it.
+5. **Re-test `add_to_cart` via express checkout.** If it still never fires when a buyer uses the
+   PayPal / WooPayments express button, that path genuinely bypasses the cart and the honest
+   answer is that express-checkout buyers cannot produce an add-to-cart event — in which case
+   `begin_checkout` and `purchase` are the events that matter for them.
 
 ## The one number that decides it
 
