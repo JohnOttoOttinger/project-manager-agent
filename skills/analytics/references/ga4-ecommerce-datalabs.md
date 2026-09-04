@@ -39,6 +39,15 @@ Read straight off the live product page, by script id:
 **The plugin that generates every ecommerce event is configured with the dead Universal Analytics
 property, not the GA4 one.** Universal Analytics stopped processing data in July 2023.
 
+**Verified 4 Sep 2026: the UA property no longer exists.** The Google Analytics account
+*Data Arts Master Account* (34087862) contains exactly two properties — Datalabs GA4
+(265583155) and Oddtoe - GA4 (377681126). There is no Universal Analytics property to select,
+so `UA-34087862-1` is not merely stale, it is an address with nothing behind it. Every ecommerce
+event the plugin sends to it is discarded.
+
+There is therefore **nothing to delete on the Google side**. The only UA left anywhere is the tag
+on the website.
+
 Its events reach GA4 today only by accident: Site Kit separately configures `G-ST757S330F` on the
 same page, and `gtag()` broadcasts an event to *every* configured destination. That is why
 `view_item` and `view_item_list` show up at all — they are riding on Site Kit's config, not on
