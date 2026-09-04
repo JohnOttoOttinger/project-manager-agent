@@ -1,4 +1,4 @@
-# Datalabs GA4 records no conversions — what to fix (4 Sep 2026)
+# Datalabs GA4 conversions — diagnosed and fixed 4 Sep 2026
 
 **Property 265583155. 32,304 sessions in 180 days, 0 key events.** Anything that claims to rank
 pages by business result is really ranking sessions until this is fixed.
@@ -54,7 +54,47 @@ asking for a quote are not the same conversion and should never share a number.
 Measurement is on. Until then the course and template sales are invisible, and `begin_checkout`
 at 6 against 1,229 cart views should be treated as broken rather than as a real drop-off.
 
-## Why this could not be done from the repo
+## DONE 4 Sep 2026 (in the GA4 UI, on Otto's explicit go-ahead)
+
+The original setup was **already broken in a way the numbers could not show**. A key event named
+`FormFilloutThankYou` existed and was starred, but its custom-event rule was circular:
+
+    event_name equals FormFilloutThankYou  AND  page_location contains thank-you
+
+It triggered on an event of its own name — which nothing ever emitted — so it could only ever
+create itself. That is why 180 days produced zero conversions despite the thank-you page being
+visited every month. Marking something as a key event was never the missing piece.
+
+Two custom events now exist and both are key events:
+
+| Custom event | Conditions | Feeds |
+|---|---|---|
+| `FormFilloutThankYou` | `event_name equals page_view` + `page_location contains /thank-you/` | the pre-existing key event, which now receives data |
+| `guide_downloaded` | `event_name equals page_view` + `page_location contains /thank-you-download` | new key event |
+
+Reusing the name `FormFilloutThankYou` was deliberate: the key event of that name already
+existed, so populating it needed no second key-event definition and no naming drift.
+
+The trailing slash matters. `/thank-you/` does **not** match `/thank-you-download/`, so the
+enquiry count stays clean of lead-magnet downloads — they are counted separately, because a
+downloaded PDF and someone asking for a quote are not the same conversion.
+
+`purchase` is listed as an event but is **not** starred as a key event, and does not fire anyway
+(see Fix 3).
+
+### OPEN — the old circular rule should probably be deleted
+
+The broken rule is still there. It was inert while nothing emitted `FormFilloutThankYou`, but the
+new rule now emits exactly that, on a page whose URL contains `thank-you` — so its conditions
+match. GA4 warns against a created event matching its own conditions. Risk is a doubled count or
+a loop. **Recommend deleting custom event #1** (the one whose first condition is
+`event_name equals FormFilloutThankYou`), leaving the two correct rules. Not done unasked,
+because deleting configuration is irreversible.
+
+Check `Reports → Engagement → Events` in a few days: if `FormFilloutThankYou` reads roughly
+double the `/thank-you/` pageviews, the old rule is double-counting.
+
+## Why this could not be done from the repo automatically
 
 Two independent blockers, both verified 4 Sep 2026:
 
