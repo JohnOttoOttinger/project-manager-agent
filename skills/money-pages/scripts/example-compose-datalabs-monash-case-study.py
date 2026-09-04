@@ -130,6 +130,21 @@ row_gallery = gallery_row('The work, full size', 'What was designed',
     [(ids['rankings-infographic.jpg'], 'The Rankings Infographic', 'The source artefact'),
      (ids['analytics-dashboard.jpg'], 'The Reporting Template', 'Built for Monash Marketing')])
 
+# Caption on the reporting template (Otto, 4 Sep 2026). Otto's call: use WPBakery's own
+# add_caption="yes", which pulls the caption from the ATTACHMENT (media 54140), rather than a
+# hand-placed text block. It then travels with the image wherever it is used and the theme
+# aligns it to the image box automatically. Two earlier attempts got the placement wrong --
+# first full-width under both cards, then correct-but-hand-positioned. This needs neither.
+# The caption text itself lives on the media item, set via /wp/v2/media/54140.
+_img = f'[vc_single_image image="{ids["analytics-dashboard.jpg"]}" img_size="large" alignment="center" style="vc_box_rounded" onclick="link_image"]'
+assert row_gallery.count(_img) == 1, 'reporting-template image not found exactly once in the gallery'
+# img_size must be "full" for the caption to align: with "large" WP serves a scaled file
+# inside a figure sized to the column, so the figcaption box is wider than the <img> and the
+# caption overhangs. Existing working captions on these sites all use img_size="full".
+row_gallery = row_gallery.replace(_img,
+    _img.replace('img_size="large"', 'img_size="full"')
+        .replace(' onclick="link_image"]', ' onclick="link_image" add_caption="yes"]'))
+
 # ---------- Row: the period reporting artefact, full width (house 'big statement + image' shape) ----------
 row_results_img = ('[vc_row bg_check="row-background-dark" dfd_enable_overlay=""]'
     '[vc_column width="1/6"][/vc_column][vc_column width="4/6"]' + SP(40)
@@ -215,18 +230,40 @@ page = assemble([hero_p1, row_flow, row_secB, t_results, row_results_img, row_ga
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
 page = apply_theme(page, '#101a2e')
 print('composed chars:', len(page))
-PAGE_ID = 54143  # created 2 Sep 2026
+PAGE_ID = 54143  # created 2 Sep 2026, published 2 Sep
 pathlib.Path(OUT).write_text(page)
 import json, base64, urllib.request
 _u, _p = os.environ['WP_DATALABS_USER'], os.environ['WP_DATALABS_APP_PASSWORD']
-_req = urllib.request.Request(
-    f'https://www.datalabsagency.com/wp-json/wp/v2/pages/{PAGE_ID}',
-    data=json.dumps({'content': page, 'status': 'draft'}).encode(),
-    headers={'Content-Type': 'application/json',
-             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-             'Authorization': 'Basic ' + base64.b64encode(f'{_u}:{_p}'.encode()).decode()},
-    method='POST')
-print('WP draft updated:', json.load(urllib.request.urlopen(_req))['id'])
+_hdr = {'Content-Type': 'application/json',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Authorization': 'Basic ' + base64.b64encode(f'{_u}:{_p}'.encode()).decode()}
+_URL = f'https://www.datalabsagency.com/wp-json/wp/v2/pages/{PAGE_ID}'
+
+# Read the CURRENT status first and preserve it. An earlier version of this block
+# hardcoded status='draft', which would silently unpublish a live page on every re-run.
+_cur = json.load(urllib.request.urlopen(urllib.request.Request(
+    _URL + '?context=edit&_fields=status', headers=_hdr)))['status']
+
+urllib.request.urlopen(urllib.request.Request(
+    _URL, data=json.dumps({'content': page, 'status': _cur}).encode(),
+    headers=_hdr, method='POST')).read()
+
+# READ BACK AND VERIFY. On 2-3 Sep 2026 three consecutive runs printed "updated"
+# while WordPress stored none of the changes -- the old block only read `id` from
+# the response, which is present whether or not the content saved. Never trust the
+# POST response; assert on what comes back out.
+_back = json.load(urllib.request.urlopen(urllib.request.Request(
+    _URL + '?context=edit&_fields=content,status,modified', headers=_hdr)))
+_stored = _back['content']['raw']
+_markers = ['image="%s"' % ids['case-study-results.jpg'],
+            'The results, as they were recorded',
+            'Click either card']
+_missing = [m for m in _markers if m not in _stored]
+print(f"WP page {PAGE_ID}: status={_back['status']} modified={_back['modified']} "
+      f"stored={len(_stored)} chars (sent {len(page)})")
+if _missing:
+    raise SystemExit('PUSH DID NOT PERSIST - missing from stored content: %s' % _missing)
+print('verified: all content markers present in stored page')
 print('Review: https://www.datalabsagency.com/wp-admin/post.php?post=%d&action=edit' % PAGE_ID)
 print()
 print('YOAST SEO TITLE: Monash University Case Study: 1.4M View Video Campaign')

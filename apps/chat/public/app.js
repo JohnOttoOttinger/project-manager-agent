@@ -5314,6 +5314,29 @@
       card.append(note);
     }
 
+    // A lookup link, not a stored profile: none of Otto's LinkedIn exports
+    // predate the URL column, so there is no verified profile to link to.
+    // This opens LinkedIn's people search pre-filled with the name and company,
+    // which is one click and never wrong about what it is.
+    if (lead.contact) {
+      const find = document.createElement("p");
+      find.className = "lead-card__actions";
+      const link = document.createElement("a");
+      link.className = "lead-card__action";
+      link.href =
+        "https://www.linkedin.com/search/results/people/?keywords=" +
+        encodeURIComponent(
+          [lead.contact, lead.company].filter(Boolean).join(" "),
+        );
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      // Without this the browser drags the link instead of the card.
+      link.draggable = false;
+      link.textContent = "Find on LinkedIn";
+      find.append(link);
+      card.append(find);
+    }
+
     if (writable) {
       const actions = document.createElement("p");
       actions.className = "lead-card__actions";

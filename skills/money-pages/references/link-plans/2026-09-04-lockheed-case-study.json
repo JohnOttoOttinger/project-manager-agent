@@ -1,0 +1,12 @@
+{
+  "target": 53913,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 52962,
+      "type": "pages",
+      "search": "ndees we split the group into two cohorts rather than diluting the work",
+      "replace": "ndees we split the group into <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/lockheed-martin-data-visualization-workshops/\">two cohorts</a></strong> rather than diluting the work"
+    }
+  ]
+}

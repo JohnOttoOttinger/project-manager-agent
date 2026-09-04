@@ -1,0 +1,12 @@
+{
+  "target": 53956,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 415,
+      "type": "pages",
+      "search": " individual charts to complex calculators, from interactive dashboards ",
+      "replace": " individual charts to complex <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/transurban-road-usage-calculator/\">calculators</a></strong>, from interactive dashboards "
+    }
+  ]
+}

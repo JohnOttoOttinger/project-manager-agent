@@ -1,0 +1,12 @@
+{
+  "target": 53970,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 367,
+      "type": "pages",
+      "search": "Business intelligence dashboards or BI dashboards",
+      "replace": "<strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/gumtree-ebay-visual-bi-strategy/\">Business intelligence dashboards</a></strong> or BI dashboards"
+    }
+  ]
+}

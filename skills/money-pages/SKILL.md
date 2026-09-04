@@ -152,6 +152,20 @@ An orphan page gets crawled (Yoast sitemap) but not weighted; internal links do 
 
 Everything in geo-playbook `banned.md` applies. One page = one brand. After the site publishes, remind Otto the Cloudflare cache holds HTML ~4 hours — verify with a cache-buster URL, or purge.
 
+## Publishing a Visual Case Study? Add it to the Case Studies page (added 4 Sep 2026)
+
+**The `/case-studies/` index (page 19482) does NOT auto-populate.** Its grid is
+`[vc_basic_grid post_type="ids" ... include="52198, 25379, ..."]` — a hardcoded ID list.
+A newly published case study is invisible there until its ID is added, newest first.
+Monash 54143 was missed on publish and only caught because Otto asked.
+
+**Row backgrounds cannot be changed through REST.** WPBakery compiles a row's `css=".vc_custom_N{...}"`
+into `_wpb_shortcodes_custom_css` post meta, which is NOT exposed by the REST API — editing the `css=`
+attribute text changes nothing on screen. Two workarounds: point the row at an EXISTING compiled class
+that already has the colour you want (read them off the live page's `<style>` blocks), or have Otto set
+it in the page builder UI, which regenerates the meta properly. Removing the `css=` attribute drops the
+class entirely and the row goes transparent — on these dark-bodied pages that means black.
+
 ## Retiring a post? Check the homepage promo slots (added 24 Aug 2026)
 
 The Datalabs homepage (page 167) promotes three articles by hard-coded ID in its
