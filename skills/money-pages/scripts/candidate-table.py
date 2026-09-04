@@ -6,9 +6,10 @@ Columns come from four places, and the point is that they disagree:
   SWEEP (DataForSEO)   what Australia actually searches for, whether or not we rank.
   GSC                  what we earn today, AU-filtered and machine-filtered. Answers "is
                        anything of ours already absorbing this demand, and how well".
-  GA4                  what the nearest existing page does for the BUSINESS - sessions and
-                       key events. A term whose nearest page already converts is a different
-                       proposition from one whose nearest page is a dead end.
+  GA4                  what the nearest existing page does for the BUSINESS - ENGAGED sessions
+                       from human channels, and key events. Raw `sessions` is not usable here:
+                       Datalabs' Direct channel ran 14,616 sessions in Feb 2026 at 8% engagement
+                       and 5.7 seconds average duration. Bots. Excluding Direct is the point.
   LIVE                 is the proposed slug a real 404.
 
     python3 candidate-table.py                  # 10 rows, markdown
@@ -56,16 +57,40 @@ def gsc_rows(brand, days=180, country="aus"):
             for r in json.load(urllib.request.urlopen(req)).get("rows", [])]
 
 
+# Channels whose sessions are people. Datalabs' Direct channel was 14,616 sessions in Feb 2026
+# at 8% engagement and an average duration of 5.7 SECONDS — bots, and they made raw `sessions`
+# useless for ranking anything. Measured 4 Sep 2026; same disease as the GSC impression
+# contamination, different metric. Organic Search that month: 916 sessions, 78% engaged, 119s.
+HUMAN_CHANNELS = ["Organic Search", "AI Assistant", "Referral", "Organic Social", "Paid Search"]
+
+
 def ga4_pages(brand, days=180):
+    """Engaged sessions from human channels only. Raw `sessions` is not a business signal here."""
+    import urllib.request
+    body = {"dateRanges": [{"startDate": f"{days}daysAgo", "endDate": "yesterday"}],
+            "dimensions": [{"name": "pagePath"}],
+            "metrics": [{"name": "sessions"}, {"name": "engagedSessions"}, {"name": "keyEvents"}],
+            "dimensionFilter": {"filter": {"fieldName": "sessionDefaultChannelGroup",
+                                           "inListFilter": {"values": HUMAN_CHANNELS}}},
+            "limit": 500,
+            "orderBys": [{"metric": {"metricName": "engagedSessions"}, "desc": True}]}
+    prop = GA4[brand] or ga_client.config()["property_id"]
     try:
-        rows = ga_client.ga4_report(
-            ["sessions", "engagedSessions", "keyEvents"], ["pagePath"],
-            start=f"{days}daysAgo", end="yesterday", limit=500,
-            order_by_metric="sessions", property_id=GA4[brand])
+        req = urllib.request.Request(
+            f"https://analyticsdata.googleapis.com/v1beta/properties/{prop}:runReport",
+            data=json.dumps(body).encode(),
+            headers={"Authorization": f"Bearer {ga_client.get_token()}",
+                     "Content-Type": "application/json"})
+        d = json.load(urllib.request.urlopen(req))
     except Exception as e:
         print(f"(GA4 {brand} unavailable: {type(e).__name__}: {e})", file=sys.stderr)
         return {}
-    return {r["pagePath"].split("?")[0].rstrip("/") + "/": r for r in rows}
+    out = {}
+    for row in d.get("rows", []):
+        path = row["dimensionValues"][0]["value"].split("?")[0].rstrip("/") + "/"
+        m = [v["value"] for v in row["metricValues"]]
+        out[path] = {"sessions": int(m[0]), "engagedSessions": int(m[1]), "keyEvents": int(m[2])}
+    return out
 
 
 def main():
@@ -127,7 +152,7 @@ def main():
                 "au_clicks_180d": clicks, "au_impressions_180d": impr,
                 "our_position": round(pos, 1) if pos else None,
                 "nearest_page": npath or "-",
-                "ga4_sessions": g["sessions"] if g else None,
+                "ga4_engaged_sessions": g["engagedSessions"] if g else None,
                 "ga4_key_events": g["keyEvents"] if g else None,
                 "slug_status": "EXISTS" if gap == 0.0 else ("404" if gap == 1.0 else f"HTTP {code}"),
                 "in_queue": next((ti for ti, tkq in claimed_titles
@@ -161,7 +186,7 @@ def main():
               f"{r['competition'] or '?'} | {('$%.2f' % r['cpc']) if r['cpc'] else '-'} | "
               f"{r['incumbent']} | {r['au_clicks_180d']} | {r['au_impressions_180d']:,} | "
               f"{r['our_position'] or '-'} | {r['nearest_page']} | "
-              f"{r['ga4_sessions'] if r['ga4_sessions'] is not None else '-'} | "
+              f"{r['ga4_engaged_sessions'] if r['ga4_engaged_sessions'] is not None else '-'} | "
               f"{r['ga4_key_events'] if r['ga4_key_events'] is not None else '-'} | "
               f"{r['slug_status']} | {r['score']} | {r['in_queue'] or '-'} |")
     print()
