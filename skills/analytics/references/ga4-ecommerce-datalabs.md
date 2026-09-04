@@ -1,4 +1,4 @@
-# Datalabs ecommerce tracking — root cause found 4 Sep 2026, NOT fixed (blocked on admin)
+# Datalabs ecommerce tracking — FIXED 4 Sep 2026
 
 Follows on from `ga4-key-events-datalabs.md`. The enquiry conversions are now counted; the shop
 still is not.
@@ -60,7 +60,50 @@ snippet and keeping the WooCommerce plugin's. **Doing that first would have kill
 tracking completely**, because Site Kit's config is currently the only thing pointing at GA4.
 Order matters, and it is the reverse of what it looked like.
 
-## The fixes, in the order they must happen
+## APPLIED 4 Sep 2026 (Otto granted admin; changes made in wp-admin)
+
+| Step | Result |
+|---|---|
+| Repoint WooCommerce plugin to `G-ST757S330F` | **DONE**, verified server-side on home, product and post |
+| Deactivate + delete `GA Google Analytics` (m0n.co/ga) | **DONE** — "was successfully deleted" |
+| `UA-34087862-1` on the site | **0 references**, site-wide |
+| legacy `analytics.js` library | **gone** |
+| Site Kit snippet | **left ON, deliberately** — see below |
+
+The plugin's Event Tracking checkboxes were already all ticked — Purchase Transactions, Add to
+Cart, Remove from Cart, Product Impressions, Product Clicks, Product Detail Views. Nothing was
+disabled. The events were configured to fire the whole time and were being sent to a property
+that no longer exists.
+
+### Why Site Kit's snippet was NOT turned off
+
+The original plan said to remove it as a duplicate. On inspection that is wrong: Site Kit is
+Google's own plugin and is the natural owner of site-wide pageview tracking, while the WooCommerce
+plugin exists to send ecommerce events and should not be the only tag on the site.
+
+### The third tag — pre-existing, left alone
+
+The homepage carries THREE `gtag('config','G-ST757S330F')` calls:
+
+    woocommerce-google-analytics-integration-gtag-js-after   (WooCommerce plugin, correct)
+    google_gtagjs-js-after                                   (Site Kit, correct)
+    jquery-migrate-js-after                                  (a hand-injected Google tag snippet)
+
+The third predates this work — it already configured GA4 before today. It is **not** from WPCode
+(its 6 snippets are Yoast/schema/Mailchimp/comments, no gtag). Source not yet identified; likely a
+theme option or a header-script field.
+
+**It is not causing measurable harm.** Page views to sessions runs 38,560 / 32,004 = **1.20**.
+Triple-counting would show roughly 3.0. Worth removing as housekeeping, not urgent.
+
+### Still unverified: does `add_to_cart` now fire?
+
+Could not be tested from Otto's browser — it blocks analytics (zero `collect` requests, the
+plugin's `main.js` blocked from loading client-side while present server-side). A real add-to-cart
+was performed and the cart did populate, so the click path works. **Check GA4 in 24-48 hours**
+for `add_to_cart` against real traffic.
+
+## The original fix plan, for reference
 
 1. **Point the WooCommerce plugin at GA4.** WooCommerce → Settings → Integration → Google
    Analytics (or the plugin's own settings screen). Replace `UA-34087862-1` with
@@ -76,7 +119,17 @@ Order matters, and it is the reverse of what it looked like.
    answer is that express-checkout buyers cannot produce an add-to-cart event — in which case
    `begin_checkout` and `purchase` are the events that matter for them.
 
-## The one number that decides it
+## The one number that decides it — ANSWERED
+
+**One.** WooCommerce holds 216 orders all-time (188 completed), but by date the recent list reads:
+Apr 12 2026 (Failed), Apr 2 2026 (Processing, $450), **Mar 19 2026 (Completed, $45)**, then Feb 9,
+then Nov 2025. Inside the 180-day window there is exactly **one completed order**.
+
+So `purchase: 0` in GA4 was very nearly correct on its own terms. The repoint was still right —
+events were going nowhere — but purchase tracking was never going to be a meaningful signal at
+this volume. **The shop is close to dormant, and that is a commercial finding, not a tracking one.**
+
+Original framing below.
 
 **How many WooCommerce orders completed in the last 180 days?**
 
