@@ -93,6 +93,37 @@ The app's Content pipeline card reads this file — keep the format exact.
 
 ## Oddtoe (goal: commissions and bookings)
 
+- [ ] **PR Stunt Agency (oddtoe) — Otto's call, UNVALIDATED VOLUME, 9 Sep 2026.** Otto asked directly for a
+  page targeting buyers looking to hire Oddtoe for a PR/publicity stunt (his framing: "keywords like
+  agency, company, firm"). **GSC has zero signal to build this from** — 480-day window checked, 5,322
+  distinct queries with any impressions, and NOT ONE contains "stunt"; also checked guerrilla marketing,
+  ambush marketing, street marketing, viral marketing, brand stunt — all zero. So `next-best-page.py`'s
+  near-duplicate/cannibalisation math (which needs impression data) cannot arbitrate this one; it is a
+  positioning bet, not a data pick, same class as the two unvalidated Datalabs vertical-workshop entries
+  below. **Cannibalisation check done by hand (no GSC to lean on):** grepped body text of the five nearest
+  existing pages — /brand-activation-ideas/, /experiential-activation-agency/,
+  /experiential-marketing-agencies/, /experiential-marketing/, /global-brand-experience-agency/ — zero
+  mention of "stunt" in any of them; also checked all three sitemaps (post/page/product), no "stunt" in
+  any existing URL. Genuinely open ground. Proposed slug `/pr-stunt-agency/` (HEAD-checked 404, 9 Sep
+  2026) — also confirmed free: `/publicity-stunt-agency/`, `/pr-stunt-company/`, `/publicity-stunt-company/`.
+  **Cross-link guardrails (no do_not_target list exists without GSC, so honour these by hand):** link OUT
+  to /brand-activation-ideas/ (format/idea brainstorm — don't restate) and /experiential-activation-agency/
+  (adjacent positioning) rather than duplicating either; do NOT restate /experiential-marketing-agencies/
+  (that page ranks OTHER agencies, "who are the big players" framing, not "hire Oddtoe" — same distinction
+  already honoured on Global Brand Experience Agency). Natural proof links: /prop-fabrication-services/,
+  /artist-designer/installation-artist/, /inflatable-artist/ (build-capability evidence) — NatGeo Kids is
+  cartooning/game design, not stunt work, so don't force it in here.
+  **Open gaps before this can compose (banned.md rule 3 — no invented facts):**
+  (1) Scope — does Oddtoe's stunt offering cover media/press seeding, or purely concept + physical build
+  with the client's own PR team running outreach? Changes the H1 promise materially.
+  (2) Any existing project (even if never framed as a "stunt" before) usable as portfolio proof — an
+  inflatable, installation, topiary or projection piece that got press attention.
+  (3) Pricing — TO FILL per brands.md, Oddtoe has no rate card yet; drop the pricing table per the
+  animation-agency/character-design-services precedent.
+  (4) "PR stunt" vs "publicity stunt" as the lead H1 term — no data to arbitrate, Otto's call.
+  Unused tint candidate: graphite `#1c1c1f` or nearblack `#101418` (plum/teal/umber/slate already spoken
+  for across live Oddtoe pages).
+
 - [x] Brand activation ideas (oddtoe) — [live](https://www.oddtoe.com/brand-activation-ideas/) (page 16133, published 14 Aug 2026)
 
 - [x] Installation Artist page rebuild (oddtoe) — [live](https://www.oddtoe.com/artist-designer/installation-artist/) (page 11178, swapped 16 Aug 2026; staging draft 16136 trashed. Original body in site-backups/oddtoe-installation-artist-original-2026-08-16.json)
