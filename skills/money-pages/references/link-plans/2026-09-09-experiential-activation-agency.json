@@ -1,0 +1,33 @@
+{
+  "approved": false,
+  "target_id": 16288,
+  "target_url": "https://www.oddtoe.com/experiential-activation-agency/",
+  "brand": "oddtoe",
+  "note": "Drafted 9 Sep 2026 after Otto published page 16288. Awaiting Otto's sign-off per the plan-first rule (SKILL.md) before apply.",
+  "edits": [
+    {
+      "source_id": 16243,
+      "type": "pages",
+      "search": "or take one market off a larger agency’s hands and deliver Australia to their spec.</p>",
+      "replace": "or take one market off a larger agency’s hands and deliver Australia to their spec. For a single build in one place, see the studio’s <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-activation-agency/\">experiential activation agency</a></strong> page instead.</p>"
+    },
+    {
+      "source_id": 16173,
+      "type": "pages",
+      "search": "Or hunting for a job in <strong>experiential marketing</strong>? Here is my guide to the",
+      "replace": "Or hunting for a job in <strong>experiential marketing</strong>? If you want to hire one instead of browsing them, see Oddtoe’s own <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-activation-agency/\">experiential activation agency</a></strong> page. Here is my guide to the"
+    },
+    {
+      "source_id": 16124,
+      "type": "pages",
+      "search": "We can take part of the heavy load for your next brief.</p>",
+      "replace": "We can take part of the heavy load for your next brief, or run it end to end as your <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-activation-agency/\">experiential activation agency</a></strong>.</p>"
+    },
+    {
+      "source_id": 16133,
+      "type": "pages",
+      "search": "across Australia and internationally.</p>",
+      "replace": "across Australia and internationally. Want the whole thing run for you, brief to install? That is exactly what an <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/experiential-activation-agency/\">experiential activation agency</a></strong> does.</p>"
+    }
+  ]
+}
