@@ -12,7 +12,8 @@ import argparse, re, sys
 from collections import Counter
 
 CANONS = (
-    # Oddtoe: must appear verbatim and unbolded, so it is matched against the RAW html.
+    # Oddtoe: verbatim wording. Since 7 Sep 2026 the brand name may carry <strong> per the
+    # naming rule, so this is matched against raw html OR tag-stripped text.
     ("Oddtoe is an experiential design and generative-AI animation studio based in Melbourne, "
      "creating projection, installation, and animated work for events, venues, and galleries."),
     # Datalabs: the brand name may carry <strong> per the naming rule, so this is matched
@@ -97,10 +98,11 @@ def main() -> None:
         warns.append(("no first person", 0, 0,
                       "design-kit article slots are first-person Otto voice", []))
 
-    # canonical sentence must survive verbatim and unbolded
+    # canonical sentence must survive verbatim. Both brands may bold the brand name
+    # (Otto's rule, 7 Sep 2026), so both are also matched tag-stripped.
     import re as _re
     _stripped = _re.sub(r"\s+", " ", _re.sub(r"<[^>]+>", "", html))
-    if CANONS[0] not in html and CANONS[1] not in _stripped:
+    if CANONS[0] not in html and CANONS[0] not in _stripped and CANONS[1] not in _stripped:
         fails.append(("canonical sentence", 0, 0, "missing or altered — must be verbatim "
                       "(either brand's sentence from brands.md)", []))
 

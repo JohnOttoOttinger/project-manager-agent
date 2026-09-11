@@ -978,3 +978,148 @@ settles; a stale ref reports success without acting.
 - 2026-09-04 · datalabs · source 687 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/introduction-to-data-visualization-tools-techniques-workshop/) → target 53970
 - 2026-09-04 · datalabs · source 367 (https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) → target 53852
 - 2026-09-04 · datalabs · source 367 (https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) → target 53970
+
+---
+
+## 7 Sep 2026 — Mascot Designer launch: link pass, menus, GSC
+
+Plan-first rule followed: the edit list was put to Otto as a Q&A before anything was applied; he
+approved both proposed edits and then asked for a third on Brand Activation Ideas.
+
+**Markup standard used:** `<strong><a class="dfd-custom-link-decorated" href="…">…</a></strong>`,
+no inline colours. Backups taken first:
+`site-backups/oddtoe-{16190,16133,13226}-pre-mascot-linkpass-2026-09-07.json`.
+
+### [Mascot Designer](https://www.oddtoe.com/artist-designer/mascot-designer/) (page 16255) — PUBLISHED
+
+Slug `mascot-designer`, parent 13226, `page-custom.php`. Yoast set by hand in wp-admin (REST silently
+drops it) and verified in `yoast_head_json`. Published on Otto's explicit instruction.
+
+### Inbound links added — 3
+
+| Anchor | Source | Target | Location |
+|---|---|---|---|
+| Wearable mascot costumes | [Inflatable Artist](https://www.oddtoe.com/artist-designer/inflatable-artist/) (16190) | `/artist-designer/mascot-designer/` | "What Can Oddtoe Make?" bullet list |
+| costume mascot | [Brand Activation Ideas](https://www.oddtoe.com/brand-activation-ideas/) (16133) | same | idea 4, new sentence (see below) |
+| Mascot Designer card | [Artist & Designer hub](https://www.oddtoe.com/artist-designer/) (13226) | same | new discipline card, icon 16263 |
+
+Each prose anchor was verified to appear **exactly once** in the page source before replacing.
+
+**New copy written for 16133** (Otto: "You can write something new and short to do it"), appended to
+idea 4 so the page's "ten ideas" count is untouched: *"The same character can be built as a costume
+mascot so it turns up in person as well as on screen."*
+
+**The Inflatable Artist edit also resolves the cannibalisation flag** raised in
+`mascot-keyword-audience-research.md` — that page sells "wearable mascot costumes" and now hands the
+mascot query to the mascot page.
+
+**Rejected, not forced:** Experiential Marketing (16124) has no usable prose anchor; Character Design
+Services (16208) and the rest of Brand Activation Ideas offered only strained ones.
+
+### Menus — wp-admin, REST 403s `rest_cannot_create` on `/wp/v2/menu-items` (verified again 7 Sep)
+
+- **Primary & Temporary Menu (42)** — "Mascot Designer" added under **Designer** (parent 15552),
+  after Character Designer. **Roboticist (item 13685) removed** from this menu on Otto's instruction;
+  it had no children, so the removal was clean.
+- **Footer Nav (229)** — "Mascot Designer" added after Comedy Writer, at the end of the discipline
+  block. **Roboticist (item 13376) deliberately kept here.**
+- Both verified server-side via REST after saving.
+
+### GSC
+
+URL inspected on the `https://www.oddtoe.com/` property.
+
+| URL | Result |
+|---|---|
+| `/artist-designer/mascot-designer/` | "URL is unknown to Google" (expected on publish day) → **indexing requested, priority crawl queue** |
+| `/artist-designer/inflatable-artist/` | indexed → **indexing requested** (recrawl for the new outbound link) |
+| `/brand-activation-ideas/` | indexed → **indexing requested** (recrawl for the new outbound link) |
+| `/artist-designer/` (hub) | indexed → **NOT SUBMITTED — "Quota Exceeded", daily limit hit** |
+
+**⚠ OPEN — resubmit `https://www.oddtoe.com/artist-designer/` for indexing tomorrow.** The daily
+manual-submission quota was exhausted, partly by two accidental duplicate submissions (a mis-click
+hit "Request again" on the Inflatable Artist and Brand Activation Ideas results while their toasts
+were still on screen). Not urgent: the hub is already indexed, its `lastmod` in `page-sitemap.xml`
+updated to 7 Sep 07:35 which signals the change, and the mascot page itself is queued, so discovery
+is not blocked either way.
+
+### Open
+
+- [ ] Bold-company-name rule: "Oddtoe" is now bolded in body copy on 16255 (3 spans) but NOT in the
+      canonical sentence — that fails `de-ai-check.py`'s verbatim match and is shared across pages.
+      A brand-wide change to `brands.md` plus every page carrying it is Otto's call.
+
+---
+
+## 8 Sep 2026 — Mascot Design into the Global Brand Experience Agency interactive
+
+### [Global Brand Experience Agency](https://www.oddtoe.com/global-brand-experience-agency/) (16243)
+
+Otto's brief: in the **"Nothing to photograph"** scenario, swap the Generative AI Animation step for
+the new Mascot Designer page, and reflect mascots in the surrounding activation copy.
+
+The interactive is a JSON scenario set inside a base64 `vc_raw_html` block. **Encoding gotcha:** the
+percent layer is `encodeURIComponent`-equivalent — in Python, `quote(raw, safe="!*'()")`. A default
+`quote(raw, safe='')` does NOT round-trip (it escapes parentheses) and would rewrite the whole block.
+Verify the round-trip reproduces the original byte-for-byte before editing.
+
+Five edits, each asserted to match exactly once. Backup:
+`site-backups/oddtoe-16243-pre-mascot-swap-2026-09-08.json`.
+
+| Field | Before | After |
+|---|---|---|
+| item 3 | Generative AI Animation → `/studio/generative-ai-animator/` | **Mascot Design** → `/artist-designer/mascot-designer/`, icon `dfd-icon-bear`, image 16263 |
+| `bl` | A character built at two metres | A character at two metres, and a mascot that walks |
+| Events Management | A launch floor built around the piece instead of a stage | …built around the character, with the mascot working the room |
+| Project Management | One fabrication spec, freight, and install inside the venue | One design, two builds: the two-metre piece and the costume, plus freight and install |
+| Content Marketing | Looping video and photos the product team can use all quarter | Photos of people with the character that the product team can use all quarter |
+
+**The `/studio/generative-ai-animator/` link is NOT orphaned** — Generative AI Animation still appears
+in the "Protest / press moment" scenario. Verified: 1 remaining instance. Render-checked live.
+
+### GSC — hub resubmission STILL OUTSTANDING
+
+`https://www.oddtoe.com/artist-designer/` was retried on 8 Sep after yesterday's quota exhaustion.
+**Both attempts returned "Oops! Something went wrong — error submitting your indexing request".**
+Stopped after two rather than hammering it. Possibly a lingering quota state presenting as a generic
+error, possibly a Google-side fault. **Still to do — try again.** Low impact: the hub is indexed, its
+sitemap `lastmod` is current, and the mascot page itself is already queued.
+
+---
+
+## 8 Sep 2026 — site-wide company-name bolding
+
+Otto's rule, refined: **bold `Oddtoe` in Arvo body copy.** Bebas is all caps so bolding adds nothing;
+Qwigley is script. Same treatment Datalabs has had since 19 Aug.
+
+**Applied: 210 edits across 36 published pages.** Verified after: 294 `<strong>Oddtoe</strong>` spans
+site-wide, **0 remaining candidates, 0 double-wraps**. Per-page backups at
+`site-backups/oddtoe-<id>-pre-bold-2026-09-08.json`.
+
+Dry run was shown to Otto and approved before anything was written
+(`Oddtoe New Growth Pages 2026/oddtoe-bolding-dry-run.md`).
+
+**Skipped automatically:** 149 shortcode attributes · 103 already bold · 43 `dfd_heading` text ·
+19 inside an existing `<strong>` · 3 Bebas display · 3 inside HTML tags.
+
+**Edge cases — Otto's call was to bold all of them:** 5 small grey italic captions ("Oddtoe quotes per
+project after a scoping conversation"), 1 comparison-table cell, 2 parenthetical citations
+("…Will Be Bots (Oddtoe, 2023)"). I had recommended skipping the captions and citations on looks;
+he overruled, nothing broke, render-checked on character-design-services.
+
+**Do not do this with find-and-replace.** Oddtoe pages use four different markup patterns for body
+text, and a blind pass corrupts shortcode attributes, the base64 JSON interactive blocks and alt
+text. The working method: mask protected regions (shortcode tags, `vc_raw_html` payloads, all HTML
+tags, `<script>`), then skip Bebas/Qwigley spans, `dfd_heading` text, heading tags and existing
+`<strong>` wrappers. Apply replacements back-to-front so byte offsets stay valid, and assert the
+length delta is exactly 17 chars per edit.
+
+**`brands.md` updated** — the Oddtoe canonical sentence now carries `<strong>` on the brand name, so
+new pages inherit it. `de-ai-check.py` matches that sentence tag-stripped (changed 7 Sep), so wording
+is still enforced verbatim while the markup passes.
+- 2026-09-09 · oddtoe · source 11727 (https://www.oddtoe.com/artist-designer/street-artist-muralist/) → target 16272
+- 2026-09-09 · oddtoe · source 16133 (https://www.oddtoe.com/brand-activation-ideas/) → target 16272
+- 2026-09-09 · oddtoe · source 16209 (https://www.oddtoe.com/prop-fabrication-services/) → target 16272
+- 2026-09-11 · oddtoe · source 16190 (https://www.oddtoe.com/artist-designer/inflatable-artist/) → target 16272
+- 2026-09-11 · oddtoe · source 16288 (https://www.oddtoe.com/experiential-activation-agency/) → target 16272
+- 2026-09-11 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target 16272

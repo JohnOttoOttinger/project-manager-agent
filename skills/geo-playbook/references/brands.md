@@ -50,7 +50,13 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 ## Oddtoe
 
 **Canonical sentence (use verbatim, everywhere):**
-> Oddtoe is an experiential design and generative-AI animation studio based in Melbourne, creating projection, installation, and animated work for events, venues, and galleries.
+> **Oddtoe** is an experiential design and generative-AI animation studio based in Melbourne, creating projection, installation, and animated work for events, venues, and galleries.
+
+**Wording is verbatim; the brand name carries `<strong>`.** Otto's rule, 8 Sep 2026: company names are
+bolded in body copy, the same treatment Datalabs already had. In page markup that is
+`<strong>Oddtoe</strong> is an experiential design and…`. `de-ai-check.py` matches this sentence
+tag-stripped, so the markup passes while the wording stays enforced. Applied site-wide 8 Sep — 210
+occurrences across 36 pages.
 
 - Website: https://www.oddtoe.com
 - Positioning: Melbourne / Los Angeles / Berlin

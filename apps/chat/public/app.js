@@ -3090,17 +3090,22 @@
       required: "name",
       endpoint: "/api/opportunities/import",
       needsList: false,
+      kindFallback: "opencall",
       map: {
         name: "name", festival: "name", event: "name", opportunity: "name",
+        eventname: "name", festivalname: "name", eventtitle: "name", title: "name",
         organiser: "organiser", organizer: "organiser", host: "organiser",
-        kind: "kind", type: "kind", stream: "kind",
+        kind: "kind", type: "kind", stream: "kind", eventtype: "kind",
+        festivaltype: "kind", category: "kind", format: "kind",
         city: "city", country: "country",
-        url: "url", website: "url", link: "url",
+        url: "url", website: "url", link: "url", officialwebsite: "url",
+        officialsite: "url", homepage: "url", web: "url",
+        applicationstatus: "verified", verified: "verified", verification: "verified",
         start: "eventStart", eventstart: "eventStart", startdate: "eventStart",
         end: "eventEnd", eventend: "eventEnd", enddate: "eventEnd",
         pressdeadline: "pressDeadline", submissiondeadline: "submissionDeadline",
         deadline: "submissionDeadline",
-        contact: "contact", presscontact: "contact",
+        contact: "contact", presscontact: "contact", email: "contact",
         relevance: "relevance", focus: "relevance", blurb: "relevance",
         nextaction: "nextAction", notes: "notes", note: "notes",
       },
@@ -3124,7 +3129,29 @@
     },
   };
 
-  function bdParseDelimited(text) {
+  // Free-text "type" columns ("Light art festival", "Open call") are folded onto
+  // the board's fixed streams. Anything unrecognised keeps its original wording
+  // in notes and falls back to the shape's default stream.
+  function bdNormaliseKind(value) {
+    const text = String(value ?? "").trim().toLowerCase();
+    if (text === "") { return null; }
+    if (BD_KIND_LABELS[text]) { return text; }
+    if (/open ?call|submission|call for/.test(text)) { return "opencall"; }
+    if (/prize|award|competition/.test(text)) { return "prize"; }
+    if (/market|fair|expo|trade|showcase/.test(text)) { return "market"; }
+    if (/regist|\beoi\b|expression of interest/.test(text)) { return "register"; }
+    if (/press|media|editorial/.test(text)) { return "press"; }
+    if (/scout/.test(text)) { return "scouting"; }
+    return null;
+  }
+
+  function bdHeaderLabel(cell) {
+    const words = cell.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+    return words === "" ? "" : words[0].toUpperCase() + words.slice(1);
+  }
+
+  function bdParseDelimited(raw) {
+    const text = String(raw ?? "").replace(/^\uFEFF/, "");
     const firstLine = text.split("\n", 1)[0] ?? "";
     const tabs = (firstLine.match(/\t/g) ?? []).length;
     const commas = (firstLine.match(/,/g) ?? []).length;
@@ -3156,7 +3183,7 @@
 
     const intro = document.createElement("p");
     intro.className = "bd-listcard__note";
-    intro.textContent = `Paste rows or choose a file. The first row must be a header. A ${shape.required} column is required; everything else is optional and anything unrecognised is reported rather than silently dropped.`;
+    intro.textContent = `Paste rows or choose a file. The first row must be a header. A ${shape.required} column is required; everything else is optional. Unrecognised columns are kept in notes rather than dropped.`;
     body.append(intro);
 
     const card = dashCard();
@@ -3220,36 +3247,62 @@
       const reader = new FileReader();
       reader.onload = () => {
         paste.value = String(reader.result ?? "");
-        status.textContent = `Loaded ${chosen.name}.`;
+        runPreview(`Loaded ${chosen.name}. `);
+      };
+      reader.onerror = () => {
+        status.textContent = `Could not read ${chosen.name}.`;
       };
       reader.readAsText(chosen);
     });
 
-    check.addEventListener("click", () => {
+    // Edited text makes any earlier preview stale; Import re-runs it.
+    paste.addEventListener("input", () => {
+      parsed = null;
+      commit.disabled = paste.value.trim() === "";
+    });
+
+    check.addEventListener("click", () => { runPreview(); });
+
+    function runPreview(prefix = "") {
       preview.replaceChildren();
+      parsed = null;
       commit.disabled = true;
       const table = bdParseDelimited(paste.value);
       if (table.length < 2) {
-        status.textContent = "Needs a header row and at least one row of data.";
-        return;
+        status.textContent = `${prefix}Needs a header row and at least one row of data.`;
+        return false;
       }
       const header = table[0].map((cell) =>
         shape.map[cell.trim().toLowerCase().replace(/[^a-z0-9]/g, "")] ?? null,
       );
       const unknown = table[0].filter((cell, i) => header[i] === null && cell.trim() !== "");
       if (!header.includes(shape.required)) {
-        status.textContent = `No ${shape.required} column found. Rename a column to "${shape.required}" and preview again.`;
-        return;
+        status.textContent = `${prefix}No ${shape.required} column found. Rename a column to "${shape.required}" and preview again.`;
+        return false;
       }
       const rows = [];
       let skipped = 0;
       for (const cells of table.slice(1)) {
         const record = {};
+        const extras = [];
         header.forEach((field, i) => {
           const value = (cells[i] ?? "").trim();
-          if (field && value !== "") { record[field] = value; }
+          if (value === "") { return; }
+          if (field) { record[field] = value; }
+          else if (table[0][i].trim() !== "") { extras.push(`${bdHeaderLabel(table[0][i])}: ${value}`); }
         });
         if (!record[shape.required]) { skipped += 1; continue; }
+        if ("kind" in shape.map || shape.kindFallback) {
+          const stream = bdNormaliseKind(record.kind);
+          if (stream) { record.kind = stream; }
+          else {
+            if (record.kind) { extras.unshift(`Type: ${record.kind}`); }
+            if (shape.kindFallback) { record.kind = shape.kindFallback; } else { delete record.kind; }
+          }
+        }
+        if (extras.length > 0) {
+          record.notes = [record.notes, ...extras].filter(Boolean).join("\n");
+        }
         rows.push(record);
       }
       parsed = rows;
@@ -3259,10 +3312,10 @@
       mapped.textContent = `${rows.length} rows ready${skipped > 0 ? `, ${skipped} skipped for having no ${shape.required}` : ""}. Columns matched: ${[...new Set(header.filter(Boolean))].join(", ")}.`;
       preview.append(mapped);
       if (unknown.length > 0) {
-        const ignored = document.createElement("p");
-        ignored.className = "bd-oppcard__next";
-        ignored.textContent = `Ignored ${unknown.length} unrecognised column(s): ${unknown.join(", ")}.`;
-        preview.append(ignored);
+        const kept = document.createElement("p");
+        kept.className = "bd-oppcard__next";
+        kept.textContent = `${unknown.length} unrecognised column(s) kept in notes: ${unknown.join(", ")}.`;
+        preview.append(kept);
       }
 
       const wrap = document.createElement("div");
@@ -3298,11 +3351,13 @@
         more.textContent = `Showing the first 8 of ${rows.length}.`;
         preview.append(more);
       }
-      status.textContent = "Looks readable. Import when you're happy.";
+      status.textContent = `${prefix}${rows.length === 0 ? "No rows to import." : "Looks readable. Import when you're happy."}`;
       commit.disabled = rows.length === 0;
-    });
+      return rows.length > 0;
+    }
 
     commit.addEventListener("click", () => {
+      if (!parsed && !runPreview()) { return; }
       if (!parsed || parsed.length === 0) { return; }
       commit.disabled = true;
       status.textContent = "Importing…";
