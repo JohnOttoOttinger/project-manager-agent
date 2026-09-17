@@ -32,8 +32,8 @@ hero = widen_hero(fill(blocks['intro'], {
     'CANONICAL_SENTENCE': CANONICAL,
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why does a leadership program end with data storytelling?',
-    'SECTION_B_ANSWER': 'The animation above is the delivery machine. The brief behind it: Lockheed&rsquo;s LDP participants &mdash; leaders with <strong>0&ndash;3 years&rsquo; experience</strong> drawn from engineering, operations, finance, communications, HR, and security &mdash; were finishing a program about leading boldly. The capstone had to teach the skill bold leadership runs on: <strong>making a case with data</strong>.',
-    'SECTION_B_CONTEXT': 'A capstone audience is an unforgiving one &mdash; 287 people at the end of a long program, all attending virtually, across functions with very different relationships to data. The design answer was concurrency and coaching: sessions capped at <strong>40&ndash;50 participants</strong> so exercises stay personal, run eight times so nobody waits a month for their slot, and staffed with Lockheed Martin leaders at Manager-to-Director level <strong>embedded as coaches</strong>, so the conversation continues inside the business after the facilitator logs off.',
+    'SECTION_B_ANSWER': 'The animation above is the delivery machine. The brief behind it: Lockheed&rsquo;s LDP participants &mdash; leaders with <strong>0&ndash;3 years&rsquo; experience</strong> drawn from <strong>six functions across the business</strong> &mdash; were finishing a program about leading boldly. The capstone had to teach the skill bold leadership runs on: <strong>making a case with data</strong>.',
+    'SECTION_B_CONTEXT': 'A capstone audience is an unforgiving one &mdash; 287 people at the end of a long program, all attending virtually, across functions with very different relationships to data. The design answer was concurrency and coaching: sessions capped at <strong>40&ndash;50 participants</strong> so exercises stay personal, run eight times so nobody waits a month for their slot, and staffed with senior Lockheed Martin leaders <strong>embedded as coaches</strong>, so the conversation continues inside the business after the facilitator logs off.',
     'PRIMARY_CTA_TEXT': 'Plan your program capstone',
     'PRIMARY_CTA_URL': CONTACT,
 }))
@@ -75,7 +75,7 @@ def svg_delivery():
     # coach band
     parts.append(f'<rect x="430" y="560" width="670" height="56" rx="9" fill="#262532" stroke="{TAN}" stroke-width="1.5" stroke-dasharray="5 6"/>')
     parts.append(f'<text x="765" y="588" text-anchor="middle" font-family="{BEBAS}" font-size="20" letter-spacing="1.5" fill="{TAN}">20+ LOCKHEED COACHES EMBEDDED ACROSS EVERY SESSION</text>')
-    parts.append(f'<text x="765" y="606" text-anchor="middle" font-family="{ARVO}" font-size="11" fill="#8a8a95">Manager-to-Director leaders, briefed and equipped before day one</text>')
+    parts.append(f'<text x="765" y="606" text-anchor="middle" font-family="{ARVO}" font-size="11" fill="#8a8a95">Senior leaders, briefed and equipped before day one</text>')
     parts.append('</svg>')
     return ''.join(parts)
 
@@ -85,14 +85,14 @@ row_flow = svg_row('Watch the two days fill up', 'One capstone, eight rooms',
 
 # ---------- timeline table ----------
 t_timeline = table_row(blocks, 'Contract to capstone', 'The ten-week delivery timeline',
-    'The project timeline, from the engagement&rsquo;s own planning record.',
+    'The delivery cadence, contract to capstone.',
     ['Milestone', 'What happened'],
-    [['April 2022', 'Contract awarded'],
-     ['Within 7 business days', 'Audience consultation call &mdash; functions, experience levels, expectations'],
-     ['23 May 2022', 'All participant materials submitted for review'],
-     ['8 June 2022', 'Virtual vendor overview for the embedded coaches'],
-     ['14&ndash;15 June 2022', 'Delivery &mdash; eight sessions across four time slots']],
-    footnote='All sessions delivered virtually. Coach materials &mdash; a pre/during/post brief and a session-prep worksheet &mdash; shipped ahead of the coach overview.')
+    [['Contract award', 'April 2022 &mdash; engagement confirmed'],
+     ['Inside seven business days', 'Audience consultation call &mdash; who the leaders are and what they need'],
+     ['Three weeks out', 'All participant materials submitted for review'],
+     ['One week out', 'Virtual overview session for the embedded coaches'],
+     ['Delivery', '14&ndash;15 June 2022 &mdash; eight sessions across four time slots']],
+    footnote='All sessions delivered virtually, with the coach-support kit shipped ahead of the overview session.')
 
 # ---------- gallery ----------
 row_gallery = gallery_row('The materials, full size', 'Inside the workshop deck',
@@ -109,8 +109,8 @@ row_tiles = svg_row('The rules under every session', 'The principles behind the 
         ('ENGAGEMENT EVERY 4&#8211;8 MIN', 'No stretch of the session runs passive', 'clock'),
         ('LIVED EXPERIENCE', 'Real project stories over stock case studies', 'doc'),
         ('DELIBERATE PRACTICE', 'Structured exercises, not passive watching', 'target'),
-        ('LOCKHEED&#8217;S OWN DATA', 'Custom datasets for the final exercises', 'grid'),
-        ('COACHES IN THE ROOM', '20+ Lockheed leaders embedded in sessions', 'people'),
+        ('PRACTICE DATASETS', 'Custom-built dummy data, shaped like the work', 'grid'),
+        ('COACHES IN THE ROOM', '20+ senior leaders embedded in sessions', 'people'),
         ('BUILT FOR VIRTUAL', 'Motion graphics made for screen delivery', 'layers'),
     ]))
 
@@ -118,8 +118,8 @@ row_tiles = svg_row('The rules under every session', 'The principles behind the 
 sec_deliver = widen_inner(fill(blocks['section2'], {
     'SECTION_D_SUBTITLE': 'Delivered, documented, taught',
     'SECTION_D_HEADING': 'What did Lockheed Martin receive at the end?',
-    'SECTION_D_ANSWER': 'Lockheed received a custom <strong>90-minute slide deck</strong> in its own branding, <strong>287 professionally designed digital workbooks</strong>, visual examples and motion graphics built for virtual delivery, custom datasets for the final exercises, and a complete <strong>coach-support kit</strong> &mdash; brief, prep worksheet, and a pre-delivery vendor overview.',
-    'SECTION_D_RATIONALE': 'The coach kit is the part that outlasts the two days. Because the coaches were <strong>Lockheed&rsquo;s own Manager-to-Director leaders</strong>, every session ended with someone inside the business who had seen the method work and could hold participants to it. Training that embeds the client&rsquo;s own leaders becomes capability building rather than a guest lecture &mdash; and it has been the <strong>Datalabs Agency</strong> model ever since.',
+    'SECTION_D_ANSWER': 'Lockheed received a custom <strong>90-minute slide deck</strong> in its own branding, <strong>287 professionally designed digital workbooks</strong>, visual examples and motion graphics built for virtual delivery, custom practice datasets for the final exercises, and a complete <strong>coach-support kit</strong>.',
+    'SECTION_D_RATIONALE': 'The coach kit is the part that outlasts the two days. Because the coaches were <strong>Lockheed&rsquo;s own senior leaders</strong>, every session ended with someone inside the business who had seen the method work and could hold participants to it. Training that embeds the client&rsquo;s own leaders becomes capability building rather than a guest lecture &mdash; and it has been the <strong>Datalabs Agency</strong> model ever since.',
 }), '1/4', '1/2')
 
 # ---------- quote ----------
@@ -129,13 +129,13 @@ row_quote = quote_row('Otto Ottinger', 'The design principle behind the Lockheed
 # ---------- FAQ ----------
 row_faq = faq_row(blocks, 'The Lockheed Martin program', 'Ask about your program', [
     ('How many people did the Datalabs Agency train at Lockheed Martin?',
-     '<strong>287 Leadership Development Program participants</strong>, all with 0&ndash;3 years of leadership experience, drawn from engineering, operations, finance, communications, HR, and security. The workshops were the <strong>capstone of Leadership Development Conference II</strong> in June 2022.'),
+     '<strong>287 Leadership Development Program participants</strong>, all with 0&ndash;3 years of leadership experience, drawn from six functions across the business. The workshops were the <strong>capstone of Leadership Development Conference II</strong> in June 2022.'),
     ('How were 287 people trained in two days?',
      '<strong>Eight concurrent 90-minute virtual sessions</strong> across four time slots on 14 and 15 June 2022, each capped at <strong>40&ndash;50 participants</strong> so the exercises stayed hands-on. Two slots ran each day, morning and afternoon US Eastern time.'),
     ('What materials did participants receive?',
-     'A custom slide deck in Lockheed Martin branding, a professionally designed <strong>digital workbook for each of the 287 participants</strong>, visual examples and motion graphics built for virtual delivery, and <strong>Lockheed-specific datasets</strong> for the final exercises.'),
+     'A custom slide deck in Lockheed Martin branding, a professionally designed <strong>digital workbook for each of the 287 participants</strong>, visual examples and motion graphics built for virtual delivery, and <strong>custom practice datasets</strong> &mdash; dummy data shaped like the work &mdash; for the final exercises.'),
     ('What role did the coaches play?',
-     '<strong>More than twenty Lockheed Martin leaders</strong> at Manager-to-Director level were <strong>embedded in the sessions</strong>, supported by a coaching brief, a session-prep worksheet, and a virtual vendor overview a week before delivery. They carried the method back into the business after the program ended.'),
+     '<strong>More than twenty senior Lockheed Martin leaders</strong> were <strong>embedded in the sessions</strong>, briefed and equipped with a full coach-support kit ahead of delivery. They carried the method back into the business after the program ended.'),
     ('Can the Datalabs Agency run a capstone like this for our leadership program?',
      'Yes. Concurrent virtual sessions, custom-branded materials, digital workbooks, and a <strong>coach-support layer</strong> is a repeatable format &mdash; the schedule <strong>scales to your cohort size and time zones</strong>. Send your program shape through the contact form and we will reply with a delivery plan.'),
 ])
@@ -145,9 +145,9 @@ art1 = fill(blocks['article1'], {
     'ARTICLE_1_SUBTITLE': 'Attention is the deliverable',
     'ARTICLE_1_HEADING': 'Designing a virtual workshop leaders do not tab away from',
     'ARTICLE_1_BODY': f'''{P}A virtual room is the hardest room. Nobody has to look at you; the second monitor is right there. So the Lockheed sessions were engineered around one number: <strong>something changes every four to eight minutes</strong>. A prompt, an exercise, a critique, a story &mdash; the format never sits still long enough for attention to leave.</p>
-{P}The exercises did the heavy lifting. <strong>Deliberate practice</strong> &mdash; structured, repeatable exercises with feedback &mdash; beats demonstration every time, so participants spent their minutes building, not watching. The final exercises ran on <strong>custom Lockheed Martin datasets</strong>, because a leader in operations or finance takes a lesson seriously when it arrives wearing their own numbers.</p>
+{P}The exercises did the heavy lifting. <strong>Deliberate practice</strong> &mdash; structured, repeatable exercises with feedback &mdash; beats demonstration every time, so participants spent their minutes building, not watching. The final exercises ran on <strong>custom-built practice datasets</strong> &mdash; dummy data shaped like the work &mdash; because a leader in operations or finance takes a lesson seriously when the exercise feels like their world.</p>
 {P}The materials were built natively for the medium: <strong>motion graphics</strong> and visual examples designed for screen delivery, and a digital workbook for every participant &mdash; all 287 of them &mdash; so the session left something behind that survives the meeting-ends chime.</p>
-{P}Every device in that list is now standard in our {LINK("/?page_id=661", "data visualisation training workshops")}. The four-to-eight-minute rule is not a Lockheed special; it is what virtual training owes its audience.</p>''',
+{P}You will find the same care in our {LINK("/?page_id=661", "data visualisation training workshops")} &mdash; that rhythm of constant engagement is what virtual training owes its audience.</p>''',
 })
 art2 = fill(blocks['article2'], {
     'ARTICLE_2_SUBTITLE': 'Ten weeks, no drift&hellip;',

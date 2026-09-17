@@ -1,0 +1,24 @@
+{
+  "target": 54143,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 461,
+      "type": "pages",
+      "search": "as an animated video with an <a href=\"https://www.jeffbullas.com/ai-voice/\"",
+      "replace": "as an <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/monash-university-rankings-campaign/\">animated video</a></strong> with an <a href=\"https://www.jeffbullas.com/ai-voice/\""
+    },
+    {
+      "source_id": 53763,
+      "type": "pages",
+      "search": "<strong>An animated data video choreographs charts to a script, a voiceover and a clock.</strong>",
+      "replace": "<strong>An <a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/monash-university-rankings-campaign/\">animated data video</a> choreographs charts to a script, a voiceover and a clock.</strong>"
+    },
+    {
+      "source_id": 19178,
+      "type": "pages",
+      "search": "data visualisations, infographics and motion graphics.",
+      "replace": "data visualisations, infographics and <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/monash-university-rankings-campaign/\">motion graphics</a></strong>."
+    }
+  ]
+}

@@ -12,6 +12,19 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 - Founded: 2012, Melbourne, Australia (serves clients globally — US, Europe, Middle East)
 - International workshop delivery (confirmed by Otto, 14 Aug 2026): on-site workshops delivered in the United States, Germany (several cities), Saudi Arabia, Hong Kong, and Singapore, plus across Australia (incl. Sydney, Canberra). Travel quoted up front; remote full days can split over two mornings for time zones.
 - Services: corporate training workshops (~16 topics incl. Power BI, Tableau, data storytelling), dashboard design & consulting, BI style guides, WooCommerce shop of Power BI/Tableau templates, **interactive annual reports (web-based, replacing PDF/print reports)**
+- **AI dashboards (Otto, 27 Aug 2026): REAL, and real in BOTH senses.** Otto confirmed both halves
+  when asked to separate them:
+  1. **AI-assisted production** — Otto uses Claude and similar tools to design and build dashboards.
+     The client receives a normal Power BI or Tableau dashboard; the AI is in how it was made.
+  2. **AI features in the dashboard itself** — dashboards can be built so the client's own users ask
+     questions in plain language rather than only reading fixed charts.
+  Because (2) is true, **"AI-powered dashboard" is defensible** — that phrase means the dashboard has
+  AI capability, and it does. Had only (1) been true it would have been a false claim, and the page
+  would have had to say "AI-assisted dashboard design" instead. **Keep naming the mechanism**, per the
+  rule below: say what the AI does, never just "AI".
+  `TO CONFIRM before writing feature detail: which AI features specifically ship in a client build
+  (natural-language question answering is confirmed; automated insight generation, anomaly alerts and
+  forecasting are NOT yet confirmed and must not be listed).`
 - **AI (Otto, 26 Aug 2026): AI-assisted annual reports are a REAL, current offer** — content may say The Datalabs Agency uses AI in producing interactive annual reports. Otto's stated direction is to infuse AI across every product and service, so expect this list to grow.
   - **What the AI actually does (Otto, 26 Aug 2026)** — name the mechanism, never just the word "AI":
     **interactive chart generation**, **web animations**, and **interactive diagrams**. Pair it with the
@@ -37,7 +50,13 @@ Facts here are the ONLY brand facts content may use. Items marked `TO CONFIRM` n
 ## Oddtoe
 
 **Canonical sentence (use verbatim, everywhere):**
-> Oddtoe is an experiential design and generative-AI animation studio based in Melbourne, creating projection, installation, and animated work for events, venues, and galleries.
+> **Oddtoe** is an experiential design and generative-AI animation studio based in Melbourne, creating projection, installation, and animated work for events, venues, and galleries.
+
+**Wording is verbatim; the brand name carries `<strong>`.** Otto's rule, 8 Sep 2026: company names are
+bolded in body copy, the same treatment Datalabs already had. In page markup that is
+`<strong>Oddtoe</strong> is an experiential design and…`. `de-ai-check.py` matches this sentence
+tag-stripped, so the markup passes while the wording stays enforced. Applied site-wide 8 Sep — 210
+occurrences across 36 pages.
 
 - Website: https://www.oddtoe.com
 - Positioning: Melbourne / Los Angeles / Berlin

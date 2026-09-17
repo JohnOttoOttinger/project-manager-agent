@@ -1,0 +1,12 @@
+{
+  "target": 53852,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 367,
+      "type": "pages",
+      "search": "effective Tableau dashboards.</strong>",
+      "replace": "effective <a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/marriott-dashboard-design-case-study/\">Tableau dashboards</a>.</strong>"
+    }
+  ]
+}

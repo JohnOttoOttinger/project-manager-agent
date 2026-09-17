@@ -1,0 +1,33 @@
+{
+  "URL_SLUG": "publicity-stunts",
+  "PARENT_PAGE_ID": "16272",
+  "FORM_ID": "4",
+  "AD_HEADLINE": "A stunt the press will photograph",
+  "AD_SUB": "One built object for your campaign...",
+  "CTA_LABEL": "Tell me the date",
+  "PROOF_KICKER": "Built, carried and photographed...",
+  "PROOF_TITLE": "recent work from the workshop",
+  "FORM_TITLE": "Got a stunt in mind?",
+  "FORM_KICKER": "Tell me about the project and when it needs to happen.",
+  "FAQ_PICK": [
+    1,
+    3,
+    2
+  ],
+  "FAQ_TAB_STAMP": "1757800000",
+  "THANKS_TITLE": "Got it.",
+  "THANKS_KICKER": "Thanks for the brief...",
+  "THANKS_BODY": "<span style=\"font-family: Arvo;\"><strong>Oddtoe</strong> replies within <strong>one working day</strong> with two or three questions about the project, the place and the date. Until then, the full use case and the built work are one tap away.</span>",
+  "THANKS_BTN1_TEXT": "Read the full use case",
+  "THANKS_BTN1_URL": "https://www.oddtoe.com/use-cases/publicity-stunts/",
+  "THANKS_BTN2_TEXT": "See built work",
+  "THANKS_BTN2_URL": "https://www.oddtoe.com/portfolio-aggregate/",
+  "YOAST_TITLE_TWIN": "A Stunt the Press Will Photograph | Oddtoe",
+  "YOAST_TITLE_THANKS": "Got It | Oddtoe",
+  "AD_COPY_NOTE": "The ad's headline must be AD_HEADLINE word for word; the ad image is the hero image (16301).",
+  "AD_LINE": "Designed by a <strong>political cartoonist</strong>, ready for your date.",
+  "HERO_IMAGE_ID": "16347",
+  "CIRCLES_SUB": "Six ways to get on the news and all over social media. Roll over a circle and pick the one your organisation could pull off.",
+  "CIRCLES_FOOT": "Want one of these for your organisation? <a href=\"#form\">Tell me about the project</a>.",
+  "PKG4_BODY": "<span style=\"font-family: Arvo;\">Designed in Melbourne, <strong>built by the right maker for the piece</strong>, here or near you. Finished so it looks right on a news camera and on a phone, for Instagram Reels and TikTok. Made to come apart into a crate and go back together without a technician.</span>"
+}

@@ -2,27 +2,54 @@
 
 Use this skill when Otto asks for the next money page, a pricing page, a comparison, a case study, the credits page, an events-guide page, or a directory/list page of people or companies — or clicks the "Next money page" quick action. The full template suite is `references/template-catalog.md`. These pages answer buying questions AI assistants get asked ("who can train my team", "what does X cost"), which is where a recommendation becomes a lead.
 
-## The 6am draft pipeline (24 Aug 2026)
+## The daily pipeline (rebuilt 3 Sep 2026)
 
-A scheduled task, `oddtoe-next-best-page`, composes the next money page as a WordPress **draft** every
-morning at 05:00. Otto reviews, verifies any statistic, sets the two wp-admin page settings, and publishes.
-Two scripts back it, both usable by hand:
+Two cloud routines per brand. **4pm scout** emails a shortlist of candidates; Otto replies with a
+number, "skip", or a page in his own words; **5am builder** composes it as a WordPress draft and
+records it. The prompts those routines run live in `references/routine-prompts/` — that directory
+is the source of truth, and a change there has to be pasted into the routine to take effect.
 
-    python3 scripts/next-best-page.py            # what to build next, and why
-    python3 scripts/de-ai-check.py <file.html>   # fail a draft that reads like a machine wrote it
+    python3 scripts/next-content.py --brand datalabs      # what to build next, and why
+    python3 scripts/suggest.py oddtoe "the page you want" # jump the queue, in your own words
+    python3 scripts/suggest.py --list                     # the whole queue
+    python3 scripts/de-ai-check.py <file.html>            # fail a draft that reads machine-written
 
-**`next-best-page.py`** ranks opportunities from live Search Console data. It looks for the pattern that
-produced /animation-agency/: real demand, the site already appearing for it, ranking badly, converting at
-nothing, because Google is serving the WRONG page. Signals: impression volume, whether the position sits in
-the winnable 11-40 band, whether the serving page's slug reflects the query at all, wasted demand
-(<1% CTR on 300+ impressions), and commercial intent. It clusters query variants by their two most
-site-frequent terms so "X services / X studio / X company" propose ONE page, not three. For every candidate
-it computes a `do_not_target` list — queries other Oddtoe pages already rank top-10 for — which is the
-cannibalisation guardrail the composer must honour.
+**Two files hold the state.** `references/queue.json` is the forward-looking list — short, machine
+readable, shared by the scout and the builder. `references/backlog.md`
+stays the human build record, takes the long post-build write-ups, and is still what the app's
+Content pipeline card parses. Before the split, one file
+did both jobs and the record was crushing the queue: 44 items, 13 of them actually queued, single
+entries running 900+ words.
 
-It also separates a second class: **title/meta fixes**. A query ranking top-10 with no clicks does not need
-a new page, it needs a better title, and proposing a page over it would be self-cannibalisation. The first
-run surfaced `prop making companies australia` — 15,015 impressions, position 6.4, 0.01% CTR.
+**`next-content.py`** ranks
+
+    log10(volume) x relevance x commercial_tier x gap x winnability x competition
+
+against `references/keyword-universe.json` — real Australian search volumes from DataForSEO
+sweeps. `gap` is a live HEAD check, so a 404 is a real hole and a 200 is a retrofit; `relevance`
+asks whether the term is about what the brand actually does; `winnability` reads how weakly the
+incumbent holds it. Terms already in the queue, already drafted, or already served by an existing
+page at another slug are suppressed rather than offered back. When nothing clears the build
+threshold it says the universe is exhausted and asks for a fresh sweep instead of padding.
+
+**Why not Search Console.** GSC only reports queries the site *already appears for*, so the gaps
+worth building are invisible to it by construction. `power bi training` is 720/mo of real demand
+and produced 8 impressions in 180 days — the demand was invisible, not absent, and the old picker
+could never have found it. Its impressions are also up to 91% machine-generated. GSC is now used
+for the one thing it is genuinely good at: the `do_not_target` cannibalisation guardrail.
+
+**`next-best-page.py` is RETIRED** (3 Sep 2026) and is not part of this pipeline. It ranked GSC
+impressions and could only ever propose variations on rankings the site already had. Kept for
+reference and for its `fix-existing` / `title-meta-fix` classification, which is still sound.
+
+**Feeding the universe.** A sweep is one DataForSEO run in Otto's signed-in API Playground
+session (no credential is ever handled — the n8n path is bound to *local* n8n and unreachable
+from a cloud routine). Location Australia (2036). Write it up in
+`skills/analytics/references/dataforseo/`, then add the terms to `keyword-universe.json`. Never
+invent a volume: a term with no verified figure belongs in the queue as an Otto-origin idea.
+
+**Retrofitting existing pages is deliberately NOT on this timer** (Otto, 3 Sep 2026). Run
+`skills/analytics/scripts/geo-retrofit-rank.py` on demand, against the Phase 1 queue.
 
 **`de-ai-check.py`** enforces the tells in geo-playbook plus the ones found in review: balanced antithesis,
 aphoristic closers, coined compounds, self-praise, "rather than" as a tic, blanket bold, repeated sentence
@@ -91,6 +118,7 @@ The asset pipeline:
 1. **Basis:** a master page with one of each building block as raw `[vc_row]` markup was delivered Aug 2026 (now titled "MONEY PAGE DESIGN KIT — MASTER (never publish)", Datalabs page 52964): intro row, question-section rows, table row, article rows, FAQ row, plus fixed footer blocks. Otto styles each row in WPBakery — he is designing the *patterns* (what a table/CTA/section looks like), not one page. Styling rules that must survive: real `<h2>/<h3>` tags, real `<table>` HTML, all text as text, ONE `h1` per page (the hero title). **Heading tags are load-bearing for typography (14 Aug 2026): Ronneby styles Qwigley subtitles and Bebas titles BY TAG (`div` kills the fonts). Agreed final tag map: hero = h1 with the page's only Qwigley h2 subtitle; all other subtitles h3; cross-promo titles h2. Qwigley subtitle text is always sentence case (capital first letter only), per the Oddtoe design system.** **FAQ (updated 14 Aug 2026, supersedes the earlier flat-FAQ rule):** the styled `dfd_accordion` block with 4–8 Q&As plus a `[vc_raw_html]` FAQPage JSON-LD block (Ronneby renders accordion content server-side, so the text stays crawlable; the JSON-LD gives AI assistants the structured copy).
 2. **Snapshot into the kit:** DONE for v1 (14 Aug 2026) — `references/design-kit.html`, tokenized with `{{TOKEN}}` slots and pattern labels; specs in `references/design-kit-README.md`. When Otto restyles the dummy, re-fetch its RAW content (authenticated GET, `context=edit`), re-apply the tokens, and overwrite the kit.
 3. **Compose per page type:** every draft is assembled by repeating, re-ordering, and omitting kit patterns to fit the page structure in `references/page-types.md` — e.g. a comparison page reuses the table pattern five times. Content goes into the blocks; Otto's row/column styling attributes are NEVER altered. Drafts arrive in wp-admin already in his look-and-feel, and Otto retains full liberty to further art-direct any individual page in WPBakery afterwards (the agent must not overwrite his per-page styling on later edits — re-fetch raw content before any update).
+3b. **Hero cardboard box (Otto, 11 Sep 2026):** the kit master carries the chart box (Oddtoe 16126 / Datalabs 52827) as its hero placeholder. Pick a DIFFERENT box per page so neighbouring money pages do not repeat: Oddtoe library = chart 16126, flow diagram 16127, megaphone man 16125, all-seeing eye 16319, 3D cubes 16320 (megaphone man and eye are Oddtoe-only); Datalabs = chart 52827, diagrams 52830, sample box 52527. Swap = the one `image="..."` attribute on the hero `vc_single_image` after the dotted-arrow delimiter; back up and diff live-vs-local first. New boxes: upload with a descriptive slug and alt text, then add them here.
 4. **Kit updates:** when Otto restyles the dummy (or adds new patterns to it), re-snapshot → the next drafts pick the changes up. New pattern ideas (e.g. a highlight band, a testimonial row) get added to the dummy first, then re-snapshotted.
 5. **Retrofit + lifting the hold:** the workshop pricing page (draft 52962) gets recomposed from the kit before Otto reviews it; once he publishes it, the hold is lifted and the normal flow resumes (publish → link pass).
 
@@ -124,6 +152,20 @@ An orphan page gets crawled (Yoast sitemap) but not weighted; internal links do 
 ## Guardrails
 
 Everything in geo-playbook `banned.md` applies. One page = one brand. After the site publishes, remind Otto the Cloudflare cache holds HTML ~4 hours — verify with a cache-buster URL, or purge.
+
+## Publishing a Visual Case Study? Add it to the Case Studies page (added 4 Sep 2026)
+
+**The `/case-studies/` index (page 19482) does NOT auto-populate.** Its grid is
+`[vc_basic_grid post_type="ids" ... include="52198, 25379, ..."]` — a hardcoded ID list.
+A newly published case study is invisible there until its ID is added, newest first.
+Monash 54143 was missed on publish and only caught because Otto asked.
+
+**Row backgrounds cannot be changed through REST.** WPBakery compiles a row's `css=".vc_custom_N{...}"`
+into `_wpb_shortcodes_custom_css` post meta, which is NOT exposed by the REST API — editing the `css=`
+attribute text changes nothing on screen. Two workarounds: point the row at an EXISTING compiled class
+that already has the colour you want (read them off the live page's `<style>` blocks), or have Otto set
+it in the page builder UI, which regenerates the meta properly. Removing the `css=` attribute drops the
+class entirely and the row goes transparent — on these dark-bodied pages that means black.
 
 ## Retiring a post? Check the homepage promo slots (added 24 Aug 2026)
 
@@ -170,4 +212,4 @@ of a page already ranking top-10.
 **Companion tool:** `skills/analytics/scripts/geo-coverage.py --brand <brand>` ranks live pages by
 (traffic already earned) x (GEO treatment missing), scoring each 0–6 on the detectable playbook
 rules — canonical sentence, FAQ schema, 2+ question headings, comparison table, visible date, meta
-description. Use it to pick the next *improvement*; use `next-best-page.py` only for genuine gaps.
+description. Use it to pick the next *improvement*; use `next-content.py` for genuine gaps.

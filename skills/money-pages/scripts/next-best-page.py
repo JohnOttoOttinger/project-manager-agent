@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Rank the next money page to build, from live Search Console data.
+"""RETIRED 3 Sep 2026 - superseded by next-content.py. Not part of the daily pipeline.
+
+Kept because its fix-existing / title-meta-fix classification and its do_not_target guardrail are
+still sound. Its ranking is not: it reads Search Console, which only contains queries the site
+already appears for, so it is structurally blind to the gaps worth building ("power bi training",
+720/mo, 8 impressions in 180 days, never surfaced here). Its impression counts also run up to 91%
+machine-generated. See references/keyword-universe.json for what replaced it.
+
+Rank the next money page to build, from live Search Console data.
 
 The pattern this is built to find is the one that produced /animation-agency/:
 a query with real demand that the site ALREADY shows up for, ranking badly,

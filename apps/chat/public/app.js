@@ -1551,6 +1551,10 @@
       { id: "bd-outreach", label: "Outreach" },
       { id: "bd-lists", label: "Lists" },
     ],
+    sales: [
+      { id: "sales-crm", label: "CRM" },
+      { id: "sales-overview", label: "Overview" },
+    ],
     marketing: [
       { id: "mk-overview", label: "Overview" },
       { id: "mk-campaigns", label: "Campaigns" },
@@ -1691,12 +1695,31 @@
     { status: "imported", label: "Imported" },
     { status: "needs_review", label: "Needs review" },
     { status: "enriched", label: "Enriched" },
-    { status: "emailed", label: "Emailed" },
+    // The status is "emailed" but it means an email has been PREPARED — the
+    // send is tracked by sentDate, which stays empty until Otto sends. A
+    // column headed "Emailed" read as already-sent and caused exactly that
+    // confusion, so the label says what the column actually holds.
+    { status: "emailed", label: "Email drafted" },
+    // Not a stored status: the store keeps a sent prospect at "emailed" and
+    // stamps sentAt/sentDate. The board splits on that stamp so "waiting in
+    // Gmail" and "actually sent" stop sharing a column. Dropping a card here
+    // records a real sent signal rather than a status change.
+    { status: "sent", label: "Email sent", virtual: true },
     { status: "opened", label: "Clicked" },
     { status: "followed_up", label: "Followed up" },
     { status: "replied", label: "Replied" },
     { status: "closed", label: "Closed" },
   ];
+
+  // Which column a prospect belongs in. Only "emailed" splits: a sent stamp
+  // moves the card to the virtual "sent" column, everything else is 1:1 with
+  // its stored status.
+  function bdBoardStatus(prospect) {
+    if (prospect.status === "emailed" && (prospect.sentAt || prospect.sentDate)) {
+      return "sent";
+    }
+    return prospect.status;
+  }
 
   let bdDraggedProspectId = null;
   // Set from the Lists tab so "Show on board" opens the board scoped to one
@@ -1734,8 +1757,8 @@
       case "needs_review":
         return prospect.flagReason || "Flagged by enrichment";
       case "emailed":
-        return prospect.sentDate
-          ? `Sent ${prospect.sentDate}`
+        return prospect.sentDate || prospect.sentAt
+          ? `Sent ${prospect.sentDate || bdShortDate(prospect.sentAt)}`
           : prospect.draftedAt
             ? `Drafted ${bdShortDate(prospect.draftedAt)} — not sent yet`
             : "Draft prepared";
@@ -1912,9 +1935,41 @@
       if (!prospectId) {
         return;
       }
-      void moveProspect(prospectId, column.status, onMoved);
+      if (column.virtual) {
+        void markProspectSent(prospectId, onMoved);
+      } else {
+        void moveProspect(prospectId, column.status, onMoved);
+      }
     });
     return element;
+  }
+
+  // The virtual column records a sent signal — the same write the reply scan
+  // makes when it finds the message in the Oddtoe account's Sent folder — so
+  // a drag and an inbox scan produce identical state.
+  async function markProspectSent(prospectId, onMoved) {
+    try {
+      const payload = await fetchJson("/api/prospects/signals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          brand: activeBrand()?.id ?? "oddtoe",
+          signals: [{ prospectId, kind: "sent" }],
+        }),
+      });
+      const result = payload.results?.[0];
+      if (!result || result.outcome === "not_found") {
+        onMoved(null, "That card could not be marked sent. Reload and try again.");
+        return;
+      }
+      if (result.outcome === "already") {
+        onMoved(null, `${result.company} was already recorded as sent.`);
+        return;
+      }
+      onMoved({ prospect: { company: result.company, status: "sent" } });
+    } catch {
+      onMoved(null, "That card could not be marked sent. Reload and try again.");
+    }
   }
 
   async function moveProspect(prospectId, status, onMoved) {
@@ -2018,7 +2073,7 @@
           };
           for (const column of BD_COLUMNS) {
             const inColumn = prospects
-              .filter((prospect) => prospect.status === column.status)
+              .filter((prospect) => bdBoardStatus(prospect) === column.status)
               .sort((first, second) => {
                 const firstTier =
                   first.tier === "" ? 99 : Number(first.tier) || 98;
@@ -2182,6 +2237,11 @@
         select.className = "prospect-move__select";
         select.setAttribute("aria-label", `Move ${prospect.company} to another column`);
         for (const column of BD_COLUMNS) {
+          // "Email sent" is not a storable status — marking sent happens by
+          // dragging the card there, or by the reply scan finding the message.
+          if (column.virtual) {
+            continue;
+          }
           const option = document.createElement("option");
           option.value = column.status;
           option.textContent = column.label;
@@ -2463,8 +2523,9 @@
         holder.append(setup);
 
         // --- In flight ----------------------------------------------------
-        const drafted = prospects.filter((p) => p.draftId !== "" && p.sentDate === "");
-        const sent = prospects.filter((p) => p.sentDate !== "" && p.status !== "replied" && p.status !== "closed");
+        const wasSent = (p) => p.sentDate !== "" || p.sentAt !== "";
+        const drafted = prospects.filter((p) => p.draftId !== "" && !wasSent(p));
+        const sent = prospects.filter((p) => wasSent(p) && p.status !== "replied" && p.status !== "closed");
         const dueFollowUp = prospects.filter(
           (p) => p.followUpDue !== "" && p.followUpDue <= today && p.status !== "replied" && p.status !== "closed",
         );
@@ -3029,17 +3090,22 @@
       required: "name",
       endpoint: "/api/opportunities/import",
       needsList: false,
+      kindFallback: "opencall",
       map: {
         name: "name", festival: "name", event: "name", opportunity: "name",
+        eventname: "name", festivalname: "name", eventtitle: "name", title: "name",
         organiser: "organiser", organizer: "organiser", host: "organiser",
-        kind: "kind", type: "kind", stream: "kind",
+        kind: "kind", type: "kind", stream: "kind", eventtype: "kind",
+        festivaltype: "kind", category: "kind", format: "kind",
         city: "city", country: "country",
-        url: "url", website: "url", link: "url",
+        url: "url", website: "url", link: "url", officialwebsite: "url",
+        officialsite: "url", homepage: "url", web: "url",
+        applicationstatus: "verified", verified: "verified", verification: "verified",
         start: "eventStart", eventstart: "eventStart", startdate: "eventStart",
         end: "eventEnd", eventend: "eventEnd", enddate: "eventEnd",
         pressdeadline: "pressDeadline", submissiondeadline: "submissionDeadline",
         deadline: "submissionDeadline",
-        contact: "contact", presscontact: "contact",
+        contact: "contact", presscontact: "contact", email: "contact",
         relevance: "relevance", focus: "relevance", blurb: "relevance",
         nextaction: "nextAction", notes: "notes", note: "notes",
       },
@@ -3063,7 +3129,29 @@
     },
   };
 
-  function bdParseDelimited(text) {
+  // Free-text "type" columns ("Light art festival", "Open call") are folded onto
+  // the board's fixed streams. Anything unrecognised keeps its original wording
+  // in notes and falls back to the shape's default stream.
+  function bdNormaliseKind(value) {
+    const text = String(value ?? "").trim().toLowerCase();
+    if (text === "") { return null; }
+    if (BD_KIND_LABELS[text]) { return text; }
+    if (/open ?call|submission|call for/.test(text)) { return "opencall"; }
+    if (/prize|award|competition/.test(text)) { return "prize"; }
+    if (/market|fair|expo|trade|showcase/.test(text)) { return "market"; }
+    if (/regist|\beoi\b|expression of interest/.test(text)) { return "register"; }
+    if (/press|media|editorial/.test(text)) { return "press"; }
+    if (/scout/.test(text)) { return "scouting"; }
+    return null;
+  }
+
+  function bdHeaderLabel(cell) {
+    const words = cell.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
+    return words === "" ? "" : words[0].toUpperCase() + words.slice(1);
+  }
+
+  function bdParseDelimited(raw) {
+    const text = String(raw ?? "").replace(/^\uFEFF/, "");
     const firstLine = text.split("\n", 1)[0] ?? "";
     const tabs = (firstLine.match(/\t/g) ?? []).length;
     const commas = (firstLine.match(/,/g) ?? []).length;
@@ -3095,7 +3183,7 @@
 
     const intro = document.createElement("p");
     intro.className = "bd-listcard__note";
-    intro.textContent = `Paste rows or choose a file. The first row must be a header. A ${shape.required} column is required; everything else is optional and anything unrecognised is reported rather than silently dropped.`;
+    intro.textContent = `Paste rows or choose a file. The first row must be a header. A ${shape.required} column is required; everything else is optional. Unrecognised columns are kept in notes rather than dropped.`;
     body.append(intro);
 
     const card = dashCard();
@@ -3159,36 +3247,62 @@
       const reader = new FileReader();
       reader.onload = () => {
         paste.value = String(reader.result ?? "");
-        status.textContent = `Loaded ${chosen.name}.`;
+        runPreview(`Loaded ${chosen.name}. `);
+      };
+      reader.onerror = () => {
+        status.textContent = `Could not read ${chosen.name}.`;
       };
       reader.readAsText(chosen);
     });
 
-    check.addEventListener("click", () => {
+    // Edited text makes any earlier preview stale; Import re-runs it.
+    paste.addEventListener("input", () => {
+      parsed = null;
+      commit.disabled = paste.value.trim() === "";
+    });
+
+    check.addEventListener("click", () => { runPreview(); });
+
+    function runPreview(prefix = "") {
       preview.replaceChildren();
+      parsed = null;
       commit.disabled = true;
       const table = bdParseDelimited(paste.value);
       if (table.length < 2) {
-        status.textContent = "Needs a header row and at least one row of data.";
-        return;
+        status.textContent = `${prefix}Needs a header row and at least one row of data.`;
+        return false;
       }
       const header = table[0].map((cell) =>
         shape.map[cell.trim().toLowerCase().replace(/[^a-z0-9]/g, "")] ?? null,
       );
       const unknown = table[0].filter((cell, i) => header[i] === null && cell.trim() !== "");
       if (!header.includes(shape.required)) {
-        status.textContent = `No ${shape.required} column found. Rename a column to "${shape.required}" and preview again.`;
-        return;
+        status.textContent = `${prefix}No ${shape.required} column found. Rename a column to "${shape.required}" and preview again.`;
+        return false;
       }
       const rows = [];
       let skipped = 0;
       for (const cells of table.slice(1)) {
         const record = {};
+        const extras = [];
         header.forEach((field, i) => {
           const value = (cells[i] ?? "").trim();
-          if (field && value !== "") { record[field] = value; }
+          if (value === "") { return; }
+          if (field) { record[field] = value; }
+          else if (table[0][i].trim() !== "") { extras.push(`${bdHeaderLabel(table[0][i])}: ${value}`); }
         });
         if (!record[shape.required]) { skipped += 1; continue; }
+        if ("kind" in shape.map || shape.kindFallback) {
+          const stream = bdNormaliseKind(record.kind);
+          if (stream) { record.kind = stream; }
+          else {
+            if (record.kind) { extras.unshift(`Type: ${record.kind}`); }
+            if (shape.kindFallback) { record.kind = shape.kindFallback; } else { delete record.kind; }
+          }
+        }
+        if (extras.length > 0) {
+          record.notes = [record.notes, ...extras].filter(Boolean).join("\n");
+        }
         rows.push(record);
       }
       parsed = rows;
@@ -3198,10 +3312,10 @@
       mapped.textContent = `${rows.length} rows ready${skipped > 0 ? `, ${skipped} skipped for having no ${shape.required}` : ""}. Columns matched: ${[...new Set(header.filter(Boolean))].join(", ")}.`;
       preview.append(mapped);
       if (unknown.length > 0) {
-        const ignored = document.createElement("p");
-        ignored.className = "bd-oppcard__next";
-        ignored.textContent = `Ignored ${unknown.length} unrecognised column(s): ${unknown.join(", ")}.`;
-        preview.append(ignored);
+        const kept = document.createElement("p");
+        kept.className = "bd-oppcard__next";
+        kept.textContent = `${unknown.length} unrecognised column(s) kept in notes: ${unknown.join(", ")}.`;
+        preview.append(kept);
       }
 
       const wrap = document.createElement("div");
@@ -3237,11 +3351,13 @@
         more.textContent = `Showing the first 8 of ${rows.length}.`;
         preview.append(more);
       }
-      status.textContent = "Looks readable. Import when you're happy.";
+      status.textContent = `${prefix}${rows.length === 0 ? "No rows to import." : "Looks readable. Import when you're happy."}`;
       commit.disabled = rows.length === 0;
-    });
+      return rows.length > 0;
+    }
 
     commit.addEventListener("click", () => {
+      if (!parsed && !runPreview()) { return; }
       if (!parsed || parsed.length === 0) { return; }
       commit.disabled = true;
       status.textContent = "Importing…";
@@ -3881,6 +3997,13 @@
     "accepted", "declined", "passed", "missed",
   ];
 
+  // How much of an opportunity card's prose shows on the face of the card.
+  // Both fields keep their full text in a title tooltip, so trimming here
+  // costs nothing but reading time. Measured across the live 83 rows, these
+  // two caps take about 10% off the average card.
+  const BD_OPP_WHY_CHARS = 190;
+  const BD_OPP_NEXT_CHARS = 150;
+
   const BD_MEDIA_STATUSES = ["sourced", "qualified", "drafted", "sent", "outcome"];
 
   // A deadline is only a date if someone read it on the organiser's page.
@@ -4130,8 +4253,8 @@
     if (relevance !== "") {
       const why = document.createElement("p");
       why.className = "bd-listcard__note";
-      why.textContent = relevance.length > 240
-        ? `${relevance.slice(0, 240)}…`
+      why.textContent = relevance.length > BD_OPP_WHY_CHARS
+        ? `${relevance.slice(0, BD_OPP_WHY_CHARS)}…`
         : relevance;
       why.title = relevance;
       card.append(why);
@@ -4139,7 +4262,12 @@
     if (opportunity.nextAction !== "") {
       const next = document.createElement("p");
       next.className = "bd-oppcard__next";
-      next.textContent = `Next: ${opportunity.nextAction}`;
+      const line = `Next: ${opportunity.nextAction}`;
+      next.textContent = line.length > BD_OPP_NEXT_CHARS
+        ? `${line.slice(0, BD_OPP_NEXT_CHARS)}…`
+        : line;
+      // Nothing is lost — the untrimmed action stays on hover.
+      next.title = opportunity.nextAction;
       card.append(next);
     }
 
@@ -4674,6 +4802,8 @@
       });
   }
 
+  let draggedPipelineItem = null;
+
   function pipelineItemsFor(payload, key) {
     const items = payload?.[key];
     return Array.isArray(items) ? items : [];
@@ -4696,7 +4826,7 @@
     return cut.length > 72 ? `${cut.slice(0, 72)}…` : cut;
   }
 
-  function makeIconCard(item, icon, { dimmed = false } = {}) {
+  function makeIconCard(item, icon, { dimmed = false, draggable = false } = {}) {
     const card = document.createElement("button");
     card.className = "icon-card";
     card.type = "button";
@@ -4704,6 +4834,26 @@
       card.classList.add("icon-card--dimmed");
     }
     card.setAttribute("aria-expanded", "false");
+    // A card can only be dragged when it maps back to a real line in a real
+    // file; sample cards and anything the server marked unwritable stay put.
+    if (draggable && item.source && Number.isInteger(item.line) && item.line >= 0) {
+      card.draggable = true;
+      card.classList.add("icon-card--draggable");
+      card.addEventListener("dragstart", (event) => {
+        draggedPipelineItem = item;
+        card.classList.add("icon-card--dragging");
+        event.dataTransfer.effectAllowed = "move";
+        // Some browsers refuse to start a drag with an empty payload.
+        event.dataTransfer.setData("text/plain", item.title);
+      });
+      card.addEventListener("dragend", () => {
+        draggedPipelineItem = null;
+        card.classList.remove("icon-card--dragging");
+        for (const column of document.querySelectorAll(".kanban-col--drop")) {
+          column.classList.remove("kanban-col--drop");
+        }
+      });
+    }
 
     const head = document.createElement("span");
     head.className = "icon-card__head";
@@ -4722,7 +4872,7 @@
 
     const detail = document.createElement("span");
     detail.className = "icon-card__detail";
-    detail.textContent = item.title;
+    detail.textContent = item.note ?? item.title;
     if (item.url) {
       const link = document.createElement("a");
       link.href = item.url;
@@ -4853,30 +5003,195 @@
     );
   }
 
-  function kanbanColumn(title, icon, items, brand) {
-    const column = document.createElement("div");
-    column.className = "kanban-col";
+  // ---- Content Pipeline board ----
+  // Every column is one marker in one of two markdown files, so a drag is a
+  // one-character edit to a known line. Backlog, Awaiting review and Published
+  // are the same file and move between each other freely; Outreach is a
+  // different file and only ever leaves the board by being marked sent.
+  const PIPELINE_COLUMNS = [
+    {
+      key: "nextPages",
+      title: "Backlog",
+      icon: "📝",
+      source: "backlog",
+      status: "queued",
+      canAdd: true,
+    },
+    {
+      key: "awaitingReview",
+      title: "Awaiting review",
+      icon: "👀",
+      source: "backlog",
+      status: "review",
+    },
+    {
+      key: "outreach",
+      title: "Outreach to send",
+      icon: "📣",
+      source: "outreach",
+      status: "queued",
+      canAdd: true,
+      sendable: true,
+    },
+    {
+      key: "published",
+      title: "Published",
+      icon: "✅",
+      source: "backlog",
+      status: "published",
+    },
+  ];
+
+  function pipelinePost(payload) {
+    return fetchJson("/api/pipeline", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
+
+  function acceptsPipelineDrop(target, item) {
+    return (
+      Boolean(item) &&
+      item.source === target.source &&
+      item.status !== target.status
+    );
+  }
+
+  // Wires one element as a drop target for a { source, status } pair.
+  function pipelineDropTarget(element, target, commit) {
+    element.addEventListener("dragover", (event) => {
+      if (!acceptsPipelineDrop(target, draggedPipelineItem)) {
+        return;
+      }
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      element.classList.add("kanban-col--drop");
+    });
+    element.addEventListener("dragleave", (event) => {
+      if (!element.contains(event.relatedTarget)) {
+        element.classList.remove("kanban-col--drop");
+      }
+    });
+    element.addEventListener("drop", (event) => {
+      const item = draggedPipelineItem;
+      if (!acceptsPipelineDrop(target, item)) {
+        return;
+      }
+      event.preventDefault();
+      element.classList.remove("kanban-col--drop");
+      commit(() =>
+        pipelinePost({
+          action: "move",
+          source: item.source,
+          line: item.line,
+          fingerprint: item.fingerprint,
+          status: target.status,
+        }),
+      );
+    });
+  }
+
+  function pipelineAddForm(column, brand, commit) {
+    const form = document.createElement("form");
+    form.className = "kanban-add";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "kanban-add__input";
+    input.maxLength = 200;
+    input.placeholder =
+      column.source === "outreach" ? "Add an artifact…" : "Add a page…";
+    input.setAttribute("aria-label", `Add a card to ${column.title}`);
+    const select = document.createElement("select");
+    select.className = "kanban-add__brand";
+    select.setAttribute("aria-label", "Brand");
+    for (const option of [
+      { value: "datalabs", label: "Datalabs" },
+      { value: "oddtoe", label: "Oddtoe" },
+      { value: "general", label: "Both" },
+    ]) {
+      const element = document.createElement("option");
+      element.value = option.value;
+      element.textContent = option.label;
+      select.append(element);
+    }
+    select.value = brand?.id ?? "general";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "kanban-add__submit";
+    submit.textContent = "Add";
+    form.append(input, select, submit);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const title = input.value.trim();
+      if (title === "") {
+        input.focus();
+        return;
+      }
+      commit(() =>
+        pipelinePost({
+          action: "add",
+          source: column.source,
+          brand: select.value,
+          title,
+        }),
+      );
+    });
+    return form;
+  }
+
+  function pipelineColumn(column, payload, brand, commit) {
+    const items = pipelineItemsFor(payload, column.key);
+    const writable = payload.writable === true;
+    const element = document.createElement("div");
+    element.className = "kanban-col";
+
     const heading = document.createElement("p");
     heading.className = "kanban-col__title";
     const text = document.createElement("span");
-    text.textContent = `${icon} ${title}`;
+    text.textContent = `${column.icon} ${column.title}`;
     const count = document.createElement("span");
     count.className = "kanban-col__count";
     count.textContent = String(items.length);
     heading.append(text, count);
-    column.append(heading);
+    element.append(heading);
+
+    // The list scrolls rather than truncating: the count in the heading is the
+    // real number of items in the file, and all of them are reachable.
+    const list = document.createElement("div");
+    list.className = "kanban-col__list";
     if (items.length === 0) {
-      column.append(dashEmpty("Empty."));
-      return column;
+      list.append(dashEmpty("Empty."));
     }
     for (const item of items) {
-      column.append(
-        makeIconCard(item, icon, {
+      list.append(
+        makeIconCard(item, column.icon, {
           dimmed: !itemMatchesBrand(item, brand),
+          draggable: writable,
         }),
       );
     }
-    return column;
+    element.append(list);
+
+    if (writable) {
+      pipelineDropTarget(element, column, commit);
+      if (column.sendable) {
+        // Sent outreach leaves the board, so it needs a target of its own.
+        const sent = document.createElement("div");
+        sent.className = "kanban-col__sent";
+        sent.textContent = "✓ Drop here when sent";
+        pipelineDropTarget(
+          sent,
+          { source: column.source, status: "published" },
+          commit,
+        );
+        element.append(sent);
+      }
+      if (column.canAdd) {
+        element.append(pipelineAddForm(column, brand, commit));
+      }
+    }
+    return element;
   }
 
   function renderPipelineBoard(body) {
@@ -4888,49 +5203,491 @@
           : "Content pipeline — both brands",
       ),
     );
+    const status = document.createElement("p");
+    status.className = "kanban-status";
+    status.hidden = true;
+    status.setAttribute("role", "status");
+    body.append(status);
     const board = document.createElement("div");
     board.className = "kanban";
     body.append(board);
+    const footer = document.createElement("div");
+    body.append(footer);
     board.append(dashEmpty("Loading the board…"));
+
+    let busy = false;
+    function draw(payload) {
+      board.replaceChildren(
+        ...PIPELINE_COLUMNS.map((column) =>
+          pipelineColumn(column, payload, brand, commit),
+        ),
+      );
+      footer.replaceChildren();
+      if (payload.sample === true) {
+        footer.append(dashNote("Sample data — the backlog skill is not present."));
+      }
+      footer.append(
+        dashNote(
+          payload.writable === true
+            ? "Click a card for its full note; dimmed cards belong to the other brand. Drag a card to a new column to change its marker in the backlog file."
+            : "Click a card for its full note; dimmed cards belong to the other brand.",
+        ),
+      );
+    }
+    function commit(run) {
+      if (busy) {
+        return;
+      }
+      busy = true;
+      status.hidden = false;
+      status.className = "kanban-status";
+      status.textContent = "Saving…";
+      void run()
+        .then((payload) => {
+          status.hidden = true;
+          draw(payload);
+        })
+        .catch((error) => {
+          status.className = "kanban-status kanban-status--error";
+          status.textContent =
+            error?.message ?? "That change could not be saved.";
+          // The file moved under us, so redraw from what is actually on disk.
+          void fetchJson("/api/pipeline")
+            .then(draw)
+            .catch(() => {});
+        })
+        .finally(() => {
+          busy = false;
+        });
+    }
+
     void fetchJson("/api/pipeline")
-      .then((payload) => {
-        board.replaceChildren(
-          kanbanColumn(
-            "Backlog",
-            "📝",
-            pipelineItemsFor(payload, "nextPages"),
-            brand,
-          ),
-          kanbanColumn(
-            "Awaiting review",
-            "👀",
-            pipelineItemsFor(payload, "awaitingReview"),
-            brand,
-          ),
-          kanbanColumn(
-            "Outreach to send",
-            "📣",
-            pipelineItemsFor(payload, "outreach"),
-            brand,
-          ),
-          kanbanColumn(
-            "Published",
-            "✅",
-            pipelineItemsFor(payload, "published"),
-            brand,
-          ),
-        );
-        if (payload.sample === true) {
-          body.append(
-            dashNote("Sample data — the backlog skill is not present."),
-          );
-        }
-        body.append(
-          dashNote("Click a card for the full note; dimmed cards belong to the other brand."),
-        );
-      })
+      .then(draw)
       .catch(() => {
         board.replaceChildren(dashEmpty("The pipeline is not reachable."));
+      });
+  }
+
+  // ---- Sales CRM board ---------------------------------------------------
+  // Six columns, one per stored lead stage. Unlike the content pipeline, a
+  // lead is a record rather than a markdown line, so a card carries its own
+  // id and the board edits fields in place.
+  const SALES_COLUMNS = [
+    { stage: "new", label: "New" },
+    { stage: "contacted", label: "Contacted" },
+    { stage: "talking", label: "In conversation" },
+    { stage: "proposal", label: "Proposal sent" },
+    { stage: "won", label: "Won" },
+    { stage: "lost", label: "Lost" },
+  ];
+  // Won and lost are outcomes, not work in progress: they are excluded from
+  // the open-pipeline figures so the header answers "what is still live".
+  const SALES_OPEN_STAGES = new Set([
+    "new",
+    "contacted",
+    "talking",
+    "proposal",
+  ]);
+  let draggedLead = null;
+
+  function salesPost(body) {
+    return fetchJson("/api/sales/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  }
+
+  function formatMoney(value) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+      return "";
+    }
+    return `A$${value.toLocaleString("en-AU")}`;
+  }
+
+  function salesLeadCard(lead, brand, commit, writable) {
+    const card = document.createElement("div");
+    card.className = "lead-card";
+    if (!itemMatchesBrand(lead, brand)) {
+      card.classList.add("lead-card--dimmed");
+    }
+    if (writable) {
+      card.draggable = true;
+      card.addEventListener("dragstart", (event) => {
+        draggedLead = lead;
+        card.classList.add("lead-card--dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", lead.company);
+      });
+      card.addEventListener("dragend", () => {
+        draggedLead = null;
+        card.classList.remove("lead-card--dragging");
+        for (const column of document.querySelectorAll(".kanban-col--drop")) {
+          column.classList.remove("kanban-col--drop");
+        }
+      });
+    }
+
+    const head = document.createElement("p");
+    head.className = "lead-card__company";
+    const dot = document.createElement("span");
+    dot.className = `kanban-card__brand kanban-card__brand--${lead.brand}`;
+    dot.title = lead.brand;
+    head.append(dot, document.createTextNode(lead.company));
+    card.append(head);
+
+    if (lead.contact || lead.email) {
+      const who = document.createElement("p");
+      who.className = "lead-card__contact";
+      who.textContent = [lead.contact, lead.email].filter(Boolean).join(" · ");
+      card.append(who);
+    }
+
+    const meta = document.createElement("p");
+    meta.className = "lead-card__meta";
+    const money = formatMoney(lead.value);
+    if (money) {
+      const amount = document.createElement("span");
+      amount.className = "lead-card__value";
+      amount.textContent = money;
+      meta.append(amount);
+    }
+    if (lead.source) {
+      const tag = document.createElement("span");
+      tag.className = "lead-card__tag";
+      tag.textContent = lead.source;
+      meta.append(tag);
+    }
+    if (meta.childNodes.length > 0) {
+      card.append(meta);
+    }
+
+    if (lead.note) {
+      const note = document.createElement("p");
+      note.className = "lead-card__note";
+      note.textContent = lead.note;
+      card.append(note);
+    }
+
+    // A lookup link, not a stored profile: none of Otto's LinkedIn exports
+    // predate the URL column, so there is no verified profile to link to.
+    // This opens LinkedIn's people search pre-filled with the name and company,
+    // which is one click and never wrong about what it is.
+    if (lead.contact) {
+      const find = document.createElement("p");
+      find.className = "lead-card__actions";
+      const link = document.createElement("a");
+      link.className = "lead-card__action";
+      link.href =
+        "https://www.linkedin.com/search/results/people/?keywords=" +
+        encodeURIComponent(
+          [lead.contact, lead.company].filter(Boolean).join(" "),
+        );
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      // Without this the browser drags the link instead of the card.
+      link.draggable = false;
+      link.textContent = "Find on LinkedIn";
+      find.append(link);
+      card.append(find);
+    }
+
+    if (writable) {
+      const actions = document.createElement("p");
+      actions.className = "lead-card__actions";
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "lead-card__action";
+      edit.textContent = "Edit";
+      edit.addEventListener("click", () => {
+        card.replaceChildren(salesLeadForm(lead, commit, () => commit(null)));
+      });
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "lead-card__action lead-card__action--danger";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", () => {
+        if (!window.confirm(`Remove ${lead.company} from the board?`)) {
+          return;
+        }
+        commit(() => salesPost({ action: "remove", id: lead.id }));
+      });
+      actions.append(edit, remove);
+      card.append(actions);
+    }
+    return card;
+  }
+
+  // One form serves both "add" and "edit": the only difference is whether it
+  // carries an existing lead's id.
+  function salesLeadForm(lead, commit, onCancel, stage) {
+    const form = document.createElement("form");
+    form.className = "lead-form";
+    const fields = {};
+    const spec = [
+      { name: "company", label: "Company", required: true },
+      { name: "contact", label: "Contact" },
+      { name: "email", label: "Email" },
+      { name: "value", label: "Value (AUD)", type: "number" },
+      { name: "source", label: "Source" },
+    ];
+    for (const item of spec) {
+      const wrapper = document.createElement("label");
+      wrapper.className = "lead-form__field";
+      const caption = document.createElement("span");
+      caption.textContent = item.label;
+      const input = document.createElement("input");
+      input.type = item.type ?? "text";
+      input.className = "lead-form__input";
+      if (item.required) {
+        input.required = true;
+      }
+      if (item.type === "number") {
+        input.min = "0";
+        input.step = "1";
+      }
+      input.value = lead && lead[item.name] != null ? String(lead[item.name]) : "";
+      fields[item.name] = input;
+      wrapper.append(caption, input);
+      form.append(wrapper);
+    }
+
+    const brandWrapper = document.createElement("label");
+    brandWrapper.className = "lead-form__field";
+    const brandCaption = document.createElement("span");
+    brandCaption.textContent = "Brand";
+    const brandSelect = document.createElement("select");
+    brandSelect.className = "lead-form__input";
+    for (const option of ["general", "datalabs", "oddtoe"]) {
+      const choice = document.createElement("option");
+      choice.value = option;
+      choice.textContent = option === "general" ? "Both / general" : option;
+      brandSelect.append(choice);
+    }
+    brandSelect.value = lead?.brand ?? activeBrand()?.id ?? "general";
+    fields.brand = brandSelect;
+    brandWrapper.append(brandCaption, brandSelect);
+    form.append(brandWrapper);
+
+    const noteWrapper = document.createElement("label");
+    noteWrapper.className = "lead-form__field";
+    const noteCaption = document.createElement("span");
+    noteCaption.textContent = "Note";
+    const note = document.createElement("textarea");
+    note.className = "lead-form__input lead-form__input--area";
+    note.rows = 2;
+    note.value = lead?.note ?? "";
+    fields.note = note;
+    noteWrapper.append(noteCaption, note);
+    form.append(noteWrapper);
+
+    const actions = document.createElement("p");
+    actions.className = "lead-form__actions";
+    const save = document.createElement("button");
+    save.type = "submit";
+    save.className = "lead-form__save";
+    save.textContent = lead ? "Save" : "Add lead";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "lead-form__cancel";
+    cancel.textContent = "Cancel";
+    cancel.addEventListener("click", onCancel);
+    actions.append(save, cancel);
+    form.append(actions);
+
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const payload = {
+        company: fields.company.value,
+        contact: fields.contact.value,
+        email: fields.email.value,
+        value: fields.value.value === "" ? null : Number(fields.value.value),
+        source: fields.source.value,
+        brand: fields.brand.value,
+        note: fields.note.value,
+      };
+      if (payload.company.trim() === "") {
+        return;
+      }
+      commit(() =>
+        lead
+          ? salesPost({ action: "update", id: lead.id, lead: payload })
+          : salesPost({
+              action: "add",
+              lead: { ...payload, stage: stage ?? "new" },
+            }),
+      );
+    });
+    return form;
+  }
+
+  function salesColumn(column, leads, brand, commit, writable) {
+    const element = document.createElement("div");
+    element.className = "kanban-col";
+
+    const heading = document.createElement("p");
+    heading.className = "kanban-col__title";
+    const text = document.createElement("span");
+    text.textContent = column.label;
+    const count = document.createElement("span");
+    count.className = "kanban-col__count";
+    count.textContent = String(leads.length);
+    heading.append(text, count);
+    element.append(heading);
+
+    const list = document.createElement("div");
+    list.className = "kanban-col__list";
+    if (leads.length === 0) {
+      list.append(dashEmpty("Empty."));
+    }
+    for (const lead of leads) {
+      list.append(salesLeadCard(lead, brand, commit, writable));
+    }
+    element.append(list);
+
+    if (writable) {
+      element.addEventListener("dragover", (event) => {
+        if (!draggedLead || draggedLead.stage === column.stage) {
+          return;
+        }
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        element.classList.add("kanban-col--drop");
+      });
+      element.addEventListener("dragleave", (event) => {
+        if (!element.contains(event.relatedTarget)) {
+          element.classList.remove("kanban-col--drop");
+        }
+      });
+      element.addEventListener("drop", (event) => {
+        const lead = draggedLead;
+        if (!lead || lead.stage === column.stage) {
+          return;
+        }
+        event.preventDefault();
+        element.classList.remove("kanban-col--drop");
+        commit(() =>
+          salesPost({ action: "move", id: lead.id, stage: column.stage }),
+        );
+      });
+
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "kanban-add__submit lead-add";
+      add.textContent = "+ Add lead";
+      add.addEventListener("click", () => {
+        add.replaceWith(
+          salesLeadForm(
+            null,
+            commit,
+            () => commit(null),
+            column.stage,
+          ),
+        );
+      });
+      element.append(add);
+    }
+    return element;
+  }
+
+  function renderSalesBoard(body) {
+    const brand = activeBrand();
+    body.append(
+      dashLabel(
+        brand
+          ? `Leads — both brands, ${brand.label} highlighted`
+          : "Leads — both brands",
+      ),
+    );
+    const summary = document.createElement("div");
+    summary.className = "dash-stats";
+    body.append(summary);
+    const status = document.createElement("p");
+    status.className = "kanban-status";
+    status.hidden = true;
+    status.setAttribute("role", "status");
+    body.append(status);
+    const board = document.createElement("div");
+    board.className = "kanban kanban--sales";
+    body.append(board);
+    const footer = document.createElement("div");
+    body.append(footer);
+    board.append(dashEmpty("Loading the board…"));
+
+    let busy = false;
+    function draw(payload) {
+      const leads = Array.isArray(payload?.leads) ? payload.leads : [];
+      const writable = payload?.writable === true;
+      const open = leads.filter((lead) => SALES_OPEN_STAGES.has(lead.stage));
+      const won = leads.filter((lead) => lead.stage === "won");
+      const sum = (rows) =>
+        rows.reduce(
+          (total, lead) =>
+            total + (typeof lead.value === "number" ? lead.value : 0),
+          0,
+        );
+      // A zero total means nobody has put a number on these leads yet, which
+      // is not the same claim as "this pipeline is worth nothing".
+      const money = (rows) => (sum(rows) > 0 ? formatMoney(sum(rows)) : "—");
+      summary.replaceChildren(
+        statCard(open.length, "Open leads"),
+        statCard(money(open), "In the pipe"),
+        statCard(won.length, "Won"),
+        statCard(money(won), "Won value"),
+      );
+      board.replaceChildren(
+        ...SALES_COLUMNS.map((column) =>
+          salesColumn(
+            column,
+            leads.filter((lead) => lead.stage === column.stage),
+            brand,
+            commit,
+            writable,
+          ),
+        ),
+      );
+      footer.replaceChildren(
+        dashNote(
+          writable
+            ? "Drag a card to move a lead between stages. Dimmed cards belong to the other brand. Saved to data/sales/leads.json."
+            : "This board is read-only in this install.",
+        ),
+      );
+    }
+    // A null run means "just redraw" — what the cancel buttons and the
+    // post-save refresh both want.
+    function commit(run) {
+      if (busy) {
+        return;
+      }
+      if (run === null) {
+        void fetchJson("/api/sales/leads").then(draw).catch(() => {});
+        return;
+      }
+      busy = true;
+      status.hidden = false;
+      status.className = "kanban-status";
+      status.textContent = "Saving…";
+      void run()
+        .then((payload) => {
+          status.hidden = true;
+          draw(payload);
+        })
+        .catch((error) => {
+          status.className = "kanban-status kanban-status--error";
+          status.textContent =
+            error?.message ?? "That change could not be saved.";
+          void fetchJson("/api/sales/leads").then(draw).catch(() => {});
+        })
+        .finally(() => {
+          busy = false;
+        });
+    }
+
+    void fetchJson("/api/sales/leads")
+      .then(draw)
+      .catch(() => {
+        board.replaceChildren(dashEmpty("The lead board is not reachable."));
       });
   }
 
@@ -4974,6 +5731,8 @@
         renderBdOutreachTab(body);
       } else if (activeTabId === "bd-lists") {
         renderBdListsTab(body);
+      } else if (activeTabId === "sales-crm") {
+        renderSalesBoard(body);
       } else if (activeTabId === "mk-overview") {
         renderMarketingOverviewTab(body);
       } else if (activeTabId === "mk-campaigns") {

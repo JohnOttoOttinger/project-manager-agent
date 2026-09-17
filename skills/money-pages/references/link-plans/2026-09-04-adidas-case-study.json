@@ -1,0 +1,12 @@
+{
+  "target": 53897,
+  "approved": true,
+  "edits": [
+    {
+      "source_id": 52198,
+      "type": "pages",
+      "search": " required facilitating across multiple time zones, adapting to regional differe",
+      "replace": " required facilitating across <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.datalabsagency.com/case-studies/adidas-data-storytelling-workshops/\">multiple time zones</a></strong>, adapting to regional differe"
+    }
+  ]
+}

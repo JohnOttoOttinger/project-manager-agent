@@ -5,6 +5,15 @@ written by `scripts/link-pass.py apply`. If Otto removes a link on the site,
 note it here with "(removed by Otto)" and never re-add it.
 
 Format: `- YYYY-MM-DD · brand · source <id> (<url>) → target <id-or-url>`
+- 2026-09-04 · **GSC INDEXING INCOMPLETE — 1 of 6 requested.** Lockheed `/case-studies/lockheed-martin-data-visualization-workshops/` confirmed "Indexing requested". **Marriott, Adidas, ZIM, Transurban and Gumtree/eBay were NOT submitted** — the URL-inspection box stopped accepting submissions after the first success and could not be recovered in that session. Everything tried, all failed after the first: double_click on the find→ref element (the method that DID work for Lockheed), plain left_click + type, cmd+a + retype, typing a trailing \n, clicking the sidebar "URL inspection" item (yields a *combobox* ref_12 rather than the banner textbox ref_11 — value sets, Enter still ignored), and a fresh navigate to /inspect. In every failed case the **DOM input value was verified correct before Enter** and Enter simply did not submit (title stayed "Overview"). `form_input` is NOT a workaround: it sets `input.value` but not the framework's state, so Enter is ignored — confirmed. The direct deep link `…/inspect?resource_id=…&id=<encoded url>` **404s**; the `id` is an internal opaque hash, so submission cannot be bypassed. **Not blocking discovery:** all six carry a fresh internal link from an indexed page and the site's sitemap.xml / sitemap_index.xml are registered in GSC. Retry the five in a new browser session.
+- 2026-09-04 · **SAFE-TIER BATCH PUBLISHED (6) + link pass 6/6.** Lockheed 53913, Marriott 53852, Adidas 53897, ZIM 54130, Transurban 53956, Gumtree/eBay 53970 — all given their existing 16:9 title image as Featured Image (53898/53854/53879/54112/53938/53958), published, and added to the 19482 grid after Monash (29 → 35 ids). Links: 52962 "two cohorts"→Lockheed · 367 "Tableau dashboards"→Marriott · 367 "Business intelligence dashboards"→Gumtree/eBay · 52198 "multiple time zones"→Adidas · 661 "time zones"→ZIM · 415 "calculators"→Transurban. All verified live.
+  **⚠️ NEW HARD RULE — NEVER LINK INSIDE A SHORTCODE ATTRIBUTE.** The first Marriott and eBay edits landed in page 687's `team_member_description="…"` (Otto's bio). A `<a href="…">` inside a double-quoted shortcode attribute **terminates the attribute at the first quote and corrupts the shortcode**. Caught on inspection and reverted; 687 verified rendering clean (bio intact, no stray attrs). Re-planned both against `[vc_column_text]` body copy on 367 instead. **Before building any plan, confirm the match sits inside a `[vc_column_text]…[/vc_column_text]` block** — the discovery script happily surfaces attribute text, which reads identically in a snippet.
+  Also relearned: 367's body copy contains a **non-breaking space** (`\xa0`) in "dashboards\xa0or BI dashboards" — a plain-space search returns 0 matches and looks identical in a diff.
+  **Unrelated find:** page 52198 (Adidas L&D) still carries chat-UI Tailwind pollution (`class="[li_&]:mb-0 …"`) of the kind cleaned from other pages on 16 Aug. Not introduced by this pass — worth a cleanup.
+- 2026-09-04 · **Case Studies index (19482): Monash added + FAQ row structurally broken, fixed.** (1) The grid is a HARDCODED id list, not a query — 54143 added at the front (29 ids now). (2) Found the `pat-faq` row **opened inside the previous row, closed immediately, with an orphan `[/vc_row]` rendering as literal text on the page** and the three FAQ columns floating outside any row — which is why the Q&A read as black-on-black. Restructured: previous row now closes first, `pat-faq` wraps its columns, page closes cleanly. Balance 5/5 rows, 11/11 cols. (3) Background set light via `bg_check="row-background-light"` + reusing the already-compiled `vc_custom_1781224437959` (#f8f8f8 — same band colour as the grid row above). **Editing the css= attribute's colour value does nothing: WPBakery keeps compiled row CSS in `_wpb_shortcodes_custom_css` post meta, which REST does not expose.** Verified live: rowBg rgb(248,248,248), heading rgb(40,38,43), body rgb(86,86,86), questions tan — dark-on-light, stray shortcode gone. Backup before the edit: `site-backups/datalabs-19482-case-studies-before-faq-fix-2026-09-04.json`.
+- 2026-09-04 · **⚠️ SILENT WRITE FAILURE — Monash 54143. Otto caught it, not the agent.** Three consecutive compose runs on 2 Sep printed "WP draft updated: 54143" while WordPress persisted **none** of them. The page went live with the OLD build: the uncropped Curated Content-branded results image (54137), the 3-up gallery, no full-width results row. Stored content was 81,225 chars / modified 18:06 while the local composed file was 82,437. **Root cause: the per-page push block read only `resp['id']` from the POST response** — which is returned whether or not the content saved — so a failed/ignored write was indistinguishable from a good one. **Second latent bug in the same block: it hardcoded `status='draft'`, which would have silently unpublished the live page on the next re-run.** Fixed 4 Sep: the block now (a) GETs the current status and preserves it rather than forcing draft, and (b) re-reads `content.raw` after the POST and `SystemExit`s if the expected markers are absent. Re-pushed and verified: stored 82,385 chars, status publish, all markers present, live page correct cache-busted AND plain (`age: 0`). **Rule for every future compose: never trust the POST response — read the content back and assert on it.** Note WP normalises ~52 chars on save, so compare markers, not lengths.
+- 2026-09-03 · **CACHE-PURGE ACCESS: content-agent CANNOT purge, and probably should not be able to.** `content-agent` is WP user **4274, role `editor`**, 49 caps, none of `manage_options` / `promote_users` / `edit_users` / `activate_plugins`. `admin.php?page=wpengine-common` returns "Sorry, you are not allowed to access this page"; the admin menu and toolbar contain zero cache/purge/WP Engine/Cloudflare links. An editor cannot grant itself capabilities, so the agent cannot fix this itself — it needs an administrator. **Recommendation (Otto's call): do NOT grant `manage_options`.** Cache plugins gate their menus on that cap, so granting it turns the automation account into a de-facto admin (all settings, all plugin options) while its app password sits in a gitignored `.env`. Better routes, in order: (1) **WP Engine User Portal purge** — WP Engine's own recommended method, separate credentials, never touches WordPress roles; (2) a **scoped Cloudflare cache-purge token** (Zone→Cache Purge only) in `.env`, which is what `docs/WORDPRESS_AUTOMATION_CHECKLIST.md` §5 already specifies and was never created; (3) a tiny mu-plugin granting one bespoke cap, only if 1 and 2 are unavailable. **Also on record: the purge was not actually needed on 2 Sep** — WP Engine serves these pages `x-cacheable: SHORT`, and all four URLs were verified serving the new links at the edge with no cache-buster within minutes of publish.
+- 2026-09-02 · **MONASH CASE STUDY PUBLISHED + link pass applied (3/3).** Page 54143 `/case-studies/monash-university-rankings-campaign/` published on Otto's explicit instruction ("Publish it"), then plan `link-plans/2026-09-02-monash-case-study.json` applied: (1) **461 Animated Data Videos** "as an **animated video** with an AI voice-over"; (2) **53763 Types of Data Visualization** "An **animated data video** choreographs charts…" (link placed inside the existing `<strong>`, no nested strong); (3) **19178 Al Jazeera Case Study** "data visualisations, infographics and **motion graphics**". All three verified live via cache-busted curl — one link each, HTTP 200. **18145 ADF was the stronger topical candidate but was skipped: its "motion graphics" anchor is already a link to 461.** GSC indexing requested and confirmed for all four URLs (new page + 3 sources). **GSC finding worth acting on: 53763 `/types-of-data-visualization/` is "Discovered – currently not indexed"** — Google knows it and has chosen not to index; the new inbound link plus this request may shift it, but it likely needs more than one internal link. GSC AUTOMATION NOTE (extends the 19 Aug note): the inspect box drops typed text on the FIRST double_click after any other interaction — a second double_click on the same coordinates works. Never click Dismiss on the toast first, that steals focus. Also: the green "Indexing requested" toast auto-dismisses in ~20s, so poll at 9s/14s/19s rather than waiting 30s; the durable signal is the header flipping to "✓ Indexing requested / REQUEST AGAIN". A click fired while the live-test modal is still open is silently swallowed — verify the header, not the click. **CACHE NOT PURGED — no Cloudflare token in .env; Otto must purge manually (see below).**
 - 2026-08-19 · **EXPERIENTIAL AGENCIES PAGE PUBLISHED + link pass applied (3/3).** Page 16173 /experiential-marketing-agencies/ published by the agent on Otto's explicit Q&A authorisation, then plan link-plans/2026-08-19-experiential-agencies.json applied: (1) **homepage 15922** "produces animation and installations for **agencies**" → tan decorated link; (2) **experiential-marketing 16124** "advertising, marketing, and **activation agencies**" → link inside existing strong; (3) **brand-activation-ideas 16133** "activations for **agencies** and brand teams" → strong+link. All three verified rendering live same day. Yoast meta description set via the browser recipe (typed into the Draft.js field, classic-editor Update, verified via yoast_head_json). GSC indexing requested for the new page + all 3 sources (all four confirmed "added to priority crawl queue"). GSC AUTOMATION NOTE: the inspection search box only reliably takes focus via find→ref click or double_click — single coordinate clicks silently drop the typed text and Enter re-triggers the previous URL's live test (harmless duplicates but wasted minutes); always screenshot-verify the box contains the URL before pressing Enter.
 - 2026-08-14 · datalabs · source 661 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/) → target https://www.datalabsagency.com/data-visualisation-workshop-pricing/
 - 2026-08-14 · datalabs · source 52168 (https://www.datalabsagency.com/2026/01/27/data-storytelling-workshop-providers-what-to-look-for-when-hiring/) → target https://www.datalabsagency.com/data-visualisation-workshop-pricing/
@@ -744,3 +753,412 @@ Applied (REST edits, backups in session scratchpad):
 - 2026-08-28 · oddtoe · hub 13226 card renamed "Public Art Sculptor" → "Sculptor" (h3 + link title attr) to match the new H1; card href unchanged
 WP Engine "Quick clear all cache" purged after the edits (REST edits don't purge the edge cache); all three pages live-verified.
 SAME SESSION, before the pass: 11172's hero rev_slider swapped per Otto — "Oddview — C: Youtube Hero TV Credit" (oddview-c-youtube-hero-1) → "Video Hero — Stained Glass Art in 3D" (video-hero-character-designer-11, the slider from my-product 14868 Stained Glass Window Project; 3D-design content, more relevant). Live-verified rev_slider_115 renders; data/tmp/sculptor-staging.txt updated.
+
+## Street Artist / Muralist (11727) — white-bg bug fix + GEO retrofit, 30 Aug 2026
+
+Live page https://www.oddtoe.com/artist-designer/street-artist-muralist/. Same session also fixed
+Projection Artist (11158): a leftover `{{FAQ_CTA_TEXT}}` / `{{FAQ_CTA_URL}}` template token pair was
+rendering literally on the live FAQ CTA button, and the page canvas had no `crum_page_custom_bg_color`
+set (white, per the standard Ronneby gotcha) — REST-fixed the button text/link
+("Ask about your event" → `#digital-form`), Otto set `#121315` + header style 2 in wp-admin himself.
+Backup: `site-backups/oddtoe-street-artist-11727-pre-georetrofit-2026-08-30.json`.
+
+**GEO retrofit (direct REST push to the live page, backup taken first):**
+1. Canonical Oddtoe sentence added verbatim, inside a new FAQ answer.
+2. Q&A block built from scratch (page had none) — 5 questions, first-person Oddtoe voice, matching
+   FAQPage JSON-LD (round-trip verified). Deliberately different angles from the page's own pre-existing
+   "Who hires a muralist?" / "How do you choose a muralist?" sections to avoid answering the same query
+   twice on one page. New row backed with an explicit `#0C151B` background (matching its neighbours) —
+   this page's canvas is ALSO unset/white like Projection Artist's was, so an unset `bg_check="row-background-dark"`
+   row here would have hit the same invisible-text bug; flagging that latent page-level setting to Otto
+   separately, not fixed as part of this retrofit (no visible symptom pre-existing, out of scope).
+3. "Updated August 2026" added as its own centred bold-italic line in the row-2 intro block, per
+   template-catalog.md's Artist & Designer placement rule.
+4. Meta description: existing Yoast description was a stale/auto fallback (ended in "»", didn't match
+   any text on the page). New description drafted for Otto to paste in wp-admin (REST can't set Yoast):
+   "Oddtoe is a Melbourne street artist and muralist making 3D public art and odd campaigns designed to
+   make people laugh. See the work and get a quote." (148 chars)
+
+de-ai-check: 1 FAIL before (missing canonical) → 0 after. Diff verified as exactly two insertions,
+nothing else on the page touched.
+
+**Link pass — no edits applied.** Ran `link-pass.py plan oddtoe --target 11727` against the top
+candidates (Inflatable Artist, Installation Artist, Sculptor, Brand Activation Ideas). All were scored
+as topically related, but none currently mention street art/muralist by name in their existing prose —
+their "related practices" sentences name other crafts (installation, kinetic, topiary) and omit street
+art. A link-pass edit can only wrap an `<a>` around existing text, never add a new sentence, so there is
+no safe edit here without writing new copy on someone else's page — flagged to Otto as a possible
+"related practices" copy addition, not applied.
+
+**GSC indexing — done.** Otto opened Chrome with his own GSC session; ran URL Inspection on the
+`oddtoe.com` domain property for the retrofitted URL — "URL is on Google / Page is indexed" — then
+Request Indexing: "URL was added to a priority crawl queue."
+
+## Comedy Writer (12794) — white-bg + broken hero image bug fix, 30 Aug 2026
+
+Live page https://www.oddtoe.com/artist-designer/comedy-writer/. GEO retrofit (canonical sentence,
+Q&A + FAQPage schema, meta description) was already done in Phase 1 (27 Aug) — de-ai-check confirmed
+clean before touching anything today. This session was pure bug-fixing, worse than Projection Artist:
+
+1. Same leftover `{{FAQ_CTA_TEXT}}` / `{{FAQ_CTA_URL}}` token pair on the FAQ CTA button — REST-fixed
+   to "Ask about your project" → `#digital-form`. Backup: `site-backups/oddtoe-comedy-writer-12794-pre-faqbutton-2026-08-30.json`.
+2. `crum_page_custom_bg_color` unset (white) — same as every prior page, but here it broke MUCH more:
+   the hero, both intro rows, and the FAQ row all had no explicit row background and rendered fully
+   invisible (white text on white canvas) — including a `full_height="yes"` 720px hero block that
+   was a solid blank white rectangle.
+3. **A second, different bug on top of #2**: the hero's `dfd_bg_image_new="12299"` background image
+   (verified real and reachable via `/wp/v2/media/12299`) computed to `background-image: none` —
+   WPBakery had never compiled that row's `css` attr into `_wpb_shortcodes_custom_css`, the documented
+   "REST push doesn't recompile the builder's CSS" gotcha (§4 of the migration brief). Fix is the same
+   either way: open the editor and Update.
+
+Otto opted to have this driven in his own Chrome session (already open for GSC) rather than doing it
+by hand. Set via wp-admin Page Options tab (bottom tabbed panel, NOT the right-sidebar "Header style"
+box — that's a separate metabox): Background color `#0a141c` (typed into the color-picker hex field;
+pressing Return after typing submitted the whole edit form as a side effect — turned out to be exactly
+the Update click needed, since it both saved the color AND recompiled the hero CSS in one shot — hero
+image renders correctly now). Header style set separately via the right-sidebar "Select header style"
+dropdown → "Header 2" (family standard), saved with a deliberate Update click. Full page scrolled and
+visually verified end to end: hero image + heading, intro sections, Venn diagram, quote band, "Works
+of a Comedy Writer" heading, FAQ accordion (all 3 questions + fixed CTA button), contact form — all
+render correctly, nothing left white.
+
+**Link pass — plan only, NOT applied (standing plan-first rule).** Two candidates found with existing
+unlinked body prose naming comedy specifically (unlike Street Artist, where no candidate existed):
+- Investment (13258): "...developing a suite of generative A.I. with humor, irony, satire, and other
+  forms of **comedy** at their core." — wrap "comedy".
+- Original Stories (13246): "A million more **comedians** cracking very funny jokes." — wrap "comedians".
+Both would link to https://www.oddtoe.com/artist-designer/comedy-writer/, `<strong><a class=
+"dfd-custom-link-decorated">`, no other change. Presented to Otto, awaiting approval before applying.
+
+**GSC indexing — done.** Same Chrome session, `oddtoe.com` domain property: "URL is on Google / Page
+is indexed" → Request Indexing → "URL was added to a priority crawl queue."
+- 2026-08-30 · oddtoe · source 13258 (https://www.oddtoe.com/about-oddtoe/investment/) → target 12794
+- 2026-08-30 · oddtoe · source 13246 (https://www.oddtoe.com/studio/original-stories/) → target 12794
+
+## The Oddtoe TV Show (my-product 12489) — button case fix, 30 Aug 2026
+
+Live page https://www.oddtoe.com/my-product/the-oddtoe-tv-show/. `my-product` CPT — no REST route
+(confirmed, matches the known gap), edited via wp-admin/Chrome. Button text was ALL CAPS in the raw
+`button_text` attribute itself (not a CSS `text-transform`, verified via computed style first):
+"CONTACT ODDTOE TO RECEIVE THE PITCH BIBLE FOR ODDTOE TV" → "Contact Oddtoe to receive the pitch
+bible for Oddtoe TV" (sentence case, matching the site's button-text convention elsewhere).
+
+**First attempt reverted — a stricter version of the known WPBakery-owns-the-content trap.** Clicking
+"Backend Editor" (`.wpb_switch-to-composer`) alone was NOT enough this time; the underlying `#content`
+textarea was still under **TinyMCE Visual mode** (`#wp-content-wrap` class `tmce-active`), so editing
+`textarea.value` directly via JS got silently clobbered when TinyMCE's own `triggerSave()` re-serialized
+its contenteditable buffer over the textarea at submit — "Portfolio updated" fired, but the old text was
+still live. **Fix:** click the **"Code" tab** (top-right of the editor, next to "Visual") BEFORE editing —
+confirm `#wp-content-wrap` reads `html-active`, not `tmce-active` — which detaches TinyMCE entirely and
+makes the textarea genuinely authoritative. Verified both server-side (`#content` textarea after reload)
+and on the live front end.
+
+Updated gotcha for future `my-product` edits: **Code tab + Backend Editor, in that order, both required**
+— not just one or the other.
+
+## The Oddtoe TV Show (my-product 12489) — 20px spacer before button, 30 Aug 2026
+
+Added a `[dfd_spacer ...20px all breakpoints...]` between `[/dfd_heading]` (MAKING FUNNY STORIES, AT
+SCALE, FOR THE WORLD) and the "Contact Oddtoe to receive the pitch bible for Oddtoe TV" button — there
+was no spacer there at all before, button sat flush against the heading. Live-verified gap 26px
+(20px spacer + line-height overhead), was effectively 0 before.
+
+**New wrinkle on the `my-product` editing gotcha:** the computer-tool click (both raw coordinates and
+an element ref) on the Publish-box "Update" button silently did NOT submit the form at all — no
+`#message` notice, textarea edit still sat there unsaved, `#publish` button never went into its
+disabled/spinner state. Confirmed by checking for the "Portfolio updated" notice after the click,
+which was absent. **Fix: `document.getElementById('publish').click()` via JS** — a synthetic click
+dispatched directly on the button element — worked reliably where the simulated mouse click didn't.
+Root cause not fully diagnosed (possibly the button's on-screen position/hit-area shifted after the
+Code-tab toggle resized the editor chrome, so the computer tool's click landed off-target) — for
+future `my-product` saves, verify the "Portfolio updated" notice appeared before trusting a click,
+and fall back to `document.getElementById('publish').click()` if it didn't.
+
+## Wire Taps TV Show (my-product 12586) — button case fix, 30 Aug 2026
+
+Same pattern as The Oddtoe TV Show (12489): "CONTACT ODDTOE TO RECEIVE THE PITCH BIBLE FOR WIRE TAPS"
+→ "Contact Oddtoe to receive the pitch bible for Wire Taps". Code tab + `document.getElementById(
+'publish').click()` worked cleanly this time (no revert), live-verified.
+
+## Gag Cartoonist (my-product 15269) — missing heading added, 30 Aug 2026
+
+Otto flagged the carousel → "Oddtoe as a gag cartoonist... / What » Continuous content..." block as
+looking out of place. Diagnosed: that block had no heading module at all (unlike the hero section
+above it, which has "Continuous Content, Confidently Absurd"), so it read as orphaned text after the
+carousel. Checked alignment too — both this block and the hero text above it render `text-align: left`
+by default (no inline override either way), so alignment was NOT the problem, just the missing heading.
+
+Added `[dfd_heading]` in the same style_02 pattern used elsewhere on this page (Qwigley kicker +
+Bebas headline): subtitle "The specs, for syndication partners" / title "Licensing at a Glance",
+inserted right after the carousel's two spacers and before the row of columns, with a matching
+20/20/15/10 spacer beneath it (same pattern as the hero heading). Live-verified rendering correctly
+as an h2 + Qwigley subtitle, matching the page's existing heading treatment exactly.
+
+## Gag Cartoonist (my-product 15269) — merged two columns into one centered column, 30 Aug 2026
+
+Follow-up to the heading fix above (Otto: "make the two column text into one central text column").
+Replaced the `1/6 + 1/3 + 1/3 + 1/6` row (description column left-aligned, specs column unstyled/left)
+with `1/4 + 1/2 + 1/4` — one column carrying both the description paragraph and the specs list
+("What » / Format » / Syndication » / Running Since »"), both centered, stacked with a blank line
+between. Dropped the now-unneeded border/padding css and disabled box-shadow attrs that existed only
+to gutter the two 1/3 columns apart. Live-verified: reads as one balanced centered block under the
+"Licensing at a Glance" heading.
+
+**Gotcha hit composing the replacement:** the "What »" label is followed by a literal non-breaking
+space (U+00A0) in the source, not a regular space — a same-looking-but-wrong space character in a
+hand-typed search string silently breaks an exact-match replace with no error, just a 0-count "not
+found." When a full-string match unexpectedly returns 0 despite every visible substring checking out,
+binary-search the matching prefix length and compare `codePointAt` at the exact break — don't assume
+the text is wrong just because it looks identical in a diff.
+- 2026-09-02 · datalabs · source 461 (https://www.datalabsagency.com/animated-data-videos/) → target 54143
+- 2026-09-02 · datalabs · source 53763 (https://www.datalabsagency.com/types-of-data-visualization/) → target 54143
+- 2026-09-02 · datalabs · source 19178 (https://www.datalabsagency.com/case-studies/infographic-workshop-case-study/) → target 54143
+
+---
+
+## Corrections from Otto's review, 27 Aug 2026
+
+**Currency.** Five workshop pages carried "$4,600 and $7,500 inc GST" with no currency marker. Now
+**AU$**. Otto: "not everyone will know which currency the Q&A prices are in." GEO sharpens this —
+an AI answer lifts the sentence away from the page, so the pricing page's "all prices in Australian
+dollars" line does not travel with it. Added to the playbook as rule 3.
+
+**And the trap inside the fix: the schema did not follow.** Editing the visible answer left all five
+FAQPage JSON-LD copies still saying "$4,600" — page and schema disagreeing on price, which is worse
+than the original ambiguity. Both are separate strings and both must change. Caught only because the
+push script printed `schema=False`; print that check, do not assume it.
+
+**Excel.** Otto does not build Excel dashboards. Four claims on
+[Marketing Dashboards](https://www.datalabsagency.com/?page_id=54156&preview=true) said he did.
+Removed. **The workshop pages' Excel mentions were left alone** and are correct: those say the design
+*thinking* carries into Excel, which is the tool-agnostic claim from Otto's own pricing page. Same
+word, two different claims — check which one before editing.
+
+**Cross-promo fit.** The page promoted Infographics & Report Design and Intro to Data Viz on a page
+about dashboards. Swapped the infographics card for **Designing Great Dashboards** (image 19571,
+`/designing-great-business-dashboards-workshop/`), taken verbatim from the hub's canonical card set.
+Also fixed a copy-paste bug Otto's screenshot caught: the Intro card's link `title` read "Infographics
+& Report Design Workshop", so the tooltip named the wrong workshop.
+
+**Still worth considering:** there is a **Visualization for the Modern Marketer** workshop
+(`/data-visualization-marketing-workshop/`, image 19569) which is arguably the closest fit of all for
+a *marketing* dashboards page. Otto's call whether it replaces the Intro card.
+
+---
+
+## Marketing Dashboards — PUBLISHED 27 Aug 2026
+
+Live at https://www.datalabsagency.com/marketing-dashboards/ (54156). Verified: 200, single H1,
+Yoast title (48) and description (148), 6 FAQ questions in schema, canonical sentence present, AU$ on
+every price, no Excel claim.
+
+**Inbound links — 3, all verified live.** Backups `datalabs-{53840,379,367}-pre-mdash-linkpass-*.json`.
+
+| Source | Link |
+|---|---|
+| [Dashboard Design Services](https://www.datalabsagency.com/dashboard-design-services/) | "When those decisions are campaign ones — what to pause, where to move budget — that is a **marketing dashboard**" |
+| [Power BI Dashboard Design](https://www.datalabsagency.com/power-bi-dashboard-design/) | "Campaign, channel and spend reporting has a shape of its own — see **marketing dashboards**" |
+| [Tableau Dashboard Designers](https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) | "…including **marketing dashboards** for campaign and channel reporting" |
+
+**Two anchors failed on the first attempt, both for markup reasons worth remembering:** page 379 has
+`Our <strong>Microsoft Power BI dashboard designers</strong>` — a tag sits inside the phrase, so a
+plain-text anchor never matches. Page 367 uses a literal curly `’`, not `&rsquo;`. Always anchor on
+the RAW string pulled from `?context=edit`, never on what the rendered page reads.
+
+**Search Console:** indexing requested, "Indexing requested" confirmed. The inspect box needs a click
+by `ref` and then typing in a SEPARATE call — clicking and typing inside one batch silently does
+nothing, and the "REQUEST INDEXING" button likewise needs a fresh coordinate click after the panel
+settles; a stale ref reports success without acting.
+- 2026-09-04 · datalabs · source 52962 (https://www.datalabsagency.com/data-visualisation-workshop-pricing/) → target 53913
+- 2026-09-04 · datalabs · source 687 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/introduction-to-data-visualization-tools-techniques-workshop/) → target 53852
+- 2026-09-04 · datalabs · source 52198 (https://www.datalabsagency.com/case-studies/adidas-learning-development-instructional-design/) → target 53897
+- 2026-09-04 · datalabs · source 661 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/) → target 54130
+- 2026-09-04 · datalabs · source 415 (https://www.datalabsagency.com/interactive-data-visualizations/) → target 53956
+- 2026-09-04 · datalabs · source 687 (https://www.datalabsagency.com/data-visualization-training-workshops-webinars/introduction-to-data-visualization-tools-techniques-workshop/) → target 53970
+- 2026-09-04 · datalabs · source 367 (https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) → target 53852
+- 2026-09-04 · datalabs · source 367 (https://www.datalabsagency.com/tableau-business-intelligence-dashboard-designer/) → target 53970
+
+---
+
+## 7 Sep 2026 — Mascot Designer launch: link pass, menus, GSC
+
+Plan-first rule followed: the edit list was put to Otto as a Q&A before anything was applied; he
+approved both proposed edits and then asked for a third on Brand Activation Ideas.
+
+**Markup standard used:** `<strong><a class="dfd-custom-link-decorated" href="…">…</a></strong>`,
+no inline colours. Backups taken first:
+`site-backups/oddtoe-{16190,16133,13226}-pre-mascot-linkpass-2026-09-07.json`.
+
+### [Mascot Designer](https://www.oddtoe.com/artist-designer/mascot-designer/) (page 16255) — PUBLISHED
+
+Slug `mascot-designer`, parent 13226, `page-custom.php`. Yoast set by hand in wp-admin (REST silently
+drops it) and verified in `yoast_head_json`. Published on Otto's explicit instruction.
+
+### Inbound links added — 3
+
+| Anchor | Source | Target | Location |
+|---|---|---|---|
+| Wearable mascot costumes | [Inflatable Artist](https://www.oddtoe.com/artist-designer/inflatable-artist/) (16190) | `/artist-designer/mascot-designer/` | "What Can Oddtoe Make?" bullet list |
+| costume mascot | [Brand Activation Ideas](https://www.oddtoe.com/brand-activation-ideas/) (16133) | same | idea 4, new sentence (see below) |
+| Mascot Designer card | [Artist & Designer hub](https://www.oddtoe.com/artist-designer/) (13226) | same | new discipline card, icon 16263 |
+
+Each prose anchor was verified to appear **exactly once** in the page source before replacing.
+
+**New copy written for 16133** (Otto: "You can write something new and short to do it"), appended to
+idea 4 so the page's "ten ideas" count is untouched: *"The same character can be built as a costume
+mascot so it turns up in person as well as on screen."*
+
+**The Inflatable Artist edit also resolves the cannibalisation flag** raised in
+`mascot-keyword-audience-research.md` — that page sells "wearable mascot costumes" and now hands the
+mascot query to the mascot page.
+
+**Rejected, not forced:** Experiential Marketing (16124) has no usable prose anchor; Character Design
+Services (16208) and the rest of Brand Activation Ideas offered only strained ones.
+
+### Menus — wp-admin, REST 403s `rest_cannot_create` on `/wp/v2/menu-items` (verified again 7 Sep)
+
+- **Primary & Temporary Menu (42)** — "Mascot Designer" added under **Designer** (parent 15552),
+  after Character Designer. **Roboticist (item 13685) removed** from this menu on Otto's instruction;
+  it had no children, so the removal was clean.
+- **Footer Nav (229)** — "Mascot Designer" added after Comedy Writer, at the end of the discipline
+  block. **Roboticist (item 13376) deliberately kept here.**
+- Both verified server-side via REST after saving.
+
+### GSC
+
+URL inspected on the `https://www.oddtoe.com/` property.
+
+| URL | Result |
+|---|---|
+| `/artist-designer/mascot-designer/` | "URL is unknown to Google" (expected on publish day) → **indexing requested, priority crawl queue** |
+| `/artist-designer/inflatable-artist/` | indexed → **indexing requested** (recrawl for the new outbound link) |
+| `/brand-activation-ideas/` | indexed → **indexing requested** (recrawl for the new outbound link) |
+| `/artist-designer/` (hub) | indexed → **NOT SUBMITTED — "Quota Exceeded", daily limit hit** |
+
+**⚠ OPEN — resubmit `https://www.oddtoe.com/artist-designer/` for indexing tomorrow.** The daily
+manual-submission quota was exhausted, partly by two accidental duplicate submissions (a mis-click
+hit "Request again" on the Inflatable Artist and Brand Activation Ideas results while their toasts
+were still on screen). Not urgent: the hub is already indexed, its `lastmod` in `page-sitemap.xml`
+updated to 7 Sep 07:35 which signals the change, and the mascot page itself is queued, so discovery
+is not blocked either way.
+
+### Open
+
+- [ ] Bold-company-name rule: "Oddtoe" is now bolded in body copy on 16255 (3 spans) but NOT in the
+      canonical sentence — that fails `de-ai-check.py`'s verbatim match and is shared across pages.
+      A brand-wide change to `brands.md` plus every page carrying it is Otto's call.
+
+---
+
+## 8 Sep 2026 — Mascot Design into the Global Brand Experience Agency interactive
+
+### [Global Brand Experience Agency](https://www.oddtoe.com/global-brand-experience-agency/) (16243)
+
+Otto's brief: in the **"Nothing to photograph"** scenario, swap the Generative AI Animation step for
+the new Mascot Designer page, and reflect mascots in the surrounding activation copy.
+
+The interactive is a JSON scenario set inside a base64 `vc_raw_html` block. **Encoding gotcha:** the
+percent layer is `encodeURIComponent`-equivalent — in Python, `quote(raw, safe="!*'()")`. A default
+`quote(raw, safe='')` does NOT round-trip (it escapes parentheses) and would rewrite the whole block.
+Verify the round-trip reproduces the original byte-for-byte before editing.
+
+Five edits, each asserted to match exactly once. Backup:
+`site-backups/oddtoe-16243-pre-mascot-swap-2026-09-08.json`.
+
+| Field | Before | After |
+|---|---|---|
+| item 3 | Generative AI Animation → `/studio/generative-ai-animator/` | **Mascot Design** → `/artist-designer/mascot-designer/`, icon `dfd-icon-bear`, image 16263 |
+| `bl` | A character built at two metres | A character at two metres, and a mascot that walks |
+| Events Management | A launch floor built around the piece instead of a stage | …built around the character, with the mascot working the room |
+| Project Management | One fabrication spec, freight, and install inside the venue | One design, two builds: the two-metre piece and the costume, plus freight and install |
+| Content Marketing | Looping video and photos the product team can use all quarter | Photos of people with the character that the product team can use all quarter |
+
+**The `/studio/generative-ai-animator/` link is NOT orphaned** — Generative AI Animation still appears
+in the "Protest / press moment" scenario. Verified: 1 remaining instance. Render-checked live.
+
+### GSC — hub resubmission STILL OUTSTANDING
+
+`https://www.oddtoe.com/artist-designer/` was retried on 8 Sep after yesterday's quota exhaustion.
+**Both attempts returned "Oops! Something went wrong — error submitting your indexing request".**
+Stopped after two rather than hammering it. Possibly a lingering quota state presenting as a generic
+error, possibly a Google-side fault. **Still to do — try again.** Low impact: the hub is indexed, its
+sitemap `lastmod` is current, and the mascot page itself is already queued.
+
+---
+
+## 8 Sep 2026 — site-wide company-name bolding
+
+Otto's rule, refined: **bold `Oddtoe` in Arvo body copy.** Bebas is all caps so bolding adds nothing;
+Qwigley is script. Same treatment Datalabs has had since 19 Aug.
+
+**Applied: 210 edits across 36 published pages.** Verified after: 294 `<strong>Oddtoe</strong>` spans
+site-wide, **0 remaining candidates, 0 double-wraps**. Per-page backups at
+`site-backups/oddtoe-<id>-pre-bold-2026-09-08.json`.
+
+Dry run was shown to Otto and approved before anything was written
+(`Oddtoe New Growth Pages 2026/oddtoe-bolding-dry-run.md`).
+
+**Skipped automatically:** 149 shortcode attributes · 103 already bold · 43 `dfd_heading` text ·
+19 inside an existing `<strong>` · 3 Bebas display · 3 inside HTML tags.
+
+**Edge cases — Otto's call was to bold all of them:** 5 small grey italic captions ("Oddtoe quotes per
+project after a scoping conversation"), 1 comparison-table cell, 2 parenthetical citations
+("…Will Be Bots (Oddtoe, 2023)"). I had recommended skipping the captions and citations on looks;
+he overruled, nothing broke, render-checked on character-design-services.
+
+**Do not do this with find-and-replace.** Oddtoe pages use four different markup patterns for body
+text, and a blind pass corrupts shortcode attributes, the base64 JSON interactive blocks and alt
+text. The working method: mask protected regions (shortcode tags, `vc_raw_html` payloads, all HTML
+tags, `<script>`), then skip Bebas/Qwigley spans, `dfd_heading` text, heading tags and existing
+`<strong>` wrappers. Apply replacements back-to-front so byte offsets stay valid, and assert the
+length delta is exactly 17 chars per edit.
+
+**`brands.md` updated** — the Oddtoe canonical sentence now carries `<strong>` on the brand name, so
+new pages inherit it. `de-ai-check.py` matches that sentence tag-stripped (changed 7 Sep), so wording
+is still enforced verbatim while the markup passes.
+- 2026-09-09 · oddtoe · source 11727 (https://www.oddtoe.com/artist-designer/street-artist-muralist/) → target 16272
+- 2026-09-09 · oddtoe · source 16133 (https://www.oddtoe.com/brand-activation-ideas/) → target 16272
+- 2026-09-09 · oddtoe · source 16209 (https://www.oddtoe.com/prop-fabrication-services/) → target 16272
+- 2026-09-11 · oddtoe · source 16190 (https://www.oddtoe.com/artist-designer/inflatable-artist/) → target 16272
+- 2026-09-11 · oddtoe · source 16288 (https://www.oddtoe.com/experiential-activation-agency/) → target 16272
+- 2026-09-11 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target 16272
+- 2026-09-14 · oddtoe · source 13753 (https://www.oddtoe.com/artist-designer/prop-designer-maker/) → target 16351
+- 2026-09-14 · oddtoe · source 16209 (https://www.oddtoe.com/prop-fabrication-services/) → target 16351
+- 2026-09-14 · oddtoe · source 16272 (https://www.oddtoe.com/use-cases/publicity-stunts/) → target 16351
+
+## 14 Sep 2026 — Puppet Designer link pass + hub card
+
+### [Puppet Designer](https://www.oddtoe.com/artist-designer/puppet-designer/) (page 16351) — PUBLISHED by Otto
+
+### Inbound links added — 3 of 4 proposed
+
+| Anchor | Source | Location |
+|---|---|---|
+| carried heads | [Publicity Stunts](https://www.oddtoe.com/use-cases/publicity-stunts/) (16272) | "It can be whatever the idea needs:" — every sibling item in that list was already a link, so this closed a visible gap |
+| puppeteer | [Prop Designer & Maker](https://www.oddtoe.com/artist-designer/prop-designer-maker/) (13753) | the "unusual résumé" sentence |
+| puppeteer | [Prop Fabrication Services](https://www.oddtoe.com/prop-fabrication-services/) (16209) | the same résumé sentence |
+
+The résumé line *"political cartoonist, puppeteer, data visualiser, street artist"* had been claiming
+puppetry on three pages with no page behind it since before the discipline page existed. Two of those
+three now point at it.
+
+**Declined by Otto (do not re-propose):** [Generative AI Animator](https://www.oddtoe.com/studio/generative-ai-animator/)
+(12203), first-person *"a **puppeteer,** a data visualizer"*. Plan:
+`link-plans/2026-09-14-puppet-designer.json`, which records the decline.
+
+All three verified live: one link each, `dfd-custom-link-decorated`, 16px.
+
+### Hub card — [Artist & Designer](https://www.oddtoe.com/artist-designer/) (13226)
+
+**Puppet Designer** added as the 14th discipline card, immediately after Mascot Designer in the same
+`vc_row_inner` (that row already carried four 1/3 columns and wraps, so a fifth needed no restructuring).
+Built by copying the Mascot Designer column verbatim and swapping four values: `icon_img` 16263 → **16349**
+(the marionette render), the link URL, the h3, and the description — *"Marionettes, rod puppets and
+[oversized carried heads](https://www.oddtoe.com/artist-designer/puppet-designer/)."* Asserted no Mascot
+remnants survived the copy. Backups either side:
+`site-backups/oddtoe-13226-hub-{pre,post}-puppet-card-2026-09-14.txt`. Verified live.
+
+### Still open
+- Menus (primary 42, footer 229) — REST 403s on menu-items, so these are wp-admin by hand, as with Mascot Designer.
+- GSC indexing request for the new page and the three sources.

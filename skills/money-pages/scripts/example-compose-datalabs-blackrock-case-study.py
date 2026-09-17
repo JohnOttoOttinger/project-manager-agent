@@ -30,7 +30,7 @@ hero = widen_hero(fill(blocks['intro'], {
     'HOOK': 'Over a <strong>three-year engagement</strong>, the Datalabs Agency became BlackRock&rsquo;s data visualisation partner in New York: a <strong>75-page Tableau style guide</strong> at the centre, feeding marketing dashboards, executive reporting, brand measurement, and an interactive SQL tool &mdash; one design language across all of it.',
     'SECTION_A_SUBTITLE': 'The engagement in one paragraph',
     'SECTION_A_HEADING': 'What did the Datalabs Agency build for BlackRock?',
-    'SECTION_A_INTRO': 'For BlackRock&rsquo;s New York headquarters, the <strong>Datalabs Agency</strong> provided project management and design across a three-year engagement: a <strong>75-page Tableau data visualisation style guide</strong>, a <strong>Tableau dashboard system for the Eloqua</strong> marketing platform, executive reports and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and the <strong>Data Grid</strong> &mdash; an interactive SQL tool.',
+    'SECTION_A_INTRO': 'For BlackRock&rsquo;s New York headquarters, the <strong>Datalabs Agency</strong> provided project management and design across a three-year engagement: a <strong>75-page Tableau data visualisation style guide</strong>, a <strong>Tableau dashboard system</strong> for the firm&rsquo;s marketing-automation platform, executive reports and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and an <strong>interactive internal data-exploration tool</strong>.',
     'CANONICAL_SENTENCE': CANONICAL,
     'SECTION_B_SUBTITLE': 'The problem behind the brief',
     'SECTION_B_HEADING': 'Why does an asset manager need a design language?',
@@ -39,15 +39,16 @@ hero = widen_hero(fill(blocks['intro'], {
     'PRIMARY_CTA_TEXT': 'Talk style guides with us',
     'PRIMARY_CTA_URL': CONTACT,
 }))
-hero_p1, row_secB = split_hero(hero, 53917)
+hero_p1, row_secB = split_hero(hero, None)
+hero_p1 = hero_p1.replace('[vc_single_image image="None" img_size="large" alignment="center" style="vc_box_rounded" onclick="link_image" css=""]', '')
 
 # ---------- Row: Animated Flow Diagram — one language, five streams ----------
 def svg_streams():
-    streams = [('ELOQUA DASHBOARDS', 'Marketing analytics system'),
-               ('EXECUTIVE REPORTING', 'Annual-letter analytics &amp; board decks'),
+    streams = [('MARKETING DASHBOARDS', 'The marketing-analytics system'),
+               ('EXECUTIVE REPORTING', 'High-profile analytics &amp; board decks'),
                ('BRAND MEASUREMENT', 'Awareness, engagement, sentiment'),
                ('COVID-19 COMMS', 'The April 2020 dashboard'),
-               ('THE DATA GRID', 'Interactive SQL tool')]
+               ('DATA TOOLING', 'An interactive exploration tool')]
     parts = [f'<svg viewBox="0 0 1200 640" xmlns="http://www.w3.org/2000/svg" role="img" '
              f'aria-label="One 75-page Tableau style guide feeding five BlackRock deliverable streams" '
              f'style="width:100%;height:auto;display:block;">']
@@ -78,19 +79,19 @@ row_flow = svg_row('Watch one rulebook feed five streams', 'One design language,
     svg_streams())
 
 # ---------- chart library table ----------
-t_charts = table_row(blocks, 'Pages 33 to 70', 'The chart library inside the style guide',
+t_charts = table_row(blocks, 'The chart law', 'The chart library inside the style guide',
     'More than 30 chart types documented with when-to-use guidance, in three tiers.',
-    ['Tier', 'Types', 'Examples'],
-    [['Basic', '13', 'Column, bar, clustered, bullet, pie, donut, stacked and 100% stacked variants, radar, candlestick'],
-     ['Advanced', '14', 'Slope, histogram, box-plot, waterfall, sankey, scatter, heat-map, calendar heat map, bubble, connected scatter'],
-     ['Specialised', '7', 'Funnel, step line, location map, shape map, tree map, tornado, Venn']],
+    ['Tier', 'Examples'],
+    [['Basic', 'Column, bar, clustered, bullet, pie, donut, stacked variants, radar, candlestick'],
+     ['Advanced', 'Slope, histogram, box-plot, waterfall, sankey, scatter, heat-map, bubble'],
+     ['Specialised', 'Funnel, step line, maps, tree map, tornado, Venn']],
     footnote='Delivered as native Tableau workbooks (.TWBX), aligned to BlackRock&rsquo;s brand guidelines.')
 
 # ---------- gallery (two assets) ----------
 row_gallery = gallery_row('The work, full size', 'Two artefacts from the engagement',
-    'Click either to view it full-screen &mdash; a page from the <strong>style guide</strong> and the <strong>Data Grid</strong> interactive tool.',
+    'Click either to view it full-screen &mdash; a page from the <strong>style guide</strong> and the interactive data tool.',
     [(53917, 'The Style Guide', 'One of 75 pages'),
-     (53920, 'The Data Grid', 'An interactive SQL tool')])
+     (53920, 'The Data Tool', 'An interactive exploration tool')])
 
 # ---------- Row: Design Principle Tiles — the style guide's own chapters ----------
 row_tiles = svg_row('Six questions the guide settles', 'What the style guide legislates',
@@ -108,7 +109,7 @@ row_tiles = svg_row('Six questions the guide settles', 'What the style guide leg
 sec_deliver = widen_inner(fill(blocks['section2'], {
     'SECTION_D_SUBTITLE': 'Delivered, documented, taught',
     'SECTION_D_HEADING': 'What did BlackRock receive across the engagement?',
-    'SECTION_D_ANSWER': 'The <strong>75-page Tableau style guide</strong>, the <strong>Eloqua marketing dashboard system</strong>, executive reports and presentation designs, a brand-measurement dashboard covering awareness, web engagement, and sentiment, the April 2020 <strong>COVID-19 communications dashboard</strong>, and the <strong>Data Grid</strong> SQL tool &mdash; with team training and capability building running through all of it.',
+    'SECTION_D_ANSWER': 'The <strong>75-page Tableau style guide</strong>, the <strong>marketing dashboard system</strong>, executive reports and presentation designs, a brand-measurement dashboard covering awareness, web engagement, and sentiment, the April 2020 <strong>COVID-19 communications dashboard</strong>, and the <strong>data-exploration tool</strong> &mdash; with team training and capability building running through all of it.',
     'SECTION_D_RATIONALE': 'Three years of deliverables only compound if each one leaves the client stronger. The style guide meant BlackRock&rsquo;s own analysts could design to standard without a review queue; the training meant the standard survived staff turnover. A design partnership should leave behind a firm that <strong>designs consistently without you</strong> &mdash; the dashboards are just the receipts.',
 }), '1/4', '1/2')
 
@@ -117,11 +118,11 @@ row_quote = quote_row('Otto Ottinger', 'The principle behind the BlackRock engag
 
 row_faq = faq_row(blocks, 'The BlackRock engagement', 'Ask about your design language', [
     ('What did the Datalabs Agency do for BlackRock?',
-     'Project management and design across a <strong>three-year engagement</strong> at BlackRock&rsquo;s New York headquarters: a <strong>75-page Tableau style guide</strong>, a Tableau dashboard system for the Eloqua marketing platform, executive reporting and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and an interactive SQL tool called the <strong>Data Grid</strong>.'),
+     'Project management and design across a <strong>three-year engagement</strong> at BlackRock&rsquo;s New York headquarters: a <strong>75-page Tableau style guide</strong>, a Tableau dashboard system for the firm&rsquo;s marketing-automation platform, executive reporting and presentation design, a brand-measurement dashboard, a COVID-19 communications dashboard, and an <strong>interactive internal data-exploration tool</strong>.'),
     ('What is in the 75-page Tableau style guide?',
      '<strong>Four parts</strong>: an introduction to purpose and Tableau terminology; dashboard design principles covering audience, devices, time on dashboard, chart choice, hierarchy, grids and sequencing, and language rules; styling &mdash; fonts, colour, margins, and internal versus external themes; and a chart library documenting <strong>more than 30 chart types</strong> across basic, advanced, and specialised tiers.'),
     ('What tools did the work run on?',
-     'Tableau for the style guide and dashboard systems, SQL for the Data Grid interactive tool, and <strong>PowerPoint for executive presentation design</strong>. Everything in the style guide shipped as <strong>native Tableau workbooks</strong> aligned to BlackRock&rsquo;s brand guidelines.'),
+     'Tableau for the style guide and dashboard systems, SQL for the interactive data-exploration tool, and <strong>PowerPoint for executive presentation design</strong>. Everything in the style guide shipped as <strong>native Tableau workbooks</strong> aligned to BlackRock&rsquo;s brand guidelines.'),
     ('Did BlackRock&rsquo;s own team get trained?',
      'Yes &mdash; <strong>team training and capability building</strong> ran alongside the design work throughout the engagement, so BlackRock&rsquo;s analysts could <strong>design to the standard themselves</strong> rather than routing everything through a consultant.'),
     ('Can the Datalabs Agency build a style guide for my company?',
@@ -133,19 +134,19 @@ art1 = fill(blocks['article1'], {
     'ARTICLE_1_HEADING': 'Anatomy of a Tableau style guide',
     'ARTICLE_1_BODY': f'''{P}The BlackRock guide opens where most dashboards go wrong: <strong>audience</strong>. Internal analysts and external clients read differently, tolerate different densities, and meet the work on different devices &mdash; so the guide splits its rules along that line before a single colour is specified.</p>
 {P}The design section carries the thinking most teams never write down: how much <strong>time a reader actually spends</strong> on a dashboard, what <strong>design hierarchy</strong> puts in their first glance, how <strong>grids and sequencing</strong> make a multi-view workbook navigable, and the common dashboard types the firm keeps rebuilding. Then styling &mdash; fonts, colour systems, backgrounds, margins, and separate <strong>internal and external themes</strong> under one brand.</p>
-{P}The largest part is the chart library: <strong>38 pages, more than 30 chart types</strong>, from column and bullet through sankey and box-plot to tree map and Venn &mdash; each with guidance on when it earns its place. A chart library is what turns a style guide from taste into law: the argument about which chart fits which question has a written answer.</p>
-{P}The same anatomy &mdash; audience, design, styling, chart law &mdash; structures every one of our {LINK("/?page_id=394", "data visualization style guides")}, including the {LINK("https://www.datalabsagency.com/data-visualization-style-guides/tableau-style-guides/", "Tableau style guides")} we build today.</p>''',
+{P}The largest part is the chart library: <strong>more than 30 chart types</strong>, from column and bullet through sankey and box-plot to tree map and Venn &mdash; each with guidance on when it earns its place. A chart library is what turns a style guide from taste into law: the argument about which chart fits which question has a written answer.</p>
+{P}The same anatomy &mdash; audience, design, styling, chart law &mdash; structures every one of our {LINK("https://www.datalabsagency.com/data-visualization-style-guides/", "data visualization style guides")}, including the {LINK("https://www.datalabsagency.com/data-visualization-style-guides/tableau-style-guides/", "Tableau style guides")} we build today.</p>''',
 })
 art2 = fill(blocks['article2'], {
     'ARTICLE_2_SUBTITLE': 'Three years inside one brand&hellip;',
     'ARTICLE_2_HEADING': 'What a long design partnership looks like',
     'ARTICLE_2_BODY': f'''{P}Most design work is a project: brief, build, handover, goodbye. The BlackRock engagement was the other kind &mdash; <strong>three years</strong> of being the design capability a firm reaches for as needs surface. First came the style guide, because everything else depends on it; what followed tracked the business itself.</p>
-{P}Marketing needed its <strong>Eloqua platform</strong> turned into dashboards a team could run campaigns from &mdash; that became a full Tableau dashboard system. The executive floor needed analytics shaped for the boardroom, including work supporting the firm&rsquo;s <strong>annual letter</strong>, and presentation design to match. Brand and communications needed measurement: a dashboard spanning <strong>brand tracking, web engagement, and sentiment analysis</strong> across markets.</p>
-{P}And in April 2020, the engagement showed why embedded partners matter: a <strong>COVID-19 communications dashboard</strong>, needed immediately, built inside a design language that already existed. Speed at a moment like that is not heroics &mdash; it is the dividend of the 75 pages written two years earlier.</p>
-{P}The engagement also produced my favourite odd artefact: the <strong>Data Grid</strong>, an interactive SQL tool &mdash; proof that a design language stretches past dashboards into {LINK("/?page_id=415", "interactive data tools")}. For the engagement model itself, our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how it starts.</p>''',
+{P}Marketing needed its <strong>automation platform</strong> turned into dashboards a team could run campaigns from &mdash; that became a full Tableau dashboard system. The executive floor needed analytics shaped for the boardroom, including work supporting <strong>high-profile executive communications</strong>, and presentation design to match. Brand and communications needed measurement: a dashboard spanning <strong>brand tracking, web engagement, and sentiment analysis</strong> across markets.</p>
+{P}And in April 2020, the engagement showed why embedded partners matter: a <strong>COVID-19 communications dashboard</strong>, needed immediately, built inside a design language that already existed. Speed at a moment like that is not heroics &mdash; it is the dividend of the 75 pages already on the shelf.</p>
+{P}The engagement also produced my favourite odd artefact: an <strong>interactive data-exploration tool</strong> &mdash; proof that a design language stretches past dashboards into {LINK("https://www.datalabsagency.com/interactive-data-visualizations/", "interactive data tools")}. For the engagement model itself, our {LINK("https://www.datalabsagency.com/dashboard-design-services/", "dashboard design services")} page shows how it starts.</p>''',
 })
 
-page = assemble([hero_p1, row_flow, row_secB, t_charts, row_gallery, row_tiles,
+page = assemble([hero_p1, row_flow, row_secB, t_charts, row_tiles,
                  sec_deliver, row_quote, row_faq, art1, blocks['offers'], art2, blocks['fixed']])
 page = apply_theme(page, '#1e222b')  # per-page tint (Otto-approved palette, 25 Aug)
 assert 'Aladdin' not in page and 'aladdin' not in page.lower()

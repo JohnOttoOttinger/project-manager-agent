@@ -335,6 +335,74 @@ same clothes.
 
 ---
 
+## Lesson 11a — measure the columns, do not calculate them (27 Aug 2026)
+
+Lesson 11 said balance two-column rows by rendered height. This is the proof, from Marketing
+Dashboards (54156): the character-count model predicted a **2.1%** difference and the browser
+measured **8.6%** (413px vs 452px). Paragraph margins cost far more than "~1px ≈ 1 character"
+suggests, so a side with an extra paragraph runs long even when its text is shorter.
+
+**How to actually do it.** Ronneby half-columns carry the class `columns six` — not a Bootstrap
+`vc_col-*` class, which is why a generic selector finds nothing. Walk down from `body` to the
+deepest element containing a known sentence, then up to the nearest `.columns` ancestor, and compare
+`getBoundingClientRect().height`. Push, measure, adjust, measure again.
+
+**The resolution is one line (~22px), not one character.** A trim of fewer characters than a line
+holds changes nothing. Iterations here: 39px → 17px → **5px (1.1%)**, each step moving roughly one
+line of text between the columns.
+
+**Also worth doing: check whether the split is in the right place.** On this row the paragraph "I
+sketch the layout" sat at the bottom of the left column while "Once the layout is agreed" opened the
+right. Moving the layout paragraph across both balanced the row and put the two sentences next to
+each other, turning the row into *what we decide* / *how we build*.
+
+## Lesson 15 — use real work as the hero image, and check the alt text (27 Aug 2026)
+
+Marketing Dashboards (54156) shipped with `Analysts-Toolkit-Chart-Box` as its main image — alt text
+literally "Box with a chart on it". Otto: "can you find one of the Marketing Dashboards I actually
+designed?" On a page selling dashboard design, a stock illustration of a box is the weakest possible
+proof.
+
+**The media library already had the real thing.** Search it before reaching for a generic asset:
+`?search=marketing+dashboard&media_type=image` surfaced `Marketing_Dashboard_design_Tableau_Education`
+(39240, 2048×1440) — a genuine Tableau marketing dashboard with sales funnel, campaign metrics, paid
+channels, brand health and share of voice, carrying dummy figures rather than client data. Exactly
+the page's subject.
+
+**Look at the image before using it.** Filename matching is not verification; download and view it.
+Half the plausible-sounding candidates were training slides or session photos, not dashboards.
+
+**Set the alt text — real work usually has none.** 39240's alt was empty. An empty alt on the one
+image proving competence wastes it for accessibility and for anything reading the page.
+
+**While you are in there, check the delimiters.** This page carried the same v0-seed lavender
+(`#8224E31C` / `#EEE6F6` / `#D4C9E0`) that lesson 13 removed from the Oddtoe kit — three of them, on
+Datalabs. Retinted to the plum/tan palette. Worth grepping any page you edit.
+
+## Lesson 11b — equal height is not balance; match the paragraph rhythm (27 Aug 2026)
+
+The columns measured **435px vs 430px** and Otto still said "the two columns don't look balanced."
+He was right and the measurement was blind to it. The line counts per paragraph:
+
+| | paragraphs |
+|---|---|
+| Left | 7 lines, then **12 lines** |
+| Right | 8, 6, 4 |
+
+Same box height, completely different texture. A twelve-line paragraph beside a four-line one reads
+as a wall next to a set of steps, whatever the geometry says. **Measure paragraph line counts, not
+just column height** — `Math.round(p.getBoundingClientRect().height / 22)` gives lines per paragraph
+and exposes this instantly.
+
+**The fix costs nothing in height if you trim while you split.** Splitting the 12-line paragraph adds
+one paragraph gap (~22px), so remove roughly one line of text at the same time and the column height
+is unchanged. Result here: left 7/5/6, right 8/6/4, both **430px, a 0px difference**.
+
+**Also: these columns are a fixed 400px, not fluid.** The row sits in an 800px container, so wrap
+width does not change with the viewport and a balance tuned once holds. Do check this before assuming
+a balance is fragile — but do NOT trust `innerWidth` while measuring; the browser pane resizes itself
+between calls, which sent me chasing a viewport problem that did not exist.
+
 ## Lesson 14 — never bold a list (27 Aug 2026)
 
 `de-ai-check`'s `blanket bold` rule fires on any `<strong>` over 60 characters, and a bolded list of
@@ -377,3 +445,133 @@ On 16227 it rides in the commission-steps module. After applying it, EVERY pair 
 
 Datalabs `1/2`-column articles are a different pattern: no custom class, theme default gutter renders
 20px, matches the rest of the kit — leave them alone.
+
+## Lesson 11c — measuring the balance on a DRAFT, with a control pair (7 Sep 2026)
+
+Lessons 11/11a say measure in the browser on the pushed page. That works for a live URL. A **draft**
+is not publicly reachable, and the wp-admin preview needs a logged-in session, so on Mascot Designer
+(16255) the measurement had to happen somewhere else.
+
+**Method — a local harness, validated by a control.** Rebuild the column pairs as plain HTML at the
+template's real geometry, serve over localhost, measure with `getBoundingClientRect()`.
+
+The geometry, taken off live page 11178: qsection columns **270px** with `padding: 0 3px` (→ **264px**
+of text), Arvo **16px / 22px**, paragraph `margin-bottom: 17.12px` and last-child `0`. Intro-row
+columns are **290px**. Replicate `wpautop` by splitting the column source on `\n\n` into `<p>`.
+
+**Always include a control pair** — a column pair copied verbatim from a live page whose rendered
+heights you have already measured in the browser. Installation Artist's process row measures
+**474/403** live; the harness reproduced 474/403 exactly, which is what makes the other numbers
+trustworthy. Without a control this is just a nicer-looking calculation, and Lesson 11a already
+proved calculations lie.
+
+**Gotcha:** give the harness columns `flex: 0 0 270px`. A plain `width: 270px` inside a flex row
+narrower than `270+gap+270` silently shrinks both columns and every height comes out roughly double.
+The first run reported a 38-line paragraph and a 10.5% intro gap; both were the viewport, not the copy.
+
+**Gotcha (macOS):** the preview sandbox cannot `os.getcwd()` and cannot read the iCloud Documents
+folder, so `python3 -m http.server` fails and a `_serve.py` inside the project folder fails too. Put
+the server script in the scratchpad and point `.claude/launch.json` at it by absolute path.
+
+Result on 16255: 535/364, 474/364 and 369/281 (32%, 23%, 24%) → **all six pairs within one line**,
+worst 22px / 6.3%. Fixes that were content wins as well as layout ones: the "Who commissions" row
+named charities in its answer-first line but never expanded it — adding that paragraph to the short
+column balanced the row and closed the gap.
+
+## Lesson 16 — an absolutely positioned `<img>` needs explicit width and height (8 Sep 2026)
+
+Built the scattered-circle interactive for page 16272. Circles rendered as empty rings on a clean
+load: the ring background painted, the photo did not. Every diagnostic said the image was fine —
+`complete: true`, `naturalWidth: 512`, computed `opacity: 1`, `visibility: visible`, correct box
+size, and drawing it to a canvas returned real pixels.
+
+The cause: `<img>` is a **replaced element**. `position:absolute` with `inset:6px` does NOT stretch
+it the way it stretches a `<div>` — a replaced element falls back to its intrinsic size, and the
+layout that results paints unreliably. The first attempt used `aspect-ratio:1` plus percentage
+width on the parent, which produced a valid box but no paint at all; the second used `inset` alone,
+which blew the images up to their natural 512px.
+
+**The fix that works:**
+```css
+.circle img{position:absolute;top:6px;left:6px;
+            width:calc(100% - 12px);height:calc(100% - 12px);
+            object-fit:cover;max-width:none}
+```
+Give the parent an explicit `width` AND `height` too (both as % of a stage that holds its own
+aspect via `padding-bottom`), rather than relying on `aspect-ratio` to derive one from the other.
+
+**How to spot it:** if computed styles all look correct and a canvas draw succeeds but the screen
+stays blank, stop reading CSS and check whether the element is replaced. Note also that forcing a
+reflow (changing any style from the console) makes it appear — which makes it easy to mistake for
+a lazy-loading timing artefact. It is not; reload and look again before concluding.
+
+## Lesson 17 — Midjourney draft jobs cannot be downloaded from the UI (8 Sep 2026)
+
+Otto's v8 grids come back labelled **Draft**. On a draft job page the `button[title="Download
+Image"]` exists and `.click()` runs without error, but no file is ever written. Non-draft jobs
+download normally. Several passes were wasted assuming Chrome's multiple-downloads permission was
+the blocker — it was a real gate too, but clearing it did not fix the drafts.
+
+**The route that works** — navigate the tab to the CDN file itself, which puts the page on the
+`cdn.midjourney.com` origin, then fetch same-origin and save the blob:
+```js
+// tab is at https://cdn.midjourney.com/<job-id>/0_<index>.png
+fetch(`https://cdn.midjourney.com/${job}/0_${idx}.png`)
+  .then(r => r.blob())
+  .then(b => { const a=document.createElement('a');
+               a.href=URL.createObjectURL(b); a.download=name+'.png';
+               document.body.appendChild(a); a.click(); });
+```
+Drafts serve at **512×512** — fine for anything displayed under ~350px, too small for a hero.
+`curl` cannot do this: the CDN is behind CloudFront signed cookies that are httpOnly, so only the
+browser can fetch them. A cross-origin `fetch` from `midjourney.com` fails CORS, and a canvas drawn
+from an `<img>` on that origin is tainted — the same-origin navigation is what unlocks it.
+
+**Reviewing 24 variants per job:** the /imagine grid is virtualised, so ancestor-walking the DOM
+only finds groups currently in view. Faster to inject a full-screen overlay of
+`https://cdn.midjourney.com/<job>/0_<i>_640_N.webp?method=shortest` for i in 0..23 with the index
+printed on each, and screenshot that as a contact sheet.
+
+## Lesson 18 — Qwigley subtitles ship with a line-height below their own font size (8 Sep 2026)
+
+Otto caught the kicker on page 16272 being cut off by the headline underneath. Every `dfd_heading`
+subtitle on the page — all 19 — had a computed line-height *smaller than its font-size*: 36px type
+in a 20px line, 48 in 40, 40 in 36, 28 in 30. Qwigley is a script face with deep descenders, so the
+tails ran straight into the Bebas headline below.
+
+`overflow` is visible everywhere, so nothing is clipped by its own box — the glyphs are simply
+overlapped by the next element. That makes it look like a z-index or clipping bug when it is purely
+leading.
+
+**The fix**, one page-scoped rule rather than editing 19 headings:
+```css
+.dfd-sub-title{line-height:1.3em!important;padding-bottom:0;margin-bottom:-.09em!important}
+```
+`em` so it self-corrects at every size. **1.5em was too much** — it cleared the descenders but left
+an obvious gap between kicker and headline, which Otto flagged straight away. 1.3em plus the small
+negative margin clears the descenders and keeps the pairing tight, because Bebas is all caps with
+no descenders and sits low in its own line box, so the two boxes can overlap slightly.
+
+**This is not page-specific.** The defaults come from the theme, so the same defect is almost
+certainly live on the homepage and every other page using Qwigley subtitles. Check before assuming
+a page is clean.
+
+## Lesson 19 — dfd_single_image and image_layers both mishandle transparent PNGs (8 Sep 2026)
+
+Swapping two photos for transparent PNGs in the Toolkit-style divider row on 16272 took three goes:
+
+1. **`image_layers`** deliberately pushes its image *outside* the row edge. That reads well with a
+   full-bleed photo, but these PNGs carry the subject centred in transparent padding, so the only
+   part left on screen was empty space — images loading perfectly and completely invisible. Note
+   the alignment names are inverted from what they suggest: `layers-left` pushes the image out to
+   the *right*.
+2. **`dfd_single_image`** then served the wrong files — a 158x150 thumbnail with
+   `image_size="custom"`, and the same 158px file with `image_size="full"`, despite both source
+   files being 200 OK and both having a `full` size properly registered.
+3. **What worked:** a plain `<img>` in a `vc_raw_html` block pointing straight at the full-size URL.
+
+**Matching two transparent PNGs by eye is wrong.** Set them to the same element width and one still
+looks smaller, because the padding differs. Measure the opaque area instead — draw each to a canvas
+and scan the alpha channel for its ink bounds — then scale each so the *ink* heights match. On
+16272 that meant 193px for the carton and 169px for the flight case to land both visible boxes at
+134px tall.

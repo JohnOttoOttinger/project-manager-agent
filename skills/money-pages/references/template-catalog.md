@@ -15,6 +15,7 @@ workflow (interview → compose → draft → backlog).
 | **Artist &amp; Designer discipline page** | One craft Oddtoe practises — the `/artist-designer/` siblings (installation artist, kinetic sculptor, inflatable artist...) | Oddtoe | *(no kit yet — compose from `scripts/example-compose-oddtoe-installation-artist.py`)* | This row + `page-types.md` | Live page 11178 `/artist-designer/installation-artist/`, itself built on Documentary Animator (15400) | **v0 SEED** — 14-row shape, proven live; snapshot as v1 once Otto art-directs the bubble-FAQ change |
 | Directory guide — Datalabs | (not built) | Datalabs | — | — | — | Same approach |
 | **Visual Case Study — Datalabs** | A client project case study heavy on visuals — flow-diagram SVG, asset gallery w/ lightbox, hotspot deep-dive, principle tiles, avatar quote, GEO Q&A | Datalabs | *(script-driven: compose from `scripts/example-compose-datalabs-marriott-case-study.py` — swap content + media IDs + SVG node/tile data per client)* | `design-language.md` "Page: Visual Case Study" row + `page-types.md` Case study | Marriott draft 53852 (raw snapshot 25 Aug 2026 in `masters/datalabs-visual-case-study-53852-v1-2026-08-25.txt`) | **v1 — Otto-approved 25 Aug 2026.** Content sources: `ODD & DLA Strategy/` case-study .md files (honour each file's verification queue). Next candidates: eBay/Gumtree (Data Arts branding call first), Adidas (reconcile participant count), Lockheed (clean). Parent = /case-studies/ (19482). Per-client needs: images uploaded w/ alt text, SVG `svg_flow()` nodes + `svg_concepts()` tiles rewritten to the project, hotspot markers repositioned |
+| **Use Case** | One kind of brief followed from first drawing to the day itself — the `/use-cases/` siblings (publicity stunts, museum late opening, product launch…), one per homepage "See yourself as?" row | Oddtoe | `design-kit-oddtoe-usecase.html` | `usecase-kit-README.md` (19 rows, 206 tokens, content JSON per page) | Live page 16272 `/use-cases/publicity-stunts/` (raw snapshot 11 Sep 2026 in `masters/`), snapshotted by `scripts/snapshot-usecase-kit.py` | **v1 — Otto-art-directed live page; `scripts/compose-usecase.py --verify` reproduces it identically in all 19 rows (11 Sep 2026).** Six modules swap content only: circles, timeline, package, spec, comparison, FAQ. Raw-HTML interactives kept by Otto's decision |
 
 ## Shared building blocks (usable across kits)
 
@@ -123,3 +124,13 @@ Person-noun under the hub: `/artist-designer/<craft>-artist/`. Prefer **artist**
 both exist — "designer" SERPs are dominated by manufacturers, "artist" returns named practitioners, and
 these pages exist to make Oddtoe the named practitioner. Cover the "designer" phrasing in body copy and
 Yoast instead.
+
+## Use Case paid twin + thank-you (14 Sep 2026)
+
+`design-kit-oddtoe-usecase-paid.html` (6 rows) and `design-kit-oddtoe-usecase-thanks.html` (2 rows),
+filled by `scripts/compose-usecase-paid.py <usecase-content.json> <usecase-paid.json>`. The ad
+landing page for a Use Case: hero with the ad's headline and one button, portfolio trio as proof,
+3-field Gravity form, circles, package boxes, three FAQs. Header hidden, sticky mobile button,
+noindex + canonical to the use-case page, child of it at `/go/`; thank-you at `/thanks/` fires the
+Pixel Lead event. Spec: `Claude-Projects-2026/Oddtoe-Instagram-Boost-Ads/paid-landing-page-template-spec.md`.
+First overlay: `usecase-paid-publicity-stunts.json`.

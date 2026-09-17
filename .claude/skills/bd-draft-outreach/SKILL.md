@@ -62,13 +62,42 @@ mailbox.
 7. **Report**: what was drafted, what was rejected and why, what warnings
    stand, and that nothing has been sent.
 
-## Which mailbox
+## Which mailbox — verified 1 Sep 2026, do not rediscover this
 
-The Gmail connector writes to the single account it is authorised for.
-Before drafting for a brand, say which mailbox the drafts will land in. If
-that is not the brand's own address — Oddtoe sends as `oddtoe@oddtoe.com`,
-Datalabs as `otto@datalabsagency.com` — tell Otto before creating anything,
-because he will have to move or re-send them by hand.
+There are **two separate Google accounts**, and only one is on the
+connector:
+
+- **Datalabs** — `otto@datalabsagency.com`. This is the account the Gmail
+  MCP connector is authorised for. Datalabs drafts go through the
+  connector's create-draft tool, exactly as the steps above describe.
+- **Oddtoe** — `oddtoe@oddtoe.com`. A separate sign-in the connector
+  CANNOT reach (its tools have no account switch). It lives in the browser
+  at `https://mail.google.com/mail/u/3/` — confirm the account name in the
+  tab title before touching anything. Oddtoe drafts are composed there
+  with the Chrome browser tools.
+
+**Never create Oddtoe drafts through the connector.** They land in the
+Datalabs account signed as Oddtoe, which reads as spoofed mail, and moving
+them is manual pain. This was done wrong once; once is enough.
+
+### Composing in the Oddtoe account (browser)
+
+- Click **into each field** — To, then Subject, then the body — and type
+  only after the click. Never Tab-chain between fields: a keystroke that
+  misses a field becomes a Gmail shortcut (`?` opens the shortcut overlay,
+  `c` opens a new compose), and a long paste sprays as a shortcut storm.
+- Gmail auto-inserts Otto's real signature. End the body with `Otto`, a
+  blank line, and the unsubscribe line, and let the signature carry the
+  sign-off. Do not type the full sender block — it doubles the signature.
+  The unsubscribe line itself is still required, verbatim, above the
+  signature.
+- Close the compose with its **X** (top right) — that saves the draft.
+  Never press Cmd+Enter, which sends.
+- Verify the Drafts count went up before reporting the draft as created.
+- The browser gives no usable Gmail draft id. Record the draft on the
+  board with a marker id instead — `browser-u3-<date>-<company>` — the
+  store only needs a non-empty id to know a draft exists; the loop runs on
+  status and dates.
 
 ## Composing
 
