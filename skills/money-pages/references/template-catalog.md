@@ -124,3 +124,13 @@ Person-noun under the hub: `/artist-designer/<craft>-artist/`. Prefer **artist**
 both exist — "designer" SERPs are dominated by manufacturers, "artist" returns named practitioners, and
 these pages exist to make Oddtoe the named practitioner. Cover the "designer" phrasing in body copy and
 Yoast instead.
+
+## Use Case paid twin + thank-you (14 Sep 2026)
+
+`design-kit-oddtoe-usecase-paid.html` (6 rows) and `design-kit-oddtoe-usecase-thanks.html` (2 rows),
+filled by `scripts/compose-usecase-paid.py <usecase-content.json> <usecase-paid.json>`. The ad
+landing page for a Use Case: hero with the ad's headline and one button, portfolio trio as proof,
+3-field Gravity form, circles, package boxes, three FAQs. Header hidden, sticky mobile button,
+noindex + canonical to the use-case page, child of it at `/go/`; thank-you at `/thanks/` fires the
+Pixel Lead event. Spec: `Claude-Projects-2026/Oddtoe-Instagram-Boost-Ads/paid-landing-page-template-spec.md`.
+First overlay: `usecase-paid-publicity-stunts.json`.

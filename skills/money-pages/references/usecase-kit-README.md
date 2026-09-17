@@ -117,3 +117,19 @@ the handoff, never in the body). Keys that do not change between pages: `FAQ_TAB
 `compose-usecase.py <json> --verify <master>` decodes the raw blocks on both sides and diffs row
 by row. On 11 Sep 2026 the stunts JSON reproduces master 16272 identically in all 19 rows. Run it
 after every re-snapshot; if it fails, the kit and the master have drifted.
+
+## Paid twin hero (14 Sep 2026)
+
+The twin's hero uses the 200px Bebas giant title from row 2 (tablet 150, mobile 100), left-aligned
+with 120px left padding on desktop (24px on phones) via `content_alignment="text-left"` plus the
+hero raw-block CSS. Otto's ask, 14 Sep 2026: bigger opener for the ads.
+
+`AD_LINE` (14 Sep 2026): one Arvo 20px line with one bold phrase under the giant title, before the
+button. `AD_SUB` is now the short Qwigley kicker above the title, ending in an ellipsis that
+`AD_LINE` finishes.
+
+Row order (Otto, 14 Sep 2026): hero, six-idea circles, portfolio trio, form, package boxes, FAQ. The
+circles come second so the page says something before it asks for anything.
+
+Twin overlays may override any base key (14 Sep 2026): `CIRCLES_SUB` and `PKG4_BODY` carry the social
+media mentions, `CIRCLES_FOOT` must link `#form`, never `/contact-oddtoe/` or another page.

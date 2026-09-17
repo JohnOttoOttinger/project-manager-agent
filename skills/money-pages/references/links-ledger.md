@@ -1123,3 +1123,42 @@ is still enforced verbatim while the markup passes.
 - 2026-09-11 · oddtoe · source 16190 (https://www.oddtoe.com/artist-designer/inflatable-artist/) → target 16272
 - 2026-09-11 · oddtoe · source 16288 (https://www.oddtoe.com/experiential-activation-agency/) → target 16272
 - 2026-09-11 · oddtoe · source 16124 (https://www.oddtoe.com/experiential-marketing/) → target 16272
+- 2026-09-14 · oddtoe · source 13753 (https://www.oddtoe.com/artist-designer/prop-designer-maker/) → target 16351
+- 2026-09-14 · oddtoe · source 16209 (https://www.oddtoe.com/prop-fabrication-services/) → target 16351
+- 2026-09-14 · oddtoe · source 16272 (https://www.oddtoe.com/use-cases/publicity-stunts/) → target 16351
+
+## 14 Sep 2026 — Puppet Designer link pass + hub card
+
+### [Puppet Designer](https://www.oddtoe.com/artist-designer/puppet-designer/) (page 16351) — PUBLISHED by Otto
+
+### Inbound links added — 3 of 4 proposed
+
+| Anchor | Source | Location |
+|---|---|---|
+| carried heads | [Publicity Stunts](https://www.oddtoe.com/use-cases/publicity-stunts/) (16272) | "It can be whatever the idea needs:" — every sibling item in that list was already a link, so this closed a visible gap |
+| puppeteer | [Prop Designer & Maker](https://www.oddtoe.com/artist-designer/prop-designer-maker/) (13753) | the "unusual résumé" sentence |
+| puppeteer | [Prop Fabrication Services](https://www.oddtoe.com/prop-fabrication-services/) (16209) | the same résumé sentence |
+
+The résumé line *"political cartoonist, puppeteer, data visualiser, street artist"* had been claiming
+puppetry on three pages with no page behind it since before the discipline page existed. Two of those
+three now point at it.
+
+**Declined by Otto (do not re-propose):** [Generative AI Animator](https://www.oddtoe.com/studio/generative-ai-animator/)
+(12203), first-person *"a **puppeteer,** a data visualizer"*. Plan:
+`link-plans/2026-09-14-puppet-designer.json`, which records the decline.
+
+All three verified live: one link each, `dfd-custom-link-decorated`, 16px.
+
+### Hub card — [Artist & Designer](https://www.oddtoe.com/artist-designer/) (13226)
+
+**Puppet Designer** added as the 14th discipline card, immediately after Mascot Designer in the same
+`vc_row_inner` (that row already carried four 1/3 columns and wraps, so a fifth needed no restructuring).
+Built by copying the Mascot Designer column verbatim and swapping four values: `icon_img` 16263 → **16349**
+(the marionette render), the link URL, the h3, and the description — *"Marionettes, rod puppets and
+[oversized carried heads](https://www.oddtoe.com/artist-designer/puppet-designer/)."* Asserted no Mascot
+remnants survived the copy. Backups either side:
+`site-backups/oddtoe-13226-hub-{pre,post}-puppet-card-2026-09-14.txt`. Verified live.
+
+### Still open
+- Menus (primary 42, footer 229) — REST 403s on menu-items, so these are wp-admin by hand, as with Mascot Designer.
+- GSC indexing request for the new page and the three sources.

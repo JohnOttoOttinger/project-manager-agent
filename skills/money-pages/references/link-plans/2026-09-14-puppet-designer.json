@@ -1,0 +1,25 @@
+{
+ "target": 16351,
+ "approved": true,
+ "edits": [
+  {
+   "source_id": 13753,
+   "type": "pages",
+   "search": "political cartoonist, puppeteer, data visualiser, street artist",
+   "replace": "political cartoonist, <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/artist-designer/puppet-designer/\">puppeteer</a></strong>, data visualiser, street artist"
+  },
+  {
+   "source_id": 16209,
+   "type": "pages",
+   "search": "political cartoonist, puppeteer, data visualiser, street artist",
+   "replace": "political cartoonist, <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/artist-designer/puppet-designer/\">puppeteer</a></strong>, data visualiser, street artist"
+  },
+  {
+   "source_id": 16272,
+   "type": "pages",
+   "search": "It can be whatever the idea needs: carried heads, a <strong><a class=\"dfd-custom-link-decorated\" href=\"/artist-designer/inflatable-artist/\">giant inflatable</a></strong>",
+   "replace": "It can be whatever the idea needs: <strong><a class=\"dfd-custom-link-decorated\" href=\"https://www.oddtoe.com/artist-designer/puppet-designer/\">carried heads</a></strong>, a <strong><a class=\"dfd-custom-link-decorated\" href=\"/artist-designer/inflatable-artist/\">giant inflatable</a></strong>"
+  }
+ ],
+ "note": "Otto approved 3 of 4 via the Q&A on 14 Sep 2026. Generative AI Animator 12203 (\"a puppeteer,\" inside an existing strong) was NOT approved \u2014 do not re-propose it."
+}
