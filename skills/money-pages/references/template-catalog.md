@@ -132,5 +132,5 @@ filled by `scripts/compose-usecase-paid.py <usecase-content.json> <usecase-paid.
 landing page for a Use Case: hero with the ad's headline and one button, portfolio trio as proof,
 3-field Gravity form, circles, package boxes, three FAQs. Header hidden, sticky mobile button,
 noindex + canonical to the use-case page, child of it at `/go/`; thank-you at `/thanks/` fires the
-Pixel Lead event. Spec: `Claude-Projects-2026/Oddtoe-Instagram-Boost-Ads/paid-landing-page-template-spec.md`.
+Pixel Lead event. Spec: `Claude-Projects-2026/Oddtoe-Visual-Storyteller/paid-landing-page-template-spec.md`.
 First overlay: `usecase-paid-publicity-stunts.json`.

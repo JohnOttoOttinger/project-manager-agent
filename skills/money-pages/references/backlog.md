@@ -213,8 +213,8 @@ The app's Content pipeline card reads this file — keep the format exact.
 - [x] 14 Sep 2026: circles rendered as flat ovals below 900px. The module sizes each circle at 77.13% of its own width, which is only round when the stage box is 129.64% tall; the mobile rule shortened the stage to 92%. Twin kit now uses `aspect-ratio:1 / 1.2964` (height follows the stage's own width) with a 440px cap, measured 1:1 at 330px and 780px. **The same bug is live on Stunts 16272 and the four use-case drafts (16340-16344) — they still carry `padding-bottom:92%`.** One-line fix each, needs Otto's go on a published page.
 - [x] 14 Sep 2026: circle-oval fix applied to 16272 (live), 16340, 16341, 16342, 16343, 16344 and the master use-case kit. Each page rebased on its own live body, before/after backups in site-backups, decoded diff proved to be the CSS line only, all 19 rows intact. Master re-snapshotted as `oddtoe-publicity-stunts-16272-2026-09-14-raw.txt`; compose --verify identical. Live front end serves the new rule (Cloudflare was holding a 5-minute copy).
 - 14 Sep 2026, end of session: Instagram creative system built and documented at
-  `Claude-Projects-2026/Oddtoe-Instagram-Boost-Ads/creative/` (TEMPLATES.md is the reference).
+  `Claude-Projects-2026/Oddtoe-Visual-Storyteller/creative/` (TEMPLATES.md is the reference).
   Four templates: ad 4:5, organic square 1:1, carousel deck, and the tilted collage (1-5 pictures,
   empty windows for text, 13 Oddtoe grounds, optional caption bars). Handover note at
-  `Oddtoe-Instagram-Boost-Ads/WHERE-THINGS-STAND.md`. Outstanding: the textured title-opener style,
+  `Oddtoe-Visual-Storyteller/WHERE-THINGS-STAND.md`. Outstanding: the textured title-opener style,
   on hold until Otto supplies templates from another Claude project.
